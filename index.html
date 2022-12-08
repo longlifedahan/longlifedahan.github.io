@@ -3,9 +3,19 @@
   <head>
     <meta charset="utf-8">
     <title>炫光超佛帝的主页</title>
+    <script>
+      var time=0
+      function hello(){
+        time=time+1
+        if(time>=3)
+          window.location.href="test.html"
+        else
+          alert('你好！再点点试试？')         
+      }
+    </script>
   <head>
   <body>
-    <button style="width: 100%;" onclick="alert('你好！')">你好！</button>
+    <button style="width: 100%;" onclick="hello()">你好！</button>
     <table border="1" width="100%" style="text-align: center;">
       <tr>
         <td colspan="2" style="font-size: larger;font-weight: bolder;">欢迎来到炫光超佛帝的主页</td>
