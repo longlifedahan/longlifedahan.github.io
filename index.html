@@ -1,74 +1,84 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+  <meta charset="utf-8">
+  <title>大汉万岁（longlifedahan）的主页</title>
+  <script>
+    var time = 0
+    function hello() {
+      time = time + 1
+      if (time >= 3)
+        window.location.href = "test.html"
+      else
+        alert('你好！再点点试试？')
+    }
+  </script>
+
   <head>
-    <meta charset="utf-8">
-    <title>longlifedahan（大汉万岁）的主页</title>
-    <script>
-      var time=0
-      function hello(){
-        time=time+1
-        if(time>=3)
-          window.location.href="test.html"
-        else
-          alert('你好！再点点试试？')         
-      }
-    </script>
-  <head>
+
   <body>
-    <button style="width: 100%;" onclick="hello()">你好！</button>
+    <button style="width: 100%;" onclick="hello()">你好（Hello）！</button>
+    <p style="text-align: center;">
+      <span>
+        请选择语言（Please choose language)：
+        <button onclick="window.location.href='index.html'">中文（Chinese）</button>
+        <button onclick="window.location.href='index_english.html'">英文（English）</button>
+      </span>
+    </p>
     <table border="1" width="100%" style="text-align: center;">
       <tr>
-        <td colspan="2" style="font-size: larger;font-weight: bolder;">欢迎来到我的主页</td>
+        <td colspan="2" style="font-size: larger;font-weight: bolder;">欢迎来到我的主页！</td>
       </tr>
       <tr>
-        <tr>
-          <td width="50%">
-            <p>我现在是一名软件工程方向的研究生！<p>             
-            </p>本科阶段，我主要学习基于C#/asp.net的web开发，目前，主要从事深度学习（入门中）和空间音频检测</p>
-            <p>左侧是我的个人论坛/个人小说阅读站/</p>
-          </td>
-          <td>
-            <p>
-               <a href="http://www.mymvcforum.com/" target="_blank">个人论坛（http://www.mymvcforum.com/）</a>           
-            </p>
-            <p>
-              <a href="http://xuanguang-001-site2.itempurl.com/" target="_blank">个人小说阅读站</a>           
-            </p>
-            <p>
-              <a href="https://github.com/longlifedahan" target="_blank">github首页</a>
-            </p>
-            <p>
-              <a href="https://github.com/longlifedahan/NovelAI-Embeddings/" target="_blank">novelai人物模型发布仓库</a>
-            </p>
-          </td>
-        </tr>
-        <td>
-          <p>同时，我也是一名网文作者，旁边是我的一些作品，我的主要创作方向是同人小说，在起点有一本精品小说，旁边是我的一些成绩尚可的作品</p>
-          <p>
-            这是我的作者主页：
-            <a href="https://my.qidian.com/author/8108065/" target="_blank">起点</a>&nbsp;
-            <a href="https://book.qq.com/book-writer/3651576203168501" target="_blank">QQ阅读</a>&nbsp;
-            <a href="https://user.17k.com/see/www/84363421.html" target="_blank">17k小说网</a>&nbsp;    
-          </p>
+      <tr>
+        <td width="50%">
+          <p>我现在是一名软件工程方向的研究生！</p>
+          <p>本科阶段，我主要学习基于C#/asp.net的web开发，目前，主要从事深度学习（入门中）和空间音频检测</p>
+          <p>左侧是我的个人论坛/个人小说阅读站/github首页/novelai模型分享页</p>
         </td>
         <td>
           <p>
-            <a href="https://book.qidian.com/info/1024104863/" target="_blank">《斗罗之我的老婆是银龙王》</a>
-            <img src="https://bookcover.yuewen.com/qdbimg/349573/1024104863/180 " height="100px">
+            <a href="http://www.mymvcforum.com/" target="_blank">个人论坛（http://www.mymvcforum.com/）</a>
           </p>
           <p>
-            <a href="https://book.qq.com/book-detail/28095408" target="_blank">《斗罗大陆之我能抽取无限武魂》</a>
-            <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/408/28095408/t5_28095408.jpg" height="100px">
+            <a href="http://xuanguang-001-site2.itempurl.com/" target="_blank">个人小说阅读站</a>
           </p>
           <p>
-            <a href="https://book.qq.com/book-detail/37110886" target="_blank">《斗罗之签到女神就变强》</a>
-            <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/886/37110886/t5_37110886.jpg" height="100px">
+            <a href="https://github.com/longlifedahan" target="_blank">github首页</a>
           </p>
           <p>
-            <a href="https://book.qq.com/book-detail/37110886" target="_blank">《斗罗：我能召唤诸天女神》（连载中）</a>
-            <img src="https://bookcover.yuewen.com/qdbimg/349573/1035319500/180" height="100px">
+            <a href="https://github.com/longlifedahan/NovelAI-Embeddings/" target="_blank">novelai人物模型发布仓库</a>
           </p>
         </td>
+      </tr>
+      <td>
+        <p>同时，我也是一名网文作者，旁边是我的一些作品，我的主要创作方向是同人小说，在起点有一本精品小说，旁边是我的一些成绩尚可的作品</p>
+        <p>
+          这是我的作者主页：
+          <a href="https://my.qidian.com/author/8108065/" target="_blank">起点</a>&nbsp;
+          <a href="https://book.qq.com/book-writer/3651576203168501" target="_blank">QQ阅读</a>&nbsp;
+          <a href="https://user.17k.com/see/www/84363421.html" target="_blank">17k小说网</a>&nbsp;
+        </p>
+      </td>
+      <td>
+        <p>
+          <a href="https://book.qidian.com/info/1024104863/" target="_blank">《斗罗之我的老婆是银龙王》</a>
+          <img src="https://bookcover.yuewen.com/qdbimg/349573/1024104863/180 " height="100px">
+        </p>
+        <p>
+          <a href="https://book.qq.com/book-detail/28095408" target="_blank">《斗罗大陆之我能抽取无限武魂》</a>
+          <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/408/28095408/t5_28095408.jpg" height="100px">
+        </p>
+        <p>
+          <a href="https://book.qq.com/book-detail/37110886" target="_blank">《斗罗之签到女神就变强》</a>
+          <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/886/37110886/t5_37110886.jpg" height="100px">
+        </p>
+        <p>
+          <a href="https://book.qq.com/book-detail/37110886" target="_blank">《斗罗：我能召唤诸天女神》（连载中）</a>
+          <img src="https://bookcover.yuewen.com/qdbimg/349573/1035319500/180" height="100px">
+        </p>
+      </td>
       </tr>
       <tr>
         <td>
@@ -95,4 +105,5 @@
     </table>
     <button style="width: 100%;" onclick="alert('我的qq是1762116428！')">看到这里了，有兴趣的可以加个好友！</button>
   </body>
+
 </html>
