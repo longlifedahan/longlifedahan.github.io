@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>斗临兵者编解码器</title>
+    <script>
+        function generateHexMapping() {
+            const hexDigits = "0123456789abcdef";
+            const hanzi = ["临", "兵", "斗", "者", "皆", "阵", "列", "在", "前"];
+            let mapping = {};
+            let temp = [];
+
+            // 生成所有2位汉字组合
+            for (let i = 0; i < hanzi.length; i++) {
+                for (let j = 0; j < hanzi.length; j++) {
+                    temp.push(hanzi[i] + hanzi[j]);
+                }
+            }
+
+            // 选择其中的16个组合
+            selected= [2, 53, 7, 67, 31, 41, 47, 11, 43, 61, 19, 59, 29, 71, 23, 37];
+
+            // 打乱顺序
+            selected.sort(() => Math.random() - 0.5);
+            temp = temp.filter((_, i) => selected.includes(i));
+
+            // 建立映射
+            for (let i = 0; i < hexDigits.length; i++) {
+                mapping[hexDigits[i]] = temp[i];
+            }
+            return mapping;
+        }
+
+        function encodeTextHex(text, mapping) {
+            let encoded = "";
+            for (let char of text) {
+                let hexRepr = char.charCodeAt(0).toString(16);
+                if (hexRepr.length < 4) {
+                    hexRepr = "0".repeat(4 - hexRepr.length) + hexRepr;
+                }
+                for (let digit of hexRepr) {
+                    encoded += mapping[digit];
+                }
+            }
+            return encoded;
+        }
+
+        function decodeTextHex(encodedText, reverseMapping) {
+            let result = "";
+            let decoded = "";
+            for (let i = 0; i < encodedText.length; i += 2) {
+                const encodedChar = encodedText.substring(i, i + 2);
+                const hexDigit = reverseMapping[encodedChar];
+                decoded += hexDigit;
+                if (decoded.length == 4) {
+                    result += String.fromCharCode(parseInt(decoded, 16));
+                    decoded = "";
+                }
+            }
+            return result;
+        }
+
+        let hexMapping = generateHexMapping();
+        let reverseHexMapping = {};
+        for (let key in hexMapping) {
+            reverseHexMapping[hexMapping[key]] = key;
+        }
+
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .panel {
+            background-color: white;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 40%;
+            max-width: 600px;
+            min-width: 300px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>编码</h2>
+            <textarea id="inputTextEncode" placeholder="输入文本..."></textarea>
+            <button onclick="encode()">编码</button>
+            <p>编码后:</p>
+            <textarea id="encodedOutput" readonly></textarea>
+        </div>
+
+        <div class="panel">
+            <h2>解码</h2>
+            <textarea id="inputTextDecode" placeholder="输入编码文本..."></textarea>
+            <button onclick="decode()">解码</button>
+            <p>解码后:</p>
+            <textarea id="decodedOutput" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        function encode() {
+            const text = document.getElementById('inputTextEncode').value;
+            const encoded = encodeTextHex(text, hexMapping);
+            document.getElementById('encodedOutput').innerText = encoded;
+        }
+
+        function decode() {
+            const text = document.getElementById('inputTextDecode').value;
+            const decoded = decodeTextHex(text, reverseHexMapping);
+            document.getElementById('decodedOutput').innerText = decoded;
+        }
+    </script>
+</body>
+</html>
