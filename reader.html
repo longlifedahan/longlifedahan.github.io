@@ -69,11 +69,17 @@
     <div id="toolbar">
         <input type="file" id="fileInput" accept=".txt">
         <span class="file-hint">(仅支持UTF-8编码的TXT文件)</span>
-        <button onclick="toggleDarkMode()">夜间模式</button>
+		<select id="fontSize" onchange="toggleMode(this.value)">
+            <option value="1">正常模式</option>
+            <option value="2">夜间模式</option>
+            <option value="3">护眼模式</option>
+        </select>
         <select id="fontSize" onchange="changeFontSize(this.value)">
             <option value="16">16px</option>
             <option value="18">18px</option>
             <option value="20">20px</option>
+			<option value="20">24px</option>
+			<option value="20">28px</option>
         </select>
         <input type="text" id="searchInput" placeholder="输入正则表达式">
         <button onclick="search()">搜索</button>
@@ -253,11 +259,19 @@
         }
 
         // 样式调整功能
-        function toggleDarkMode() {
-            document.body.style.backgroundColor = 
-                document.body.style.backgroundColor === 'black' ? 'white' : 'black';
-            document.body.style.color = 
-                document.body.style.color === 'white' ? 'black' : 'white';
+        function toggleMode(mode) {
+			if(mode==1){
+				document.body.style.backgroundColor = 'white';
+				document.body.style.color = 'black';
+			}
+			if(mode==2){
+				document.body.style.backgroundColor = 'black';
+				document.body.style.color = 'white';
+			}
+			if(mode==3){
+				document.body.style.backgroundColor = 'lightgreen';
+				document.body.style.color = 'black';
+			}
         }
 
         function changeFontSize(size) {
