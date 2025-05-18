@@ -74,15 +74,22 @@
             <option value="2">夜间模式</option>
             <option value="3">护眼模式</option>
         </select>
+		
         <select id="fontSize" onchange="changeFontSize(this.value)">
-            <option value="16">16px</option>
-            <option value="18">18px</option>
-            <option value="20">20px</option>
+			<option value="16">16px</option>
+			<option value="18">18px</option>
+			<option value="20">20px</option>
 			<option value="20">24px</option>
 			<option value="20">28px</option>
         </select>
+		
         <input type="text" id="searchInput" placeholder="输入正则表达式">
         <button onclick="search()">搜索</button>
+		
+		<select id="fontSize" onchange="changeBook(this.value)">
+            <option value="1">黑斗罗唐三</option>
+        </select>
+		
     </div>
     <div id="main">
         <div id="chapters"></div>
@@ -274,9 +281,27 @@
 			}
         }
 
+		// 改变字体大小
         function changeFontSize(size) {
             document.getElementById('content').style.fontSize = size + 'px';
         }
+		
+		// 载入书籍
+		function changeBook(book){
+			let fileName;
+			if(book==1){
+				fileName = "黑斗罗唐三.txt"
+			}
+			fetch(fileName)
+				.then(r => r.text())
+				.then(t => {
+					parseChapters(t);
+				displayChaptersList();
+			});
+		}
+		
+		// 加载书籍
+		changeBook(1)
     </script>
 </body>
 </html>
