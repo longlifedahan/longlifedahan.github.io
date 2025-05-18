@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>作家助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #settings {
+            height: 50px;
+            background: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 30%;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #editor {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .volume-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px;
+            background: #f8f8f8;
+        }
+
+        .chapter {
+            padding: 5px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dark-mode { background: #333; color: white; }
+        .eye-mode { background: green; color: black; }
+
+        .btn-group { display: flex; gap: 5px; }
+        button { padding: 2px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="settings">
+        <button onclick="saveBook()">保存</button>
+		<button onclick="document.getElementById('loadFile').click();">读取</button>
+        <input type="file" id="loadFile" accept=".json" style="display: none;">
+        <select id="theme">
+            <option value="light">默认</option>
+            <option value="dark">暗黑</option>
+            <option value="eye">护眼</option>
+        </select>
+        <button onclick="createVolume()">新增分卷</button>
+    </div>
+    
+    <div id="container">
+        <div id="sidebar"></div>
+        <div id="editor" contenteditable="true"></div>
+    </div>
+
+    <script>
+        let book = {
+            title: new Date().toLocaleDateString(),
+            volumes: [],
+            currentChapter: null
+        };
+
+        // 主题切换
+        document.getElementById('theme').addEventListener('change', (e) => {
+            document.body.className = `${e.target.value}-mode`;
+        });
+
+        // 分卷管理
+        function createVolume() {
+            const volume = {
+                id: Date.now(),
+                title: `第${book.volumes.length + 1}卷`,
+                chapters: [],
+                collapsed: false
+            };
+            book.volumes.push(volume);
+            renderSidebar();
+        }
+
+        function deleteVolume(volumeId) {
+            const index = book.volumes.findIndex(v => v.id === volumeId);
+            if (book.volumes[index].chapters.length === 0) {
+                book.volumes.splice(index, 1);
+                renderSidebar();
+            } else {
+                alert("无法删除包含章节的分卷");
+            }
+        }
+
+        // 章节管理
+        function createChapter(volumeId) {
+            const volume = book.volumes.find(v => v.id === volumeId);
+            const chapter = {
+                id: Date.now(),
+                title: `第${volume.chapters.length + 1}章`,
+                content: ''
+            };
+            volume.chapters.push(chapter);
+            renderSidebar();
+        }
+
+        function deleteChapter(volumeId, chapterId) {
+            const volume = book.volumes.find(v => v.id === volumeId);
+            const index = volume.chapters.findIndex(c => c.id === chapterId);
+            volume.chapters.splice(index, 1);
+            renderSidebar();
+        }
+
+        // 编辑器同步
+        function updateChapterContent() {
+            if (!book.currentChapter) return;
+            const lines = document.getElementById('editor').innerText.split('\n');
+            const chapter = findChapter(book.currentChapter);
+            chapter.title = lines[0] || "无标题章节";
+            chapter.content = lines.slice(1).join('\n');
+            renderSidebar();
+        }
+
+        // 渲染侧边栏
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = `
+                ${book.volumes.map(volume => `
+                <div class="volume">
+                    <div class="volume-header">
+                        <span ondblclick="renameVolume(${volume.id})">${volume.title}</span>
+                        <div class="btn-group">
+
+                            <button onclick="deleteVolume(${volume.id})">删除分卷</button>
+                            <button onclick="createChapter(${volume.id})">新增章节</button>
+                        </div>
+                    </div>
+                    ${!volume.collapsed ? volume.chapters.map(chapter => `
+                        <div class="chapter" 
+                            onclick="loadChapter(${chapter.id})"
+                            data-id="${chapter.id}">
+                            <span>${chapter.title}</span>
+                            <button onclick="deleteChapter(${volume.id}, ${chapter.id})">删除章节</button>
+                        </div>
+                    `).join('') : ''}
+                </div>
+                `).join('')}
+            `;
+        }
+
+        // 加载章节内容
+        function loadChapter(chapterId) {
+            const chapter = findChapter(chapterId);
+            book.currentChapter = chapterId;
+            document.getElementById('editor').innerHTML = 
+                `<b>${chapter.title}</b>\n${chapter.content}`;
+            
+            // 添加实时更新监听
+            document.getElementById('editor').addEventListener('input', updateChapterContent);
+        }
+
+        function findChapter(chapterId) {
+            for (const volume of book.volumes) {
+                const chapter = volume.chapters.find(c => c.id === chapterId);
+                if (chapter) return chapter;
+            }
+            return null;
+        }
+
+        // 保存/读取
+        function saveBook() {
+            const fileName = prompt('保存书名:', book.title) || book.title;
+            book.title = fileName;
+            document.title = fileName;
+            const data = JSON.stringify(book);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${fileName}.json`;
+            a.click();
+        }
+
+        document.getElementById('loadFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                book = JSON.parse(e.target.result);
+                document.title = book.title;
+                renderSidebar();
+            };
+            reader.readAsText(file);
+        });
+
+        // 初始化
+        createVolume();
+    </script>
+</body>
+</html>
