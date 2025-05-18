@@ -87,7 +87,8 @@
         <button onclick="search()">搜索</button>
 		
 		<select id="fontSize" onchange="changeBook(this.value)">
-            <option value="1">黑斗罗唐三</option>
+			<option value="1">斗罗之我的老婆是银龙王</option>
+            <option value="2">黑斗罗唐三</option>
         </select>
 		
     </div>
@@ -290,6 +291,9 @@
 		function changeBook(book){
 			let fileName;
 			if(book==1){
+				fileName = "银龙王.txt"
+			}
+			if(book==2){
 				fileName = "黑斗罗唐三.txt"
 			}
 			fetch(fileName)
