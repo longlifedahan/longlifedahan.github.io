@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文本转图片工具</title>
+  <style>
+    body {
+      font-family: 'Microsoft YaHei', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 20px;
+    }
+    .box {
+      flex: 1;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background-color: #4a6fa5;
+      color: white;
+      padding: 10px 15px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .content {
+      padding: 15px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    textarea {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      box-sizing: border-box;
+    }
+    #processedDiv {
+      flex-grow: 1;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      background-color: #fff;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-weight: bold;
+    }
+    .btn {
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn:hover {
+      background-color: #3a5a80;
+    }
+    .btn-group {
+      display: flex;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center">文本转图片工具</h1>
+  <div class="container">
+    <div class="box">
+      <div class="header">输入</div>
+      <div class="content">
+        <textarea id="inputText" placeholder="请在此处输入或粘贴中文文本..."></textarea>
+      </div>
+    </div>
+    <div class="box">
+      <div class="header">
+        输出
+        <div class="btn-group">
+          <button class="btn" id="exportTextBtn">导出文本</button>
+          <button class="btn" id="exportImageBtn">导出图片</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="processedDiv"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script>
+    const inputText = document.getElementById('inputText');
+    const processedDiv = document.getElementById('processedDiv');
+    const exportImageBtn = document.getElementById('exportImageBtn');
+    const exportTextBtn = document.getElementById('exportTextBtn');
+
+    inputText.addEventListener('input', updateOutput);
+
+    function updateOutput() {
+      const lines = inputText.value.split(/\r?\n/);
+      const result = [];
+      lines.forEach((line, idx) => {
+        const text = line.trim();
+        if (!text) return; // Skip empty lines
+        if (idx === 0) {
+          result.push(`<strong>${text}</strong><br>`);
+        } else {
+          result.push(`<strong>　　${text}</strong><br>`);
+        }
+      });
+      processedDiv.innerHTML = result.join('');
+    }
+
+    exportImageBtn.addEventListener('click', function () {
+      if (!processedDiv.innerHTML.trim()) {
+        alert('没有可导出的内容');
+        return;
+      }
+
+      html2canvas(processedDiv, {
+        useCORS: true,
+        scale: 2,
+        windowWidth: document.body.scrollWidth,
+        scrollY: -window.scrollY
+      }).then(canvas => {
+        const now = new Date();
+        const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL("image/png");
+        link.download = `文本图片_${ts}.png`;
+        link.click();
+      });
+    });
+
+    exportTextBtn.addEventListener('click', function () {
+      if (!inputText.value.trim()) {
+        alert('没有可导出的文本内容');
+        return;
+      }
+      const lines = inputText.value.split(/\r?\n/).filter(line => line.trim() !== '');
+      const processedLines = lines.map((line, idx) => idx === 0 ? line.trim() : '　　' + line.trim());
+      const blob = new Blob([processedLines.join('\n')], { type: 'text/plain' });
+
+      const now = new Date();
+      const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `文本_${ts}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    updateOutput();
+  </script>
+</body>
+</html>
