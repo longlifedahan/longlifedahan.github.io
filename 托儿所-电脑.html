@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字消除游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .score-time {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .score, .time {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .mode-indicator {
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+        }
+        
+        .mode-indicator.challenge {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+        
+        .leaderboard-btn {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .leaderboard-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .game-container {
+            position: relative;
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 1px;
+            background-color: #ccc;
+        }
+        
+        .cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: default;
+            user-select: none;
+        }
+        
+        .cell.selected {
+            color: red;
+            background-color: #f8f8f8;
+        }
+        
+        .cell.eliminated {
+            animation: eliminate 0.3s ease-out;
+        }
+        
+        @keyframes eliminate {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        /* 选框样式 */
+        .selection-box {
+            position: absolute;
+            border: 2px dashed #ffcc00;
+            background-color: rgba(255, 204, 0, 0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .control-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .control-btn.challenge {
+            background-color: #ff9800;
+        }
+        
+        .control-btn.challenge:hover {
+            background-color: #e65100;
+        }
+        
+        .control-btn.end-game {
+            background-color: #f44336;
+        }
+        
+        .control-btn.end-game:hover {
+            background-color: #d32f2f;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .leaderboard-list {
+            list-style: none;
+        }
+        
+        .leaderboard-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn, .sort-btn {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .mode-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        
+        .sort-btn.active {
+            background-color: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        
+        .restart-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <div class="score-time">
+            <div class="score">得分: <span id="score">0</span></div>
+            <div class="time">时间: <span id="time">00:00</span></div>
+            <div class="mode-indicator" id="modeIndicator">普通模式</div>
+        </div>
+        <button class="leaderboard-btn" id="leaderboardBtn">排行榜</button>
+    </div>
+    
+    <div class="game-container">
+        <div class="grid" id="grid"></div>
+        <!-- 选框元素 -->
+        <div class="selection-box" id="selectionBox"></div>
+        <div class="game-over" id="gameOver">
+            <h2>游戏结束!</h2>
+            <p>最终得分: <span id="finalScore">0</span></p>
+            <p>用时: <span id="finalTime">00:00</span></p>
+            <button class="restart-btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn" id="newGameBtn">开始普通模式</button>
+        <button class="control-btn challenge" id="challengeBtn">开始挑战模式</button>
+        <button class="control-btn end-game" id="endGameBtn">结束游戏</button>
+        <button class="control-btn" id="saveBtn">保存记录</button>
+        <button class="control-btn" id="loadBtn">读取记录</button>
+        <input type="file" id="fileInput" accept=".json" style="display: none">
+    </div>
+    
+    <div class="modal" id="leaderboardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>排行榜</h2>
+                <button class="close-btn" id="closeBtn">&times;</button>
+            </div>
+            <div class="sort-controls">
+                <button class="mode-btn active" data-mode="all">全部记录</button>
+                <button class="mode-btn" data-mode="challenge">挑战榜</button>
+                <button class="mode-btn" data-mode="normal">普通榜</button>
+                <button class="sort-btn active" data-sort="score-desc">按分数降序</button>
+            </div>
+            <ul class="leaderboard-list" id="leaderboardList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            grid: [],
+            score: 0,
+            startTime: null,
+            timer: null,
+            isSelecting: false,
+            startX: -1,
+            startY: -1,
+            endX: -1,
+            endY: -1,
+            selectedCells: [],
+            gameOver: false,
+            isChallengeMode: false,
+            challengeTimeLimit: 180, // 180秒挑战时间
+            challengeTimeRemaining: 0
+        };
+
+        // DOM 元素
+        const gridElement = document.getElementById('grid');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalTimeElement = document.getElementById('finalTime');
+        const restartBtn = document.getElementById('restartBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const challengeBtn = document.getElementById('challengeBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const modeIndicator = document.getElementById('modeIndicator');
+        const leaderboardBtn = document.getElementById('leaderboardBtn');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+        const closeBtn = document.getElementById('closeBtn');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const sortBtns = document.querySelectorAll('.sort-btn');
+        const saveBtn = document.getElementById('saveBtn');
+        const loadBtn = document.getElementById('loadBtn');
+        const fileInput = document.getElementById('fileInput');
+        const selectionBox = document.getElementById('selectionBox'); // 选框元素
+
+        // 初始化游戏
+        function initGame(isChallenge = false) {
+            // 重置游戏状态
+            gameState.grid = [];
+            gameState.score = 0;
+            gameState.gameOver = false;
+            gameState.isChallengeMode = isChallenge;
+            gameState.startTime = new Date();
+            
+            // 更新模式显示
+            modeIndicator.textContent = isChallenge ? "挑战模式" : "普通模式";
+            modeIndicator.classList.toggle('challenge', isChallenge);
+            
+            // 更新UI
+            scoreElement.textContent = '0';
+            updateTime();
+            
+            // 清除之前的计时器并启动新的
+            if (gameState.timer) clearInterval(gameState.timer);
+            
+            if (isChallenge) {
+                gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
+                gameState.timer = setInterval(updateChallengeTime, 1000);
+            } else {
+                gameState.timer = setInterval(updateTime, 1000);
+            }
+            
+            // 隐藏游戏结束界面和选框
+            gameOverElement.style.display = 'none';
+            selectionBox.style.display = 'none';
+            
+            // 生成新网格
+            generateGrid();
+            
+            // 渲染网格
+            renderGrid();
+        }
+
+        // 生成16x10的网格，每个单元格包含1-9的随机数字
+        function generateGrid() {
+            for (let i = 0; i < 16; i++) {
+                const row = [];
+                for (let j = 0; j < 10; j++) {
+                    // 生成1-9的随机数字
+                    row.push({
+                        value: Math.floor(Math.random() * 9) + 1,
+                        // 不再使用eliminated标记，而是用value为0表示已消除
+                    });
+                }
+                gameState.grid.push(row);
+            }
+        }
+
+        // 渲染网格到DOM
+        function renderGrid() {
+            gridElement.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const cell = gameState.grid[i][j];
+                    
+                    const cellElement = document.createElement('div');
+                    cellElement.className = 'cell';
+                    // 值为0时显示为空
+                    cellElement.textContent = cell.value !== 0 ? cell.value : '';
+                    cellElement.dataset.row = i;
+                    cellElement.dataset.col = j;
+                    
+                    // 添加左键点击事件
+                    cellElement.addEventListener('mousedown', (e) => {
+                        if (e.button === 0 && !gameState.gameOver && cell.value !== 0) { // 左键且不是已消除的方块
+                            e.preventDefault();
+                            startSelection(i, j);
+                        }
+                    });
+                    
+                    gridElement.appendChild(cellElement);
+                }
+            }
+            
+            // 鼠标移动时更新选择区域
+            document.addEventListener('mousemove', updateSelection);
+            
+            // 鼠标释放时结束选择（左键）
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0 && gameState.isSelecting) { // 左键释放
+                    endSelection();
+                }
+            });
+        }
+
+        // 开始选择区域
+        function startSelection(row, col) {
+            gameState.isSelecting = true;
+            gameState.startX = row;
+            gameState.startY = col;
+            gameState.endX = row;
+            gameState.endY = col;
+            gameState.selectedCells = [[row, col]];
+            
+            // 更新选框位置和大小
+            updateSelectionBox();
+            // 显示选框
+            selectionBox.style.display = 'block';
+            
+            updateSelectedCells();
+        }
+
+        // 更新选择区域和选框
+        function updateSelection(e) {
+            if (!gameState.isSelecting) return;
+            
+            // 获取鼠标所在的单元格
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            // 忽略已消除的单元格
+            if (gameState.grid[row][col].value === 0) return;
+            
+            gameState.endX = row;
+            gameState.endY = col;
+            
+            // 计算选择的所有单元格
+            const minRow = Math.min(gameState.startX, gameState.endX);
+            const maxRow = Math.max(gameState.startX, gameState.endX);
+            const minCol = Math.min(gameState.startY, gameState.endY);
+            const maxCol = Math.max(gameState.startY, gameState.endY);
+            
+            gameState.selectedCells = [];
+            for (let i = minRow; i <= maxRow; i++) {
+                for (let j = minCol; j <= maxCol; j++) {
+                    if (gameState.grid[i][j].value !== 0) { // 只选择未消除的单元格
+                        gameState.selectedCells.push([i, j]);
+                    }
+                }
+            }
+            
+            // 更新选框
+            updateSelectionBox();
+            updateSelectedCells();
+        }
+
+        // 更新选框位置和大小
+        function updateSelectionBox() {
+            // 获取起始和结束单元格的DOM元素
+            const startCell = document.querySelector(`.cell[data-row="${gameState.startX}"][data-col="${gameState.startY}"]`);
+            const endCell = document.querySelector(`.cell[data-row="${gameState.endX}"][data-col="${gameState.endY}"]`);
+            
+            if (!startCell || !endCell) return;
+            
+            // 获取单元格的位置和大小信息
+            const startRect = startCell.getBoundingClientRect();
+            const endRect = endCell.getBoundingClientRect();
+            const gridRect = gridElement.getBoundingClientRect();
+            
+            // 计算选框的位置和大小
+            const left = Math.min(startRect.left, endRect.left) - gridRect.left;
+            const top = Math.min(startRect.top, endRect.top) - gridRect.top;
+            const width = Math.abs(startRect.left - endRect.left) + startRect.width;
+            const height = Math.abs(startRect.top - endRect.top) + startRect.height;
+            
+            // 设置选框样式
+            selectionBox.style.left = `${left}px`;
+            selectionBox.style.top = `${top}px`;
+            selectionBox.style.width = `${width}px`;
+            selectionBox.style.height = `${height}px`;
+        }
+
+        // 更新选中单元格的样式
+        function updateSelectedCells() {
+            // 清除之前的选中状态
+            document.querySelectorAll('.cell.selected').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+            
+            // 添加新的选中状态
+            gameState.selectedCells.forEach(([row, col]) => {
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) cell.classList.add('selected');
+            });
+        }
+
+        // 结束选择
+        function endSelection() {
+            // 隐藏选框
+            selectionBox.style.display = 'none';
+            
+            // 计算选中区域的数字和
+            let sum = 0;
+            gameState.selectedCells.forEach(([row, col]) => {
+                sum += gameState.grid[row][col].value;
+            });
+            
+            // 如果和为10，消除选中的单元格
+            if (sum === 10) {
+                eliminateCells();
+            } else {
+                // 清除选中状态
+                document.querySelectorAll('.cell.selected').forEach(cell => {
+                    cell.classList.remove('selected');
+                });
+            }
+            
+            // 重置选择状态
+            gameState.isSelecting = false;
+            gameState.selectedCells = [];
+        }
+
+        // 消除选中的单元格（改为置空而不是移除）
+        function eliminateCells() {
+            // 标记要消除的单元格（值设为0）
+            gameState.selectedCells.forEach(([row, col]) => {
+                gameState.grid[row][col].value = 0;
+                
+                // 添加消除动画
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    cell.classList.add('eliminated');
+                    // 动画结束后清除类并更新显示
+                    setTimeout(() => {
+                        cell.classList.remove('eliminated');
+                        cell.textContent = '';
+                    }, 300);
+                }
+            });
+            
+            // 更新分数
+            gameState.score += gameState.selectedCells.length;
+            scoreElement.textContent = gameState.score;
+            
+            // 短暂延迟后检查游戏是否结束
+            setTimeout(() => {
+                checkGameOver();
+            }, 300);
+        }
+
+        // 检查游戏是否结束（没有可消除的方块）
+        function checkGameOver() {
+            // 挑战模式下不自动结束游戏，除非时间到
+            if (gameState.isChallengeMode) return;
+            
+            // 检查所有可能的矩形区域
+            for (let startRow = 0; startRow < 16; startRow++) {
+                for (let startCol = 0; startCol < 10; startCol++) {
+                    if (gameState.grid[startRow][startCol].value === 0) continue;
+                    
+                    for (let endRow = startRow; endRow < 16; endRow++) {
+                        for (let endCol = startCol; endCol < 10; endCol++) {
+                            if (gameState.grid[endRow][endCol].value === 0) continue;
+                            
+                            // 计算当前矩形区域的数字和
+                            let sum = 0;
+                            let hasZero = false;
+                            
+                            for (let i = startRow; i <= endRow; i++) {
+                                for (let j = startCol; j <= endCol; j++) {
+                                    if (gameState.grid[i][j].value === 0) {
+                                        hasZero = true;
+                                        break;
+                                    }
+                                    sum += gameState.grid[i][j].value;
+                                }
+                                if (hasZero) break;
+                            }
+                            
+                            // 如果找到和为10的区域，游戏没有结束
+                            if (sum === 10 && !hasZero) {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 如果没有找到可消除的区域，游戏结束
+            endGame();
+        }
+
+        // 结束游戏
+        function endGame() {
+            if (gameState.gameOver) return;
+            
+            gameState.gameOver = true;
+            clearInterval(gameState.timer);
+            
+            // 显示游戏结束界面
+            const endTime = new Date();
+            const timeTaken = Math.floor((endTime - gameState.startTime) / 1000);
+            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+            const seconds = (timeTaken % 60).toString().padStart(2, '0');
+            
+            finalScoreElement.textContent = gameState.score;
+            finalTimeElement.textContent = `${minutes}:${seconds}`;
+            gameOverElement.style.display = 'block';
+            
+            // 保存记录到本地存储
+            saveRecord(gameState.score, timeTaken, gameState.isChallengeMode);
+        }
+
+        // 更新普通模式时间显示
+        function updateTime() {
+            if (!gameState.startTime || gameState.gameOver) return;
+            
+            const currentTime = new Date();
+            const timeTaken = Math.floor((currentTime - gameState.startTime) / 1000);
+            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+            const seconds = (timeTaken % 60).toString().padStart(2, '0');
+            
+            timeElement.textContent = `${minutes}:${seconds}`;
+        }
+
+        // 更新挑战模式时间显示（倒计时）
+        function updateChallengeTime() {
+            if (gameState.gameOver) return;
+            
+            gameState.challengeTimeRemaining--;
+            
+            const minutes = Math.floor(gameState.challengeTimeRemaining / 60).toString().padStart(2, '0');
+            const seconds = (gameState.challengeTimeRemaining % 60).toString().padStart(2, '0');
+            
+            timeElement.textContent = `${minutes}:${seconds}`;
+            
+            // 时间到，结束游戏
+            if (gameState.challengeTimeRemaining <= 0) {
+                endGame();
+            }
+        }
+
+        // 保存记录到本地存储
+        function saveRecord(score, time, isChallenge) {
+            let records = JSON.parse(localStorage.getItem('numberGameRecords')) || [];
+            
+            records.push({
+                score: score,
+                time: time,
+                isChallenge: isChallenge,
+                date: new Date().toISOString()
+            });
+            
+            // 只保留前10条记录
+            records.sort((a, b) => b.score - a.score || a.time - b.time);
+            if (records.length > 10) {
+                records = records.slice(0, 10);
+            }
+            
+            localStorage.setItem('numberGameRecords', JSON.stringify(records));
+        }
+
+        // 显示排行榜
+        function showLeaderboard(mode = 'all', sort = 'score-desc') {
+            let records = JSON.parse(localStorage.getItem('numberGameRecords')) || [];
+            
+            // 根据模式过滤记录
+            if (mode === 'challenge') {
+                records = records.filter(record => record.isChallenge);
+            } else if (mode === 'normal') {
+                records = records.filter(record => !record.isChallenge);
+            }
+            
+            // 根据选择排序
+            if (sort === 'score-desc') {
+                records.sort((a, b) => b.score - a.score || a.time - b.time);
+            } else if (sort === 'time-asc') {
+                records.sort((a, b) => a.time - b.time || b.score - a.score);
+            }
+            
+            // 清空列表
+            leaderboardList.innerHTML = '';
+            
+            // 添加记录到列表
+            records.forEach((record, index) => {
+                const minutes = Math.floor(record.time / 60).toString().padStart(2, '0');
+                const seconds = (record.time % 60).toString().padStart(2, '0');
+                const modeLabel = record.isChallenge ? '<span style="color:#e65100;">[挑战]</span>' : '';
+                
+                const item = document.createElement('li');
+                item.className = 'leaderboard-item';
+                item.innerHTML = `
+                    <span>${index + 1}. 得分: ${record.score} ${modeLabel}</span>
+                    <span>时间: ${minutes}:${seconds}</span>
+                `;
+                leaderboardList.appendChild(item);
+            });
+            
+            // 显示模态框
+            leaderboardModal.style.display = 'flex';
+        }
+
+        // 保存记录为JSON文件
+        function exportRecords() {
+            const records = JSON.parse(localStorage.getItem('numberGameRecords')) || [];
+            const dataStr = JSON.stringify(records, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'number_game_records.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // 导入JSON文件中的记录
+        function importRecords(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedRecords = JSON.parse(e.target.result);
+                    if (Array.isArray(importedRecords)) {
+                        // 验证记录格式
+                        const validRecords = importedRecords.filter(record => 
+                            typeof record.score === 'number' && 
+                            typeof record.time === 'number' &&
+                            record.score >= 0 &&
+                            record.time >= 0
+                        );
+                        
+                        // 合并并排序记录
+                        let existingRecords = JSON.parse(localStorage.getItem('numberGameRecords')) || [];
+                        let allRecords = [...existingRecords, ...validRecords];
+                        
+                        // 去重并排序
+                        allRecords = [...new Map(allRecords.map(item => [item.date, item])).values()];
+                        allRecords.sort((a, b) => b.score - a.score || a.time - b.time);
+                        
+                        // 只保留前10条
+                        if (allRecords.length > 10) {
+                            allRecords = allRecords.slice(0, 10);
+                        }
+                        
+                        localStorage.setItem('numberGameRecords', JSON.stringify(allRecords));
+                        alert('记录导入成功！');
+                        
+                        // 刷新排行榜
+                        const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+                        const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
+                        showLeaderboard(activeMode, activeSort);
+                    } else {
+                        alert('导入的文件格式不正确！');
+                    }
+                } catch (error) {
+                    alert('导入失败：' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // 重置文件输入
+            fileInput.value = '';
+        }
+
+        // 事件监听器
+        restartBtn.addEventListener('click', () => initGame(gameState.isChallengeMode));
+        newGameBtn.addEventListener('click', () => initGame(false));
+        challengeBtn.addEventListener('click', () => initGame(true));
+        endGameBtn.addEventListener('click', endGame);
+        
+        leaderboardBtn.addEventListener('click', () => {
+            const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+            const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
+            showLeaderboard(activeMode, activeSort);
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            leaderboardModal.style.display = 'none';
+        });
+        
+        // 排行榜模式切换按钮
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
+                showLeaderboard(btn.dataset.mode, activeSort);
+            });
+        });
+        
+        // 排行榜排序按钮
+        sortBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sortBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+                showLeaderboard(activeMode, btn.dataset.sort);
+            });
+        });
+        
+        // 点击模态框外部关闭
+        leaderboardModal.addEventListener('click', (e) => {
+            if (e.target === leaderboardModal) {
+                leaderboardModal.style.display = 'none';
+            }
+        });
+        
+        // 保存和读取记录
+        saveBtn.addEventListener('click', exportRecords);
+        loadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', importRecords);
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字消除游戏</title>
+    <style>
+        * {
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 15px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .score-time {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .score, .time {
+            font-size: 16px;
+            font-weight: bold;
+			color: red;
+        }
+        
+        .mode-indicator {
+            font-size: 12px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+        }
+        
+        .mode-indicator.challenge {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+        
+        .leaderboard-btn {
+            padding: 6px 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+        
+        .leaderboard-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .game-container {
+            position: relative;
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            background-color: gray;
+            aspect-ratio: 10 / 16;
+        }
+        
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: lightgreen;
+            font-size: clamp(12px, 4vw, 16px);
+            font-weight: bold;
+            cursor: default;
+            user-select: none;
+        }
+        
+        .cell.selected {
+            color: red;
+            background-color: #f8f8f8;
+        }
+        
+        .cell.eliminated {
+            animation: eliminate 0.3s ease-out;
+        }
+        
+        @keyframes eliminate {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .selection-box {
+            position: absolute;
+            border: 2px dashed #ffcc00;
+            background-color: rgba(255, 204, 0, 0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+        
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .control-btn {
+            padding: 8px 12px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
+            flex: 1;
+            min-width: 60px;
+        }
+        
+        .control-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .control-btn.challenge {
+            background-color: #ff9800;
+        }
+        
+        .control-btn.challenge:hover {
+            background-color: #e65100;
+        }
+        
+        .control-btn.end-game {
+            background-color: #f44336;
+        }
+        
+        .control-btn.end-game:hover {
+            background-color: #d32f2f;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .leaderboard-list {
+            list-style: none;
+        }
+        
+        .leaderboard-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .sort-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn, .sort-btn {
+            padding: 5px 8px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .mode-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        
+        .sort-btn.active {
+            background-color: #2196F3;
+            color: white;
+            border-color: #2196F3;
+			visibility: hidden;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            width: 80%;
+        }
+        
+        .restart-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        html, body {
+            overscroll-behavior: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <div class="score-time">
+            <div class="score">得分: <span id="score">0</span></div>
+            <div class="time">时间: <span id="time">00:00</span></div>
+            <div class="mode-indicator" id="modeIndicator">普通模式</div>
+        </div>
+        <button class="leaderboard-btn" id="leaderboardBtn">排行榜</button>
+    </div>
+    
+    <div class="game-container">
+        <div class="grid" id="grid"></div>
+        <div class="selection-box" id="selectionBox"></div>
+        <div class="game-over" id="gameOver">
+            <h2>游戏结束!</h2>
+            <p>最终得分: <span id="finalScore">0</span></p>
+            <p>用时: <span id="finalTime">00:00</span></p>
+            <button class="restart-btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn" id="newGameBtn">开始普通模式</button>
+        <button class="control-btn challenge" id="challengeBtn">开始挑战模式</button>
+        <button class="control-btn end-game" id="endGameBtn">结束游戏</button>
+    </div>
+    
+    <div class="modal" id="leaderboardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>排行榜</h2>
+                <button class="close-btn" id="closeBtn">&times;</button>
+            </div>
+            <div class="sort-controls">
+                <button class="mode-btn active" data-mode="all">全部记录</button>
+                <button class="mode-btn" data-mode="challenge">挑战榜</button>
+                <button class="mode-btn" data-mode="normal">普通榜</button>
+                <button class="sort-btn active" data-sort="score-desc">按分数降序</button>
+            </div>
+            <ul class="leaderboard-list" id="leaderboardList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            grid: [],
+            score: 0,
+            startTime: null,
+            timer: null,
+            isSelecting: false,
+            startX: -1,
+            startY: -1,
+            endX: -1,
+            endY: -1,
+            selectedCells: [],
+            gameOver: false,
+            isChallengeMode: false,
+            challengeTimeLimit: 180,
+            challengeTimeRemaining: 0,
+            currentSessionRecords: [] // 仅保存当前会话的记录
+        };
+
+        // DOM 元素
+        const gridElement = document.getElementById('grid');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalTimeElement = document.getElementById('finalTime');
+        const restartBtn = document.getElementById('restartBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const challengeBtn = document.getElementById('challengeBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const modeIndicator = document.getElementById('modeIndicator');
+        const leaderboardBtn = document.getElementById('leaderboardBtn');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+        const closeBtn = document.getElementById('closeBtn');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const sortBtns = document.querySelectorAll('.sort-btn');
+        const selectionBox = document.getElementById('selectionBox');
+
+        // 初始化游戏
+        function initGame(isChallenge = false) {
+            gameState.grid = [];
+            gameState.score = 0;
+            gameState.gameOver = false;
+            gameState.isChallengeMode = isChallenge;
+            gameState.startTime = new Date();
+            
+            modeIndicator.textContent = isChallenge ? "挑战模式" : "普通模式";
+            modeIndicator.classList.toggle('challenge', isChallenge);
+            
+            scoreElement.textContent = '0';
+            updateTime();
+            
+            if (gameState.timer) clearInterval(gameState.timer);
+            
+            if (isChallenge) {
+                gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
+                gameState.timer = setInterval(updateChallengeTime, 1000);
+            } else {
+                gameState.timer = setInterval(updateTime, 1000);
+            }
+            
+            gameOverElement.style.display = 'none';
+            selectionBox.style.display = 'none';
+            
+            generateGrid();
+            renderGrid();
+        }
+
+        // 生成网格
+        function generateGrid() {
+            for (let i = 0; i < 16; i++) {
+                const row = [];
+                for (let j = 0; j < 10; j++) {
+                    row.push({
+                        value: Math.floor(Math.random() * 9) + 1,
+                    });
+                }
+                gameState.grid.push(row);
+            }
+        }
+
+        // 渲染网格
+        function renderGrid() {
+            gridElement.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const cell = gameState.grid[i][j];
+                    
+                    const cellElement = document.createElement('div');
+                    cellElement.className = 'cell';
+                    cellElement.textContent = cell.value !== 0 ? cell.value : '';
+                    cellElement.dataset.row = i;
+                    cellElement.dataset.col = j;
+                    
+                    // 触摸事件
+                    cellElement.addEventListener('touchstart', handleTouchStart);
+                    // 鼠标事件
+                    cellElement.addEventListener('mousedown', handleMouseDown);
+                    
+                    gridElement.appendChild(cellElement);
+                }
+            }
+        }
+
+        // 触摸开始处理
+        function handleTouchStart(e) {
+            e.stopPropagation();
+            if (gameState.gameOver) return;
+            
+            const cell = e.currentTarget;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (gameState.grid[row][col].value !== 0) {
+                startSelection(row, col);
+            }
+        }
+
+        // 鼠标按下处理
+        function handleMouseDown(e) {
+            if (e.button !== 0 || gameState.gameOver) return;
+            
+            const cell = e.currentTarget;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (gameState.grid[row][col].value !== 0) {
+                startSelection(row, col);
+            }
+        }
+
+        // 触摸移动处理
+        function handleTouchMove(e) {
+            if (!gameState.isSelecting) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            const cell = getCellFromCoordinates(touch.clientX, touch.clientY);
+            
+            if (cell) {
+                updateSelectionFromCell(cell);
+            }
+        }
+
+        // 鼠标移动处理
+        function handleMouseMove(e) {
+            if (!gameState.isSelecting) return;
+            
+            const cell = e.target.closest('.cell');
+            if (cell) {
+                updateSelectionFromCell(cell);
+            }
+        }
+
+        // 触摸结束处理
+        function handleTouchEnd(e) {
+            e.stopPropagation();
+            if (gameState.isSelecting) {
+                endSelection();
+            }
+        }
+
+        // 鼠标释放处理
+        function handleMouseUp(e) {
+            if (e.button === 0 && gameState.isSelecting) {
+                endSelection();
+            }
+        }
+
+        // 添加全局事件监听
+        function addGlobalEventListeners() {
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        // 移除全局事件监听
+        function removeGlobalEventListeners() {
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        }
+
+        // 根据坐标获取单元格
+        function getCellFromCoordinates(x, y) {
+            const gridRect = gridElement.getBoundingClientRect();
+            if (x < gridRect.left || x > gridRect.right || y < gridRect.top || y > gridRect.bottom) {
+                return null;
+            }
+            
+            const cellWidth = gridRect.width / 10;
+            const cellHeight = gridRect.height / 16;
+            
+            const col = Math.floor((x - gridRect.left) / cellWidth);
+            const row = Math.floor((y - gridRect.top) / cellHeight);
+            
+            if (row >= 0 && row < 16 && col >= 0 && col < 10) {
+                return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            }
+            
+            return null;
+        }
+
+        // 从单元格更新选择
+        function updateSelectionFromCell(cell) {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (gameState.grid[row][col].value === 0) return;
+            
+            gameState.endX = row;
+            gameState.endY = col;
+            
+            const minRow = Math.min(gameState.startX, gameState.endX);
+            const maxRow = Math.max(gameState.startX, gameState.endX);
+            const minCol = Math.min(gameState.startY, gameState.endY);
+            const maxCol = Math.max(gameState.startY, gameState.endY);
+            
+            gameState.selectedCells = [];
+            for (let i = minRow; i <= maxRow; i++) {
+                for (let j = minCol; j <= maxCol; j++) {
+                    if (gameState.grid[i][j].value !== 0) {
+                        gameState.selectedCells.push([i, j]);
+                    }
+                }
+            }
+            
+            updateSelectionBox();
+            updateSelectedCells();
+        }
+
+        // 开始选择区域
+        function startSelection(row, col) {
+            gameState.isSelecting = true;
+            gameState.startX = row;
+            gameState.startY = col;
+            gameState.endX = row;
+            gameState.endY = col;
+            gameState.selectedCells = [[row, col]];
+            
+            updateSelectionBox();
+            selectionBox.style.display = 'block';
+            updateSelectedCells();
+        }
+
+        // 更新选框
+        function updateSelectionBox() {
+            const startCell = document.querySelector(`.cell[data-row="${gameState.startX}"][data-col="${gameState.startY}"]`);
+            const endCell = document.querySelector(`.cell[data-row="${gameState.endX}"][data-col="${gameState.endY}"]`);
+            
+            if (!startCell || !endCell) return;
+            
+            const startRect = startCell.getBoundingClientRect();
+            const endRect = endCell.getBoundingClientRect();
+            const gridRect = gridElement.getBoundingClientRect();
+            
+            const left = Math.min(startRect.left, endRect.left) - gridRect.left;
+            const top = Math.min(startRect.top, endRect.top) - gridRect.top;
+            const width = Math.abs(startRect.left - endRect.left) + startRect.width;
+            const height = Math.abs(startRect.top - endRect.top) + startRect.height;
+            
+            selectionBox.style.left = `${left}px`;
+            selectionBox.style.top = `${top}px`;
+            selectionBox.style.width = `${width}px`;
+            selectionBox.style.height = `${height}px`;
+        }
+
+        // 更新选中单元格样式
+        function updateSelectedCells() {
+            document.querySelectorAll('.cell.selected').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+            
+            gameState.selectedCells.forEach(([row, col]) => {
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) cell.classList.add('selected');
+            });
+        }
+
+        // 结束选择
+        function endSelection() {
+            selectionBox.style.display = 'none';
+            
+            let sum = 0;
+            gameState.selectedCells.forEach(([row, col]) => {
+                sum += gameState.grid[row][col].value;
+            });
+            
+            if (sum === 10) {
+                eliminateCells();
+            } else {
+                document.querySelectorAll('.cell.selected').forEach(cell => {
+                    cell.classList.remove('selected');
+                });
+            }
+            
+            gameState.isSelecting = false;
+            gameState.selectedCells = [];
+        }
+
+        // 消除单元格
+        function eliminateCells() {
+            gameState.selectedCells.forEach(([row, col]) => {
+                gameState.grid[row][col].value = 0;
+                
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    cell.classList.add('eliminated');
+                    setTimeout(() => {
+                        cell.classList.remove('eliminated');
+                        cell.textContent = '';
+                    }, 300);
+                }
+            });
+            
+            gameState.score += gameState.selectedCells.length;
+            scoreElement.textContent = gameState.score;
+            
+            setTimeout(() => {
+                checkGameOver();
+            }, 300);
+        }
+
+        // 检查游戏结束
+        function checkGameOver() {
+            if (gameState.isChallengeMode) return;
+            
+            for (let startRow = 0; startRow < 16; startRow++) {
+                for (let startCol = 0; startCol < 10; startCol++) {
+                    if (gameState.grid[startRow][startCol].value === 0) continue;
+                    
+                    for (let endRow = startRow; endRow < 16; endRow++) {
+                        for (let endCol = startCol; endCol < 10; endCol++) {
+                            if (gameState.grid[endRow][endCol].value === 0) continue;
+                            
+                            let sum = 0;
+                            let hasZero = false;
+                            
+                            for (let i = startRow; i <= endRow; i++) {
+                                for (let j = startCol; j <= endCol; j++) {
+                                    if (gameState.grid[i][j].value === 0) {
+                                        hasZero = true;
+                                        break;
+                                    }
+                                    sum += gameState.grid[i][j].value;
+                                }
+                                if (hasZero) break;
+                            }
+                            
+                            if (sum === 10 && !hasZero) {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            endGame();
+        }
+
+        // 结束游戏
+        function endGame() {
+            if (gameState.gameOver) return;
+            
+            gameState.gameOver = true;
+            clearInterval(gameState.timer);
+            
+            const endTime = new Date();
+            const timeTaken = Math.floor((endTime - gameState.startTime) / 1000);
+            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+            const seconds = (timeTaken % 60).toString().padStart(2, '0');
+            
+            finalScoreElement.textContent = gameState.score;
+            finalTimeElement.textContent = `${minutes}:${seconds}`;
+            gameOverElement.style.display = 'block';
+            
+            // 保存到当前会话记录
+            saveToSessionRecords(gameState.score, timeTaken, gameState.isChallengeMode);
+        }
+
+        // 保存到当前会话记录
+        function saveToSessionRecords(score, time, isChallenge) {
+            gameState.currentSessionRecords.push({
+                score: score,
+                time: time,
+                isChallenge: isChallenge,
+                date: new Date().toISOString()
+            });
+            
+            // 只保留前10条记录
+            gameState.currentSessionRecords.sort((a, b) => b.score - a.score || a.time - b.time);
+            if (gameState.currentSessionRecords.length > 10) {
+                gameState.currentSessionRecords = gameState.currentSessionRecords.slice(0, 10);
+            }
+        }
+
+        // 更新普通模式时间
+        function updateTime() {
+            if (!gameState.startTime || gameState.gameOver) return;
+            
+            const currentTime = new Date();
+            const timeTaken = Math.floor((currentTime - gameState.startTime) / 1000);
+            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+            const seconds = (timeTaken % 60).toString().padStart(2, '0');
+            
+            timeElement.textContent = `${minutes}:${seconds}`;
+        }
+
+        // 更新挑战模式时间
+        function updateChallengeTime() {
+            if (gameState.gameOver) return;
+            
+            gameState.challengeTimeRemaining--;
+            
+            const minutes = Math.floor(gameState.challengeTimeRemaining / 60).toString().padStart(2, '0');
+            const seconds = (gameState.challengeTimeRemaining % 60).toString().padStart(2, '0');
+            
+            timeElement.textContent = `${minutes}:${seconds}`;
+            
+            if (gameState.challengeTimeRemaining <= 0) {
+                endGame();
+            }
+        }
+
+        // 显示排行榜
+        function showLeaderboard(mode = 'all', sort = 'score-desc') {
+            let records = [...gameState.currentSessionRecords];
+            
+            // 根据模式过滤
+            if (mode === 'challenge') {
+                records = records.filter(record => record.isChallenge);
+            } else if (mode === 'normal') {
+                records = records.filter(record => !record.isChallenge);
+            }
+            
+            // 排序
+            if (sort === 'score-desc') {
+                records.sort((a, b) => b.score - a.score || a.time - b.time);
+            }
+            
+            // 清空列表
+            leaderboardList.innerHTML = '';
+            
+            // 添加记录
+            if (records.length === 0) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'leaderboard-item';
+                emptyItem.textContent = '暂无记录';
+                leaderboardList.appendChild(emptyItem);
+            } else {
+                records.forEach((record, index) => {
+                    const minutes = Math.floor(record.time / 60).toString().padStart(2, '0');
+                    const seconds = (record.time % 60).toString().padStart(2, '0');
+                    const modeLabel = record.isChallenge ? '<span style="color:#e65100;">[挑战]</span>' : '';
+                    
+                    const item = document.createElement('li');
+                    item.className = 'leaderboard-item';
+                    item.innerHTML = `
+                        <span>${index + 1}. 得分: ${record.score} ${modeLabel}</span>
+                        <span>时间: ${minutes}:${seconds}</span>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
+            }
+            
+            leaderboardModal.style.display = 'flex';
+        }
+
+        // 事件监听器
+        function setupEventListeners() {
+            restartBtn.addEventListener('click', () => {
+                initGame(gameState.isChallengeMode);
+            });
+            
+            newGameBtn.addEventListener('click', () => {
+                initGame(false);
+            });
+            
+            challengeBtn.addEventListener('click', () => {
+                initGame(true);
+            });
+            
+            endGameBtn.addEventListener('click', endGame);
+            
+            leaderboardBtn.addEventListener('click', () => {
+                const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+                const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
+                showLeaderboard(activeMode, activeSort);
+            });
+            
+            closeBtn.addEventListener('click', () => {
+                leaderboardModal.style.display = 'none';
+            });
+            
+            // 排行榜模式切换
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
+                    showLeaderboard(btn.dataset.mode, activeSort);
+                });
+            });
+            
+            // 排行榜排序
+            sortBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sortBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+                    showLeaderboard(activeMode, btn.dataset.sort);
+                });
+            });
+            
+            // 点击模态框外部关闭
+            leaderboardModal.addEventListener('click', (e) => {
+                if (e.target === leaderboardModal) {
+                    leaderboardModal.style.display = 'none';
+                }
+            });
+        }
+
+        // 初始化
+        function init() {
+            addGlobalEventListeners();
+            setupEventListeners();
+            initGame();
+        }
+
+        // 启动游戏
+        init();
+    </script>
+</body>
+</html>
