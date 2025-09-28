@@ -405,9 +405,9 @@
 <body>
     <div class="game-header">
         <div class="score-time">
-            <div class="score">得分:<span id="score">0</span></div>
-            <div class="time">时间:<span id="time">00:00</span></div>
-            <div class="mode-indicator" id="modeIndicator">普通(10)</div>
+            <div class="score">分:<span id="score">0</span></div>
+            <div class="time">时:<span id="time">00:00</span></div>
+            <div class="mode-indicator" id="modeIndicator">普(10)</div>
         </div>
         <div class="header-buttons">
             <button class="header-btn" id="settingsBtn">设置</button> 
@@ -632,7 +632,7 @@
         // 停止任何正在进行的自动解决进程
         if (isAutoSolving) autoSolve(); 
 
-        const modeName = isChallenge ? "挑战" : "普通";
+        const modeName = isChallenge ? "挑" : "普";
         document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
         document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
         
@@ -842,9 +842,7 @@
         });
         gameState.score += gameState.selectedCells.length;
         scoreElement.textContent = gameState.score;
-        setTimeout(() => {
-            checkGameOver();
-        }, 300);
+        checkGameOver();
     }
             
     function checkGameOver() {
@@ -904,6 +902,7 @@
             highlightSuggestion(move.r1, move.c1, move.r2, move.c2);
             return;
         }
+		alert("找不到可以消除的组合")
     }
     
     // --- (以下辅助函数保持不变) ---
@@ -1042,37 +1041,69 @@
      */
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    /**
-     * 查找当前网格中所有可能的合法消除操作。
-     */
-    function findAllPossibleMoves(currentGrid) {
-        const moves = [];
-        for (let r1 = 0; r1 < ROWS; r1++) {
-            for (let c1 = 0; c1 < COLS; c1++) {
-                for (let r2 = r1; r2 < ROWS; r2++) {
-                    for (let c2 = c1; c2 < COLS; c2++) {
-                        let sum = 0;
-                        let cellsCount = 0;
-                        
-                        for (let r = r1; r <= r2; r++) {
-                            for (let c = c1; c <= c2; c++) {
-                                const value = currentGrid[r][c].value;
-                                sum += value;
-                                if (value !== 0) {
-                                    cellsCount++;
-                                }
-                            }
-                        }
-                        // 必须满足和为 10，并且至少包含 2 个非零方块
-                        if (sum === 10 && cellsCount >= 2) { 
-                            moves.push({ r1, c1, r2, c2, cellsCount });
-                        }
-                    }
-                }
-            }
-        }
-        return moves;
-    }
+	/**
+	 * 【修正BUG】使用二维前缀和 (SAT) 查找所有矩形移动。
+	 * 修正了错误的剪枝逻辑。
+	 */
+	function findAllPossibleMoves(currentGrid) {
+		const R = ROWS;
+		const C = COLS;
+		// 构建二维前缀和表 (Summed Area Table)
+		const prefixSum = Array(R + 1).fill(0).map(() => Array(C + 1).fill(0));
+		const prefixCount = Array(R + 1).fill(0).map(() => Array(C + 1).fill(0));
+
+		// O(R*C) 预计算
+		for (let r = 0; r < R; r++) {
+			for (let c = 0; c < C; c++) {
+				const value = currentGrid[r][c].value;
+				const count = value !== 0 ? 1 : 0;
+
+				// 计算公式: D - B - C + A
+				prefixSum[r + 1][c + 1] = value + prefixSum[r][c + 1] + prefixSum[r + 1][c] - prefixSum[r][c];
+				prefixCount[r + 1][c + 1] = count + prefixCount[r][c + 1] + prefixCount[r + 1][c] - prefixCount[r][c];
+			}
+		}
+
+		// O(1) 查询矩形值
+		const getRectValue = (table, r1, c1, r2, c2) => {
+			const D = table[r2 + 1][c2 + 1];
+			const B = table[r1][c2 + 1];
+			const C_val = table[r2 + 1][c1];
+			const A = table[r1][c1];
+			return D - B - C_val + A;
+		};
+
+		const moves = [];
+		// O((R*C)^2) 搜索
+		for (let r1 = 0; r1 < R; r1++) {
+			for (let c1 = 0; c1 < C; c1++) {
+				// **【已修正】移除此处错误的剪枝，确保以空单元格为起点的有效矩形也能被检查**
+				// if (currentGrid[r1][c1].value === 0) continue; // 之前错误的剪枝
+				
+				for (let r2 = r1; r2 < R; r2++) {
+					for (let c2 = c1; c2 < C; c2++) {
+						
+						const sum = getRectValue(prefixSum, r1, c1, r2, c2);
+						
+						// 早期退出：如果和超过 10，则以 (r1, c1) 开始，以 (r2, c2) 结束的所有更大矩形都不可能为 10
+						if (sum > 10) continue; 
+
+						if (sum === 10) {
+							const cellsCount = getRectValue(prefixCount, r1, c1, r2, c2);
+
+							// 必须满足和为 10，并且至少包含 2 个非零方块
+							if (cellsCount >= 2) { 
+								// 注意：此 SAT 优化无法检查选定的非零方块是否连通。
+								// 如果您的游戏规则要求连通性，则需要添加一个 O(R*C) 的连通性检查，但这会降低整体性能。
+								moves.push({ r1, c1, r2, c2, cellsCount });
+							}
+						}
+					}
+				}
+			}
+		}
+		return moves;
+	}
 
     /**
      * A* 启发式函数 h(n)
@@ -1154,7 +1185,7 @@
      * g(n): 当前步分数
      * h(n): 剩余 2 步的最优分数估值 (通过 findMaxScoreInNSteps 计算)
      */
-    function findBest3StepMove(currentGrid) {
+    function findBest2StepMove(currentGrid) {
         const moves = findAllPossibleMoves(currentGrid);
         if (moves.length === 0) {
             return null;
@@ -1228,7 +1259,7 @@
             
             // 1. 寻找当前状态下的最佳（3步深度，A*启发式）移动
             const startTime = performance.now();
-            const bestStep = findBest3StepMove(currentGrid); 
+            const bestStep = findBest2StepMove(currentGrid); 
             const endTime = performance.now();
             
             if (!bestStep) {
@@ -1260,23 +1291,28 @@
                     }
                 }
             }
-            
-            // C. 停顿 0.2 秒
-            await sleep(200); 
-
-            // D. 如果用户在停顿期间点击了“停止自动”，则退出
+			
             if (!isAutoSolving) break;
             
-            // E. 执行消除逻辑 (会更新 gameState.grid 和 gameState.score)
+            // C. 停顿 0.2 秒
+            await sleep(50); 
+			
+            if (!isAutoSolving) break;
+            
+            // D. 执行消除逻辑 (会更新 gameState.grid 和 gameState.score)
             eliminateCells(); 
             
-            // F. 清除高亮
+            // E. 清除高亮
             clearHighlightSuggestion(); 
             
-            // G. 等待消除特效完成
+			if (!isAutoSolving) break;
+			
+            // F. 等待消除特效完成
             await sleep(300); 
+			
+			if (!isAutoSolving) break;
             
-            // H. 重新渲染网格
+            // G. 重新渲染网格
             renderGrid(); 
             
             stepCount++;
@@ -1286,6 +1322,9 @@
         isAutoSolving = false;
         document.getElementById('autoBtn').textContent = '自动';
         console.log(`自动解决完成，共执行 ${stepCount} 步。`);
+		if (gameState.isChallengeMode){
+			helpme();
+		}
     }
 
 
