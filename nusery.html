@@ -48,18 +48,18 @@
 
 		.score-time {
 			display: flex;
-			gap: 15px;
+			gap: 5px;
 			flex-wrap: wrap;
 		}
 
 		.score, .time {
-			font-size: 16px;
+			font-size: 15px;
 			font-weight: bold;
 			color: red;
 		}
 
 		.mode-indicator {
-			font-size: 12px;
+			font-size: 13px;
 			padding: 3px 6px;
 			border-radius: 4px;
 			background-color: #e0e0e0;
@@ -83,7 +83,7 @@
 			border-radius: 4px;
 			cursor: pointer;
 			transition: background-color 0.3s;
-			font-size: 14px;
+			font-size: 12px;
 		}
 
 		.header-btn:hover {
@@ -405,8 +405,8 @@
 <body>
     <div class="game-header">
         <div class="score-time">
-            <div class="score">得分: <span id="score">0</span></div>
-            <div class="time">时间: <span id="time">00:00</span></div>
+            <div class="score">得分:<span id="score">0</span></div>
+            <div class="time">时间:<span id="time">00:00</span></div>
             <div class="mode-indicator" id="modeIndicator">普通(10)</div>
         </div>
         <div class="header-buttons">
@@ -420,8 +420,8 @@
         <div class="selection-box" id="selectionBox"></div>
         <div class="game-over" id="gameOver">
             <h2>游戏结束!</h2>
-            <p>最终得分: <span id="finalScore">0</span></p>
-            <p>用时: <span id="finalTime">00:00</span></p>
+            <p>最终得分:<span id="finalScore">0</span></p>
+            <p>用时:<span id="finalTime">00:00</span></p>
             <button class="restart-btn" id="restartBtn">重新开始</button>
         </div>
     </div>
