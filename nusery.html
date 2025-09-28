@@ -427,10 +427,11 @@
     </div>
     
     <div class="controls">
-        <button class="control-btn" id="newGameBtn">普通模式</button>
-        <button class="control-btn challenge" id="challengeBtn">挑战模式</button>
+        <button class="control-btn" id="newGameBtn">普通</button>
+        <button class="control-btn challenge" id="challengeBtn">挑战</button>
         <button class="control-btn end-game" id="endGameBtn">结束</button>
 		<button class="control-btn help" id="helpBtn">帮助</button>
+		<button class="control-btn help" id="autoBtn">自动</button>
     </div>
     
     <div class="modal" id="leaderboardModal">
@@ -469,694 +470,891 @@
         </div>
     </div>
 
-    <script>
-        // --- 游戏状态和常量 ---
-        const gameState = {
-            grid: [],
-            score: 0,
-            startTime: null,
-            timer: null,
-            isSelecting: false,
-            startX: -1,
-            startY: -1,
-            endX: -1,
-            endY: -1,
-            selectedCells: [],
-            gameOver: false,
-            isChallengeMode: false,
-            challengeTimeLimit: 180,
-            challengeTimeRemaining: 0,
-            allGameRecords: [],
-            currentDifficulty: 10 
-        };
+<script>
+    // --- 游戏状态和常量 ---
+    const ROWS = 16;
+    const COLS = 10;
+    
+    // (DIFFICULTY_PROBABILITIES_DATA 保持不变)
+    const DIFFICULTY_PROBABILITIES_DATA = [
+        // 难度 0: 1和2的概率最高 (0.15)
+        {1: 0.1500, 2: 0.1500, 3: 0.1000, 4: 0.1000, 5: 0.1000, 6: 0.1000, 7: 0.1000, 8: 0.1000, 9: 0.1000},
+        // 难度 1: 
+        {1: 0.1460, 2: 0.1460, 3: 0.1011, 4: 0.1011, 5: 0.1011, 6: 0.1011, 7: 0.1011, 8: 0.1011, 9: 0.1011},
+        // 难度 2:
+        {1: 0.1420, 2: 0.1420, 3: 0.1023, 4: 0.1023, 5: 0.1023, 6: 0.1023, 7: 0.1023, 8: 0.1023, 9: 0.1023},
+        // 难度 3:
+        {1: 0.1380, 2: 0.1380, 3: 0.1034, 4: 0.1034, 5: 0.1034, 6: 0.1034, 7: 0.1034, 8: 0.1034, 9: 0.1034},
+        // 难度 4:
+        {1: 0.1340, 2: 0.1340, 3: 0.1046, 4: 0.1046, 5: 0.1046, 6: 0.1046, 7: 0.1046, 8: 0.1046, 9: 0.1046},
+        // 难度 5:
+        {1: 0.1300, 2: 0.1300, 3: 0.1057, 4: 0.1057, 5: 0.1057, 6: 0.1057, 7: 0.1057, 8: 0.1057, 9: 0.1057},
+        // 难度 6:
+        {1: 0.1260, 2: 0.1260, 3: 0.1069, 4: 0.1069, 5: 0.1069, 6: 0.1069, 7: 0.1069, 8: 0.1069, 9: 0.1069},
+        // 难度 7:
+        {1: 0.1220, 2: 0.1220, 3: 0.1080, 4: 0.1080, 5: 0.1080, 6: 0.1080, 7: 0.1080, 8: 0.1080, 9: 0.1080},
+        // 难度 8:
+        {1: 0.1180, 2: 0.1180, 3: 0.1092, 4: 0.1092, 5: 0.1092, 6: 0.1092, 7: 0.1092, 8: 0.1092, 9: 0.1092},
+        // 难度 9:
+        {1: 0.1140, 2: 0.1140, 3: 0.1103, 4: 0.1103, 5: 0.1103, 6: 0.1103, 7: 0.1103, 8: 0.1103, 9: 0.1103},
+        // 难度 10: 等概率 (1/9 ≈ 0.1111)
+        {1: 0.1111, 2: 0.1111, 3: 0.1111, 4: 0.1111, 5: 0.1111, 6: 0.1111, 7: 0.1111, 8: 0.1111, 9: 0.1111}
+    ];
 
-        const LOCAL_STORAGE_KEY = 'numberEliminationRecords';
-        const SETTINGS_STORAGE_KEY = 'numberEliminationSettings'; 
-        const TOP_RECORDS_COUNT = 10;
+    let gameState = {
+        grid: [],
+        score: 0,
+        startTime: null,
+        timer: null,
+        isSelecting: false,
+        startX: -1,
+        startY: -1,
+        endX: -1,
+        endY: -1,
+        selectedCells: [],
+        gameOver: false,
+        isChallengeMode: false,
+        challengeTimeLimit: 180,
+        challengeTimeRemaining: 0,
+        allGameRecords: [],
+        currentDifficulty: 10 
+    };
+
+    const LOCAL_STORAGE_KEY = 'numberEliminationRecords';
+    const SETTINGS_STORAGE_KEY = 'numberEliminationSettings'; 
+    const TOP_RECORDS_COUNT = 10;
+    
+    // --- 新增：自动解决控制标志（要求 4） ---
+    let isAutoSolving = false; 
+    
+    // --- DOM 元素 ---
+    const gridElement = document.getElementById('grid');
+    const scoreElement = document.getElementById('score');
+    const timeElement = document.getElementById('time');
+    const gameOverElement = document.getElementById('gameOver');
+    const leaderboardModal = document.getElementById('leaderboardModal');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const toggleShowAllBtn = document.getElementById('toggleShowAll');
+    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const difficultySlider = document.getElementById('difficultySlider');
+    const difficultyLevelDisplay = document.getElementById('difficultyLevelDisplay');
+    const selectionBox = document.getElementById('selectionBox');
+
+    // --- 本地存储和设置逻辑 (保持不变) ---
+
+    function loadRecords() {
+        try {
+            const records = localStorage.getItem(LOCAL_STORAGE_KEY);
+            gameState.allGameRecords = records ? JSON.parse(records) : [];
+        } catch (error) {
+            gameState.allGameRecords = [];
+        }
+    }
+
+    function saveRecords() {
+        try {
+            gameState.allGameRecords.sort((a, b) => b.score - a.score || a.time - b.time);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState.allGameRecords));
+        } catch (error) {}
+    }
+
+    function loadSettings() {
+        try {
+            const settings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                gameState.currentDifficulty = Math.min(10, Math.max(0, parseInt(parsed.difficulty) || 10));
+            }
+        } catch (e) {}
+    }
+
+    function saveCurrentSettings() {
+        try {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ difficulty: gameState.currentDifficulty }));
+        } catch (e) {}
+    }
+
+    function clearLeaderboard() {
+        if (confirm("确定要清除所有本地游戏记录吗？此操作不可撤销。")) {
+            gameState.allGameRecords = [];
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            document.getElementById('leaderboardModal').style.display = 'none';
+            alert("所有记录已清除。");
+            // 确保在清空后能正确显示空列表
+            const activeMode = document.querySelector('.mode-btn.active') ? document.querySelector('.mode-btn.active').dataset.mode : 'all';
+            showLeaderboard(activeMode, false);
+        }
+    }
+
+    // --- 游戏核心逻辑函数 (保持不变) ---
+
+    function generateRandomNumber(difficulty) {
+        const probs = DIFFICULTY_PROBABILITIES_DATA[difficulty];
+        const random = Math.random();
+        let cumulativeProb = 0;
+        let result = 1;
+
+        for (let value = 1; value <= 9; value++) {
+            const prob = probs[value] || 0; 
+            cumulativeProb += prob;
+            
+            if (random < cumulativeProb) { 
+                result = value;
+                break;
+            }
+        }
+        return result; 
+    }
+
+    function generateGrid() {
+        const currentDifficulty = gameState.currentDifficulty;
+        gameState.grid = []; 
+        for (let i = 0; i < 16; i++) {
+            const row = [];
+            for (let j = 0; j < 10; j++) {
+                row.push({
+                    value: generateRandomNumber(currentDifficulty),
+                });
+            }
+            gameState.grid.push(row);
+        }
+    }
+
+    function initGame(isChallenge = false) {
+        // ... (省略 initGame 内部逻辑，保持不变)
+        gameState.score = 0;
+        gameState.gameOver = false;
+        gameState.isChallengeMode = isChallenge;
+        gameState.startTime = new Date();
         
-        // --- 核心常量: 难度生成常量数组 (0-10 级) ---
-        const DIFFICULTY_PROBABILITIES_DATA = [
-            // 难度 0: 1和2的概率最高 (0.15)
-            {1: 0.1500, 2: 0.1500, 3: 0.1000, 4: 0.1000, 5: 0.1000, 6: 0.1000, 7: 0.1000, 8: 0.1000, 9: 0.1000},
-            // 难度 1: 
-            {1: 0.1460, 2: 0.1460, 3: 0.1011, 4: 0.1011, 5: 0.1011, 6: 0.1011, 7: 0.1011, 8: 0.1011, 9: 0.1011},
-            // 难度 2:
-            {1: 0.1420, 2: 0.1420, 3: 0.1023, 4: 0.1023, 5: 0.1023, 6: 0.1023, 7: 0.1023, 8: 0.1023, 9: 0.1023},
-            // 难度 3:
-            {1: 0.1380, 2: 0.1380, 3: 0.1034, 4: 0.1034, 5: 0.1034, 6: 0.1034, 7: 0.1034, 8: 0.1034, 9: 0.1034},
-            // 难度 4:
-            {1: 0.1340, 2: 0.1340, 3: 0.1046, 4: 0.1046, 5: 0.1046, 6: 0.1046, 7: 0.1046, 8: 0.1046, 9: 0.1046},
-            // 难度 5:
-            {1: 0.1300, 2: 0.1300, 3: 0.1057, 4: 0.1057, 5: 0.1057, 6: 0.1057, 7: 0.1057, 8: 0.1057, 9: 0.1057},
-            // 难度 6:
-            {1: 0.1260, 2: 0.1260, 3: 0.1069, 4: 0.1069, 5: 0.1069, 6: 0.1069, 7: 0.1069, 8: 0.1069, 9: 0.1069},
-            // 难度 7:
-            {1: 0.1220, 2: 0.1220, 3: 0.1080, 4: 0.1080, 5: 0.1080, 6: 0.1080, 7: 0.1080, 8: 0.1080, 9: 0.1080},
-            // 难度 8:
-            {1: 0.1180, 2: 0.1180, 3: 0.1092, 4: 0.1092, 5: 0.1092, 6: 0.1092, 7: 0.1092, 8: 0.1092, 9: 0.1092},
-            // 难度 9:
-            {1: 0.1140, 2: 0.1140, 3: 0.1103, 4: 0.1103, 5: 0.1103, 6: 0.1103, 7: 0.1103, 8: 0.1103, 9: 0.1103},
-            // 难度 10: 等概率 (1/9 ≈ 0.1111)
-            {1: 0.1111, 2: 0.1111, 3: 0.1111, 4: 0.1111, 5: 0.1111, 6: 0.1111, 7: 0.1111, 8: 0.1111, 9: 0.1111}
-        ];
+        // 停止任何正在进行的自动解决进程
+        if (isAutoSolving) autoSolve(); 
 
-        // --- DOM 元素 ---
-        const gridElement = document.getElementById('grid');
-        const scoreElement = document.getElementById('score');
-        const timeElement = document.getElementById('time');
-        const gameOverElement = document.getElementById('gameOver');
-        const leaderboardModal = document.getElementById('leaderboardModal');
-        const leaderboardList = document.getElementById('leaderboardList');
-        const modeBtns = document.querySelectorAll('.mode-btn');
-        const toggleShowAllBtn = document.getElementById('toggleShowAll');
-        const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
-        const settingsModal = document.getElementById('settingsModal');
-        const difficultySlider = document.getElementById('difficultySlider');
-        const difficultyLevelDisplay = document.getElementById('difficultyLevelDisplay');
-        const selectionBox = document.getElementById('selectionBox');
-
-        // --- 本地存储和设置逻辑 (保持不变) ---
-
-        function loadRecords() {
-            try {
-                const records = localStorage.getItem(LOCAL_STORAGE_KEY);
-                gameState.allGameRecords = records ? JSON.parse(records) : [];
-            } catch (error) {
-                gameState.allGameRecords = [];
-            }
+        const modeName = isChallenge ? "挑战" : "普通";
+        document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
+        document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
+        
+        scoreElement.textContent = '0';
+        
+        if (gameState.timer) clearInterval(gameState.timer);
+        if (isChallenge) {
+            gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
+            gameState.timer = setInterval(updateChallengeTime, 1000);
+        } else {
+            gameState.timer = setInterval(updateTime, 1000);
         }
+        
+        document.getElementById('finalScore').textContent = '0';
+        document.getElementById('finalTime').textContent = '00:00';
+        gameOverElement.style.display = 'none';
+        selectionBox.style.display = 'none';
+        
+        generateGrid();
+        renderGrid();
+    }
 
-        function saveRecords() {
-            try {
-                gameState.allGameRecords.sort((a, b) => b.score - a.score || a.time - b.time);
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState.allGameRecords));
-            } catch (error) {}
-        }
-
-        function loadSettings() {
-            try {
-                const settings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-                if (settings) {
-                    const parsed = JSON.parse(settings);
-                    gameState.currentDifficulty = Math.min(10, Math.max(0, parseInt(parsed.difficulty) || 10));
-                }
-            } catch (e) {}
-        }
-
-        function saveCurrentSettings() {
-            try {
-                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ difficulty: gameState.currentDifficulty }));
-            } catch (e) {}
-        }
-
-        function clearLeaderboard() {
-            if (confirm("确定要清除所有本地游戏记录吗？此操作不可撤销。")) {
-                gameState.allGameRecords = [];
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-                document.getElementById('leaderboardModal').style.display = 'none';
-                alert("所有记录已清除。");
-                // 确保在清空后能正确显示空列表
-                const activeMode = document.querySelector('.mode-btn.active') ? document.querySelector('.mode-btn.active').dataset.mode : 'all';
-                showLeaderboard(activeMode, false);
-            }
-        }
-
-        // --- 游戏核心逻辑函数 (保持不变) ---
-
-        function generateRandomNumber(difficulty) {
-            const probs = DIFFICULTY_PROBABILITIES_DATA[difficulty];
-            const random = Math.random();
-            let cumulativeProb = 0;
-            let result = 1;
-
-            for (let value = 1; value <= 9; value++) {
-                const prob = probs[value] || 0; 
-                cumulativeProb += prob;
+    function renderGrid() {
+        gridElement.innerHTML = '';
+        for (let i = 0; i < 16; i++) {
+            for (let j = 0; j < 10; j++) {
+                const cell = gameState.grid[i][j];
+                const cellElement = document.createElement('div');
+                cellElement.className = 'cell';
                 
-                if (random < cumulativeProb) { 
-                    result = value;
-                    break;
+                if (cell.value === 0) {
+                    cellElement.classList.add('empty-cell');
+                }
+                
+                cellElement.textContent = cell.value !== 0 ? cell.value : '';
+                cellElement.dataset.row = i;
+                cellElement.dataset.col = j;
+                cellElement.addEventListener('touchstart', handleTouchStart);
+                cellElement.addEventListener('mousedown', handleMouseDown);
+                gridElement.appendChild(cellElement);
+            }
+        }
+    }
+    
+    // --- 选择/消除逻辑 (保持不变) ---
+    
+    function handleTouchStart(e) {
+        e.stopPropagation();
+        if (gameState.gameOver || isAutoSolving) return;
+        const cell = e.currentTarget;
+        startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
+    }
+
+    function handleMouseDown(e) {
+        if (e.button !== 0 || gameState.gameOver || isAutoSolving) return;
+        const cell = e.currentTarget;
+        startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
+    }
+    
+    function handleTouchMove(e) {
+        if (!gameState.isSelecting) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const cell = getCellFromCoordinates(touch.clientX, touch.clientY);
+        if (cell) {
+            updateSelectionFromCell(cell);
+        }
+    }
+
+    function handleMouseMove(e) {
+        if (!gameState.isSelecting) return;
+        const cell = e.target.closest('.cell');
+        if (cell) {
+            updateSelectionFromCell(cell);
+        }
+    }
+
+    function handleTouchEnd(e) {
+        e.stopPropagation();
+        if (gameState.isSelecting) {
+            endSelection();
+        }
+    }
+
+    function handleMouseUp(e) {
+        if (e.button === 0 && gameState.isSelecting) {
+            endSelection();
+        }
+    }
+    
+    function getCellFromCoordinates(x, y) {
+        const gridRect = gridElement.getBoundingClientRect();
+        if (x < gridRect.left || x > gridRect.right || y < gridRect.top || y > gridRect.bottom) {
+            return null;
+        }
+        const cellWidth = gridRect.width / 10;
+        const cellHeight = gridRect.height / 16;
+        const col = Math.floor((x - gridRect.left) / cellWidth);
+        const row = Math.floor((y - gridRect.top) / cellHeight);
+        if (row >= 0 && row < 16 && col >= 0 && col < 10) {
+            return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+        }
+        return null;
+    }
+
+    function startSelection(row, col) {
+        gameState.isSelecting = true;
+        gameState.startX = row;
+        gameState.startY = col;
+        gameState.endX = row;
+        gameState.endY = col;
+        gameState.selectedCells = [[row, col]];
+        clearHighlightSuggestion(); 
+        updateSelectionBox();
+        selectionBox.style.display = 'block';
+        updateSelectedCells();
+    }
+
+    function updateSelectionFromCell(cell) {
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        
+        gameState.endX = row;
+        gameState.endY = col;
+        
+        const minRow = Math.min(gameState.startX, gameState.endX);
+        const maxRow = Math.max(gameState.startX, gameState.endX);
+        const minCol = Math.min(gameState.startY, gameState.endY);
+        const maxCol = Math.max(gameState.startY, gameState.endY);
+        
+        gameState.selectedCells = [];
+        for (let i = minRow; i <= maxRow; i++) {
+            for (let j = minCol; j <= maxCol; j++) {
+                if (gameState.grid[i][j].value !== 0) {
+                    gameState.selectedCells.push([i, j]);
                 }
             }
-            return result; 
         }
+        updateSelectionBox();
+        updateSelectedCells();
+    }
 
-        function generateGrid() {
-            const currentDifficulty = gameState.currentDifficulty;
-            gameState.grid = []; 
-            for (let i = 0; i < 16; i++) {
-                const row = [];
-                for (let j = 0; j < 10; j++) {
-                    row.push({
-                        value: generateRandomNumber(currentDifficulty),
-                    });
+    function updateSelectionBox() {
+        const startCell = document.querySelector(`.cell[data-row="${gameState.startX}"][data-col="${gameState.startY}"]`);
+        const endCell = document.querySelector(`.cell[data-row="${gameState.endX}"][data-col="${gameState.endY}"]`);
+        
+        if (!startCell || !endCell) return;
+        
+        const startRect = startCell.getBoundingClientRect();
+        const endRect = endCell.getBoundingClientRect();
+        const gridRect = gridElement.getBoundingClientRect();
+        
+        const left = Math.min(startRect.left, endRect.left) - gridRect.left;
+        const top = Math.min(startRect.top, endRect.top) - gridRect.top;
+        const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth; 
+        const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight;
+        
+        selectionBox.style.left = `${left}px`;
+        selectionBox.style.top = `${top}px`;
+        selectionBox.style.width = `${width}px`;
+        selectionBox.style.height = `${height}px`;
+    }
+
+    function updateSelectedCells() {
+        document.querySelectorAll('.cell.selected').forEach(cell => {
+            cell.classList.remove('selected');
+        });
+        gameState.selectedCells.forEach(([row, col]) => {
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            if (cell) cell.classList.add('selected');
+        });
+    }
+
+    function endSelection() {
+        selectionBox.style.display = 'none';
+        
+        let sum = 0;
+        gameState.selectedCells.forEach(([row, col]) => {
+            sum += gameState.grid[row][col].value;
+        });
+        
+        if (sum === 10) {
+            eliminateCells();
+        } else {
+            document.querySelectorAll('.cell.selected').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+        }
+        
+        gameState.isSelecting = false;
+        gameState.selectedCells = [];
+    }
+
+    function eliminateCells() {
+        gameState.selectedCells.forEach(([row, col]) => {
+            gameState.grid[row][col].value = 0;
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            if (cell) {
+                cell.classList.add('eliminated'); 
+                cell.classList.remove('selected'); 
+                setTimeout(() => {
+                    cell.classList.remove('eliminated');
+                    cell.textContent = '';
+                    cell.classList.add('empty-cell'); 
+                }, 300);
+            }
+        });
+        gameState.score += gameState.selectedCells.length;
+        scoreElement.textContent = gameState.score;
+        setTimeout(() => {
+            checkGameOver();
+        }, 300);
+    }
+            
+    function checkGameOver() {
+        if (gameState.isChallengeMode) return;
+        
+        // 使用 findAllPossibleMoves 来检查是否还有剩余移动
+        const moves = findAllPossibleMoves(gameState.grid);
+        if (moves.length === 0) {
+            helpme(); // 触发一次帮助，显示最后的可能
+            alert("找不到可以继续消除的组合，游戏结束");
+            endGame();
+        }
+    }
+
+    function endGame() {
+        if (gameState.gameOver) return;
+        
+        gameState.gameOver = true;
+        clearInterval(gameState.timer);
+        
+        const endTime = new Date();
+        const timeTaken = gameState.isChallengeMode 
+            ? gameState.challengeTimeLimit - gameState.challengeTimeRemaining 
+            : Math.floor((endTime - gameState.startTime) / 1000);
+
+        const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+        const seconds = (timeTaken % 60).toString().padStart(2, '0');
+        
+        document.getElementById('finalScore').textContent = gameState.score;
+        document.getElementById('finalTime').textContent = `${minutes}:${seconds}`;
+        gameOverElement.style.display = 'block';
+        
+        const now = new Date();
+        const newRecord = {
+            score: gameState.score,
+            time: timeTaken,
+            isChallenge: gameState.isChallengeMode,
+            date: now.toISOString(),
+            difficulty: gameState.currentDifficulty 
+        };
+        gameState.allGameRecords.push(newRecord);
+        saveRecords();
+        
+        // 游戏结束时停止自动解决
+        if (isAutoSolving) autoSolve();
+    }
+    
+    function helpme(){
+        if (gameState.gameOver || gameState.isSelecting) return;
+        
+        clearHighlightSuggestion(); 
+        
+        // 查找第一个可消除的移动并高亮
+        const moves = findAllPossibleMoves(gameState.grid);
+        if (moves.length > 0) {
+            const move = moves[0];
+            highlightSuggestion(move.r1, move.c1, move.r2, move.c2);
+            return;
+        }
+    }
+    
+    // --- (以下辅助函数保持不变) ---
+    function highlightSuggestion(startRow, startCol, endRow, endCol) {
+        const startCell = document.querySelector(`.cell[data-row="${startRow}"][data-col="${startCol}"]`);
+        const endCell = document.querySelector(`.cell[data-row="${endRow}"][data-col="${endCol}"]`);
+
+        if (!startCell || !endCell) return;
+
+        const startRect = startCell.getBoundingClientRect();
+        const endRect = endCell.getBoundingClientRect();
+        const gridRect = gridElement.getBoundingClientRect();
+
+        const left = Math.min(startRect.left, endRect.left) - gridRect.left;
+        const top = Math.min(startRect.top, endRect.top) - gridRect.top;
+        const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth + 8; 
+        const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight + 8;
+
+        selectionBox.style.left = `${left}px`;
+        selectionBox.style.top = `${top}px`;
+        selectionBox.style.width = `${width}px`;
+        selectionBox.style.height = `${height}px`;
+        
+        selectionBox.classList.add('help-selection');
+        selectionBox.style.display = 'block';
+
+        setTimeout(clearHighlightSuggestion, 5000); 
+    }
+    
+    function clearHighlightSuggestion() {
+        selectionBox.classList.remove('help-selection');
+        selectionBox.style.display = 'none';
+    }
+
+    function updateTime() {
+        if (!gameState.startTime || gameState.gameOver) return;
+        const currentTime = new Date();
+        const timeTaken = Math.floor((currentTime - gameState.startTime) / 1000);
+        const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+        const seconds = (timeTaken % 60).toString().padStart(2, '0');
+        document.getElementById('time').textContent = `${minutes}:${seconds}`;
+    }
+
+    function updateChallengeTime() {
+        if (gameState.gameOver) return;
+        gameState.challengeTimeRemaining--;
+        const minutes = Math.floor(gameState.challengeTimeRemaining / 60).toString().padStart(2, '0');
+        const seconds = (gameState.challengeTimeRemaining % 60).toString().padStart(2, '0');
+        document.getElementById('time').textContent = `${minutes}:${seconds}`;
+        if (gameState.challengeTimeRemaining <= 0) {
+            endGame();
+        }
+    }
+    
+    function formatRecordDate(isoString) {
+        const date = new Date(isoString);
+        const Y = date.getFullYear();
+        const M = (date.getMonth() + 1).toString().padStart(2, '0');
+        const D = date.getDate().toString().padStart(2, '0');
+        const h = date.getHours().toString().padStart(2, '0');
+        const m = date.getMinutes().toString().padStart(2, '0');
+        const s = date.getSeconds().toString().padStart(2, '0');
+        return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+    }
+
+    function showLeaderboard(mode, showAll) {
+        // ... (省略 showLeaderboard 内部逻辑，保持不变)
+        let records = [...gameState.allGameRecords];
+        records.sort((a, b) => b.score - a.score || a.time - b.time);
+        
+        if (mode === 'challenge') {
+            records = records.filter(record => record.isChallenge);
+        } else if (mode === 'normal') {
+            records = records.filter(record => !record.isChallenge);
+        }
+        
+        const recordsToShow = showAll ? records : records.slice(0, TOP_RECORDS_COUNT);
+
+        document.getElementById('toggleShowAll').textContent = showAll ? `仅显示前 ${TOP_RECORDS_COUNT} 条` : '显示全部记录';
+        document.getElementById('toggleShowAll').dataset.show = showAll ? 'all' : 'top10';
+        
+        leaderboardList.innerHTML = '';
+        
+        if (recordsToShow.length === 0) {
+            const item = document.createElement('li');
+            item.className = 'leaderboard-item';
+            item.innerHTML = '暂无记录';
+            leaderboardList.appendChild(item);
+        } else {
+            recordsToShow.forEach((record, index) => {
+                const time = record.time;
+                const minutes = Math.floor(time / 60).toString().padStart(2, '0');
+                const seconds = (time % 60).toString().padStart(2, '0');
+                const modeLabel = record.isChallenge ? '<span style="color:#e65100;">[挑战]</span>' : '<span style="color:#2196F3;">[普通]</span>';
+                const formattedDate = record.date ? formatRecordDate(record.date) : '';
+                const difficultyDisplay = record.difficulty !== undefined ? ` (难度: ${record.difficulty})` : '';
+
+                const item = document.createElement('li');
+                item.className = 'leaderboard-item'; // 使用 CSS 类
+                item.innerHTML = `
+                    <div class="info">
+                        <span>${index + 1}. ${modeLabel} 分数: ${record.score}${difficultyDisplay}</span>
+                        <span>用时: ${minutes}:${seconds}</span>
+                    </div>
+                    <span class="date-time">${formattedDate}</span>
+                `;
+                leaderboardList.appendChild(item);
+            });
+        }
+        leaderboardModal.style.display = 'flex';
+    }
+
+    function openSettingsModal() {
+        difficultySlider.value = gameState.currentDifficulty;
+        difficultyLevelDisplay.textContent = gameState.currentDifficulty;
+        settingsModal.style.display = 'flex';
+    }
+
+    function saveSettings() {
+        const newDifficulty = parseInt(difficultySlider.value);
+        
+        if (newDifficulty !== gameState.currentDifficulty) {
+            gameState.currentDifficulty = newDifficulty;
+            saveCurrentSettings();
+            alert(`难度已设置为 ${newDifficulty}。游戏将重新开始以应用新难度。`);
+            initGame(gameState.isChallengeMode); 
+        }
+        settingsModal.style.display = 'none';
+    }
+
+    // --- 新增：启发式搜索算法模块（实现要求 1, 3） ---
+
+    /**
+     * 暂停函数
+     * @param {number} ms 毫秒数
+     */
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    /**
+     * 查找当前网格中所有可能的合法消除操作。
+     */
+    function findAllPossibleMoves(currentGrid) {
+        const moves = [];
+        for (let r1 = 0; r1 < ROWS; r1++) {
+            for (let c1 = 0; c1 < COLS; c1++) {
+                for (let r2 = r1; r2 < ROWS; r2++) {
+                    for (let c2 = c1; c2 < COLS; c2++) {
+                        let sum = 0;
+                        let cellsCount = 0;
+                        
+                        for (let r = r1; r <= r2; r++) {
+                            for (let c = c1; c <= c2; c++) {
+                                const value = currentGrid[r][c].value;
+                                sum += value;
+                                if (value !== 0) {
+                                    cellsCount++;
+                                }
+                            }
+                        }
+                        // 必须满足和为 10，并且至少包含 2 个非零方块
+                        if (sum === 10 && cellsCount >= 2) { 
+                            moves.push({ r1, c1, r2, c2, cellsCount });
+                        }
+                    }
                 }
-                gameState.grid.push(row);
             }
         }
+        return moves;
+    }
 
-        function initGame(isChallenge = false) {
-            gameState.score = 0;
-            gameState.gameOver = false;
-            gameState.isChallengeMode = isChallenge;
-            gameState.startTime = new Date();
-            
-            const modeName = isChallenge ? "挑战" : "普通";
-            document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
-            document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
-            
-            scoreElement.textContent = '0';
-            
-            if (gameState.timer) clearInterval(gameState.timer);
-            if (isChallenge) {
-                gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
-                gameState.timer = setInterval(updateChallengeTime, 1000);
-            } else {
-                gameState.timer = setInterval(updateTime, 1000);
-            }
-            
-            document.getElementById('finalScore').textContent = '0';
-            document.getElementById('finalTime').textContent = '00:00';
-            gameOverElement.style.display = 'none';
-            selectionBox.style.display = 'none';
-            
-            generateGrid();
-            renderGrid();
-        }
+    /**
+     * A* 启发式函数 h(n)
+     */
+	function calculateHeuristic(currentGrid) {
+		let totalCells = 0;
+		let smallCells = 0; // 1, 2, 3 的数量
 
-		function renderGrid() {
-			gridElement.innerHTML = '';
-			for (let i = 0; i < 16; i++) {
-				for (let j = 0; j < 10; j++) {
-					const cell = gameState.grid[i][j];
-					const cellElement = document.createElement('div');
-					cellElement.className = 'cell';
-					
-					if (cell.value === 0) {
-						 // >>>>> 关键修正：如果值为0，默认添加 'empty-cell' 类 <<<<<
-						cellElement.classList.add('empty-cell');
+		// 遍历计算剩余方块总数 (N_total) 和小数字数量 (N_1,2,3)
+		for (let i = 0; i < ROWS; i++) {
+			for (let j = 0; j < COLS; j++) {
+				const value = currentGrid[i][j].value;
+				if (value !== 0) {
+					totalCells++;
+					if (value <= 3) {
+						smallCells++;
 					}
-					
-					cellElement.textContent = cell.value !== 0 ? cell.value : '';
-					cellElement.dataset.row = i;
-					cellElement.dataset.col = j;
-					cellElement.addEventListener('touchstart', handleTouchStart);
-					cellElement.addEventListener('mousedown', handleMouseDown);
-					gridElement.appendChild(cellElement);
 				}
 			}
 		}
-        
-        // --- 选择/消除逻辑 (精简后保持不变) ---
-        
-        function handleTouchStart(e) {
-            e.stopPropagation();
-            if (gameState.gameOver) return;
-            const cell = e.currentTarget;
-            startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
-        }
 
-        function handleMouseDown(e) {
-            if (e.button !== 0 || gameState.gameOver) return;
-            const cell = e.currentTarget;
-            startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
-        }
-        
-        function handleTouchMove(e) {
-            if (!gameState.isSelecting) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const cell = getCellFromCoordinates(touch.clientX, touch.clientY);
-            if (cell) {
-                updateSelectionFromCell(cell);
-            }
-        }
+		// 最大潜在消除得分 (S_pot)
+		const potentialScore = Math.floor(totalCells / 2);
+		
+		// 小数字保留奖励 (B_small): 作为浮点数奖励，影响平局决策
+		const retentionBonus = smallCells / 10.0;
+		
+		// 启发式分数 = 潜在得分 + 浮点奖励
+		return potentialScore + retentionBonus;
+	}
 
-        function handleMouseMove(e) {
-            if (!gameState.isSelecting) return;
-            const cell = e.target.closest('.cell');
-            if (cell) {
-                updateSelectionFromCell(cell);
-            }
-        }
 
-        function handleTouchEnd(e) {
-            e.stopPropagation();
-            if (gameState.isSelecting) {
-                endSelection();
-            }
-        }
-
-        function handleMouseUp(e) {
-            if (e.button === 0 && gameState.isSelecting) {
-                endSelection();
-            }
+    /**
+     * 递归深度搜索，用于计算从当前状态开始的 N 步内能获得的最高分数估值。
+     * @param {number} depth 剩余搜索深度 (2, 1)
+     */
+    function findMaxScoreInNSteps(currentGrid, depth) {
+        if (depth === 0) {
+            // 到达搜索深度限制，返回 A* 启发式估值 h(n)
+            return calculateHeuristic(currentGrid);
         }
         
-        function getCellFromCoordinates(x, y) {
-            const gridRect = gridElement.getBoundingClientRect();
-            if (x < gridRect.left || x > gridRect.right || y < gridRect.top || y > gridRect.bottom) {
-                return null;
+        const moves = findAllPossibleMoves(currentGrid);
+        if (moves.length === 0) {
+            return 0; // 无法移动，后续分数为 0
+        }
+
+        let maxFutureScore = 0; 
+
+        // 优先搜索高分路径 (贪婪启发式)
+        moves.sort((a, b) => b.cellsCount - a.cellsCount);
+
+        for (const move of moves) {
+            const scoreThisStep = move.cellsCount;
+            
+            // 1. 执行移动，创建新网格
+            const nextGrid = currentGrid.map(row => row.map(cell => ({ ...cell })));
+            for (let r = move.r1; r <= move.r2; r++) {
+                for (let c = move.c1; c <= move.c2; c++) {
+                    nextGrid[r][c].value = 0;
+                }
             }
-            const cellWidth = gridRect.width / 10;
-            const cellHeight = gridRect.height / 16;
-            const col = Math.floor((x - gridRect.left) / cellWidth);
-            const row = Math.floor((y - gridRect.top) / cellHeight);
-            if (row >= 0 && row < 16 && col >= 0 && col < 10) {
-                return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            
+            // 2. 递归搜索下一层，计算后续分数估值
+            const scoreFromNextSteps = findMaxScoreInNSteps(nextGrid, depth - 1);
+
+            const totalPotentialScore = scoreThisStep + scoreFromNextSteps;
+            
+            if (totalPotentialScore > maxFutureScore) {
+                maxFutureScore = totalPotentialScore;
             }
+        }
+        return maxFutureScore;
+    }
+
+
+    /**
+     * 深度为 3 的向前搜索：选择使 f(n) = g(n) + h(n) 最高的移动。
+     * g(n): 当前步分数
+     * h(n): 剩余 2 步的最优分数估值 (通过 findMaxScoreInNSteps 计算)
+     */
+    function findBest3StepMove(currentGrid) {
+        const moves = findAllPossibleMoves(currentGrid);
+        if (moves.length === 0) {
             return null;
         }
 
-        function startSelection(row, col) {
-            gameState.isSelecting = true;
-            gameState.startX = row;
-            gameState.startY = col;
-            gameState.endX = row;
-            gameState.endY = col;
-            gameState.selectedCells = [[row, col]];
-			// *** 新增：清除任何帮助高亮 ***
-			clearHighlightSuggestion(); 
-            updateSelectionBox();
-            selectionBox.style.display = 'block';
-            updateSelectedCells();
+        let bestMove = null;
+        let maxEvaluationScore = -1; 
+
+        // 遍历所有第一步可能的移动
+        for (const move1 of moves) {
+            const g_n = move1.cellsCount; // g(n): 实际已获分数 (第一步)
+            
+            // 1. 执行第一步移动，创建新网格
+            const nextGrid1 = currentGrid.map(row => row.map(cell => ({ ...cell })));
+            for (let r = move1.r1; r <= move1.r2; r++) {
+                for (let c = move1.c1; c <= move1.c2; c++) {
+                    nextGrid1[r][c].value = 0;
+                }
+            }
+            
+            // 2. 递归计算剩余 2 步的最佳分数估值 (h(n))
+            const h_n = findMaxScoreInNSteps(nextGrid1, 2); // 2 步深度
+
+            // A* 评估函数：f(n) = g(n) + h(n)
+            const evaluationScore = g_n + 2 * h_n; 
+
+            // 3. 更新最佳移动
+            if (evaluationScore > maxEvaluationScore) {
+                maxEvaluationScore = evaluationScore;
+                bestMove = {
+                    move: move1,
+                    // 存储执行第一步后的网格状态，方便下一步的UI/逻辑同步
+                    nextGrid: nextGrid1 
+                };
+            }
         }
 
-        function updateSelectionFromCell(cell) {
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
+        return bestMove;
+    }
+
+
+    /**
+     * 自动解决游戏的异步主函数
+     */
+    async function autoSolve() {
+        // --- 停止功能（要求 4） ---
+        if (isAutoSolving) {
+            isAutoSolving = false;
+            document.getElementById('autoBtn').textContent = '自动';
+            console.log("自动解决已停止。");
+            return;
+        }
+        
+        if (gameState.gameOver || gameState.isSelecting) {
+            console.log("游戏已结束或正在选择中，无法自动解决。");
+            return;
+        }
+
+        isAutoSolving = true;
+        document.getElementById('autoBtn').textContent = '停止'; 
+        console.log("自动解决开始...");
+        
+        clearHighlightSuggestion(); 
+        
+        let stepCount = 0;
+        
+        while(isAutoSolving) { 
+            // --- 状态同步（要求 2） ---
+            // 每次循环开始时，都读取当前最新的游戏状态，以应对用户手动操作
+            const currentGrid = gameState.grid; 
             
-            gameState.endX = row;
-            gameState.endY = col;
+            // 1. 寻找当前状态下的最佳（3步深度，A*启发式）移动
+            const startTime = performance.now();
+            const bestStep = findBest3StepMove(currentGrid); 
+            const endTime = performance.now();
             
-            const minRow = Math.min(gameState.startX, gameState.endX);
-            const maxRow = Math.max(gameState.startX, gameState.endX);
-            const minCol = Math.min(gameState.startY, gameState.endY);
-            const maxCol = Math.max(gameState.startY, gameState.endY);
+            if (!bestStep) {
+                console.log("找不到可以继续消除的组合，自动解决停止。");
+                break;
+            }
+
+            const { move } = bestStep;
+            const { r1, c1, r2, c2 } = move;
+            
+            // 2. 模拟操作和执行
+            
+            // A. 模拟 SelectionBox 效果
+            highlightSuggestion(r1, c1, r2, c2); 
+            
+            // B. 模拟 SelectedCells 效果 (用于消除)
+            const minRow = Math.min(r1, r2);
+            const maxRow = Math.max(r1, r2);
+            const minCol = Math.min(c1, c2);
+            const maxCol = Math.max(c1, c2);
             
             gameState.selectedCells = [];
             for (let i = minRow; i <= maxRow; i++) {
                 for (let j = minCol; j <= maxCol; j++) {
                     if (gameState.grid[i][j].value !== 0) {
+                        const cellEl = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
+                        if (cellEl) cellEl.classList.add('selected');
                         gameState.selectedCells.push([i, j]);
                     }
                 }
             }
-            updateSelectionBox();
-            updateSelectedCells();
-        }
-
-        function updateSelectionBox() {
-            const startCell = document.querySelector(`.cell[data-row="${gameState.startX}"][data-col="${gameState.startY}"]`);
-            const endCell = document.querySelector(`.cell[data-row="${gameState.endX}"][data-col="${gameState.endY}"]`);
             
-            if (!startCell || !endCell) return;
+            // C. 停顿 0.2 秒
+            await sleep(200); 
+
+            // D. 如果用户在停顿期间点击了“停止自动”，则退出
+            if (!isAutoSolving) break;
             
-            const startRect = startCell.getBoundingClientRect();
-            const endRect = endCell.getBoundingClientRect();
-            const gridRect = gridElement.getBoundingClientRect();
+            // E. 执行消除逻辑 (会更新 gameState.grid 和 gameState.score)
+            eliminateCells(); 
             
-            const left = Math.min(startRect.left, endRect.left) - gridRect.left;
-            const top = Math.min(startRect.top, endRect.top) - gridRect.top;
-            const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth; 
-            const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight;
+            // F. 清除高亮
+            clearHighlightSuggestion(); 
             
-            selectionBox.style.left = `${left}px`;
-            selectionBox.style.top = `${top}px`;
-            selectionBox.style.width = `${width}px`;
-            selectionBox.style.height = `${height}px`;
-        }
-
-        function updateSelectedCells() {
-            document.querySelectorAll('.cell.selected').forEach(cell => {
-                cell.classList.remove('selected');
-            });
-            gameState.selectedCells.forEach(([row, col]) => {
-                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) cell.classList.add('selected');
-            });
-        }
-
-        function endSelection() {
-            selectionBox.style.display = 'none';
+            // G. 等待消除特效完成
+            await sleep(300); 
             
-            let sum = 0;
-            gameState.selectedCells.forEach(([row, col]) => {
-                sum += gameState.grid[row][col].value;
-            });
+            // H. 重新渲染网格
+            renderGrid(); 
             
-            if (sum === 10) {
-                eliminateCells();
-            } else {
-                document.querySelectorAll('.cell.selected').forEach(cell => {
-                    cell.classList.remove('selected');
-                });
-            }
-            
-            gameState.isSelecting = false;
-            gameState.selectedCells = [];
-        }
-
-		function eliminateCells() {
-			gameState.selectedCells.forEach(([row, col]) => {
-				gameState.grid[row][col].value = 0;
-				const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-				if (cell) {
-					// 触发消除特效
-					cell.classList.add('eliminated'); 
-					cell.classList.remove('selected'); 
-					setTimeout(() => {
-						cell.classList.remove('eliminated');
-						cell.textContent = '';
-						// >>>>> 关键修正：移除 'eliminated' 动画类后，添加 'empty-cell' 类 <<<<<
-						cell.classList.add('empty-cell'); 
-					}, 300);
-				}
-			});
-			gameState.score += gameState.selectedCells.length;
-			scoreElement.textContent = gameState.score;
-			setTimeout(() => {
-				checkGameOver();
-			}, 300);
-		}
-				
-		function checkGameOver() {
-			if (gameState.isChallengeMode) return;
-			
-			// 检查是否还有可消除的矩形区域
-			for (let startRow = 0; startRow < 16; startRow++) {
-				for (let startCol = 0; startCol < 10; startCol++) {
-					// 注意：外层循环可以保留 start/end 点不为 0 的检查，因为一个格子都没数字肯定不能消除
-					if (gameState.grid[startRow][startCol].value === 0) continue; 
-					
-					for (let endRow = startRow; endRow < 16; endRow++) {
-						for (let endCol = startCol; endCol < 10; endCol++) {
-							// end点也建议保留不为 0 的检查，提高一点效率
-							if (gameState.grid[endRow][endCol].value === 0) continue; 
-							
-							let sum = 0;
-							// *** 关键变化：移除 hasZero 变量及其所有相关逻辑 ***
-							
-							for (let i = startRow; i <= endRow; i++) {
-								for (let j = startCol; j <= endCol; j++) {
-									
-									// *** 这里不再检查值是否为 0 ***
-									sum += gameState.grid[i][j].value; 
-								}
-							}
-							
-							// 只要矩形区域内的数字之和为 10，就证明游戏未结束
-							if (sum === 10) { 
-								return; // 找到了一个可消除的矩形区域，游戏继续
-							}
-						}
-					}
-				}
-			}
-			
-			// 遍历所有矩形区域后没有找到和为 10 的组合，游戏结束
-			helpme();
-			alert("找不到可以继续消除的组合，游戏结束");
-			endGame();
-		}
-
-        function endGame() {
-            if (gameState.gameOver) return;
-            
-            gameState.gameOver = true;
-            clearInterval(gameState.timer);
-            
-            const endTime = new Date();
-            const timeTaken = gameState.isChallengeMode 
-                ? gameState.challengeTimeLimit - gameState.challengeTimeRemaining 
-                : Math.floor((endTime - gameState.startTime) / 1000);
-
-            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
-            const seconds = (timeTaken % 60).toString().padStart(2, '0');
-            
-            document.getElementById('finalScore').textContent = gameState.score;
-            document.getElementById('finalTime').textContent = `${minutes}:${seconds}`;
-            gameOverElement.style.display = 'block';
-            
-            const now = new Date();
-            const newRecord = {
-                score: gameState.score,
-                time: timeTaken,
-                isChallenge: gameState.isChallengeMode,
-                date: now.toISOString(),
-                difficulty: gameState.currentDifficulty 
-            };
-            gameState.allGameRecords.push(newRecord);
-            saveRecords();
-        }
-		
-		function helpme(){
-			if (gameState.gameOver || gameState.isSelecting) return;
-			
-			// 清除上次的帮助高亮
-			clearHighlightSuggestion(); 
-			
-			let foundSuggestion = false;
-
-			// 遍历所有可能的矩形区域 (与 checkGameOver 逻辑完全相同)
-			for (let startRow = 0; startRow < 16; startRow++) {
-				for (let startCol = 0; startCol < 10; startCol++) {
-					// 矩形区域必须至少包含一个数字
-					if (gameState.grid[startRow][startCol].value === 0) continue; 
-					
-					for (let endRow = startRow; endRow < 16; endRow++) {
-						for (let endCol = startCol; endCol < 10; endCol++) {
-							if (gameState.grid[endRow][endCol].value === 0) continue; 
-							
-							let sum = 0;
-							
-							// 内部循环计算矩形区域的和
-							for (let i = startRow; i <= endRow; i++) {
-								for (let j = startCol; j <= endCol; j++) {
-									sum += gameState.grid[i][j].value; 
-								}
-							}
-							
-							// 找到和为 10 的组合
-							if (sum === 10) { 
-								highlightSuggestion(startRow, startCol, endRow, endCol);
-								foundSuggestion = true;
-								return; // 找到第一个就退出
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		/**
-		 * 高亮建议区域（黄色虚线框）
-		 * @param {number} startRow, startCol - 矩形左上角
-		 * @param {number} endRow, endCol - 矩形右下角
-		 */
-		function highlightSuggestion(startRow, startCol, endRow, endCol) {
-			const startCell = document.querySelector(`.cell[data-row="${startRow}"][data-col="${startCol}"]`);
-			const endCell = document.querySelector(`.cell[data-row="${endRow}"][data-col="${endCol}"]`);
-
-			if (!startCell || !endCell) return;
-
-			const startRect = startCell.getBoundingClientRect();
-			const endRect = endCell.getBoundingClientRect();
-			const gridRect = gridElement.getBoundingClientRect();
-
-			// 计算黄色虚线框的尺寸和位置
-			const left = Math.min(startRect.left, endRect.left) - gridRect.left;
-			const top = Math.min(startRect.top, endRect.top) - gridRect.top;
-			const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth + 8; 
-			const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight + 8;
-
-			selectionBox.style.left = `${left}px`;
-			selectionBox.style.top = `${top}px`;
-			selectionBox.style.width = `${width}px`;
-			selectionBox.style.height = `${height}px`;
-			
-			// 添加黄色虚线类，并显示
-			selectionBox.classList.add('help-selection');
-			selectionBox.style.display = 'block';
-
-			// 自动清除高亮（可选，保持干净）
-			setTimeout(clearHighlightSuggestion, 5000); // 5秒后自动清除
-		}
-		
-		/**
-		 * 清除黄色虚线框
-		 */
-		function clearHighlightSuggestion() {
-			selectionBox.classList.remove('help-selection');
-			selectionBox.style.display = 'none';
-		}
-
-        // --- 时间/格式化 (保持不变) ---
-
-        function updateTime() {
-            if (!gameState.startTime || gameState.gameOver) return;
-            const currentTime = new Date();
-            const timeTaken = Math.floor((currentTime - gameState.startTime) / 1000);
-            const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
-            const seconds = (timeTaken % 60).toString().padStart(2, '0');
-            document.getElementById('time').textContent = `${minutes}:${seconds}`;
-        }
-
-        function updateChallengeTime() {
-            if (gameState.gameOver) return;
-            gameState.challengeTimeRemaining--;
-            const minutes = Math.floor(gameState.challengeTimeRemaining / 60).toString().padStart(2, '0');
-            const seconds = (gameState.challengeTimeRemaining % 60).toString().padStart(2, '0');
-            document.getElementById('time').textContent = `${minutes}:${seconds}`;
-            if (gameState.challengeTimeRemaining <= 0) {
-                endGame();
-            }
+            stepCount++;
         }
         
-        function formatRecordDate(isoString) {
-            const date = new Date(isoString);
-            const Y = date.getFullYear();
-            const M = (date.getMonth() + 1).toString().padStart(2, '0');
-            const D = date.getDate().toString().padStart(2, '0');
-            const h = date.getHours().toString().padStart(2, '0');
-            const m = date.getMinutes().toString().padStart(2, '0');
-            const s = date.getSeconds().toString().padStart(2, '0');
-            return `${Y}-${M}-${D} ${h}:${m}:${s}`;
-        }
+        // 自动解决结束后重置标志
+        isAutoSolving = false;
+        document.getElementById('autoBtn').textContent = '自动';
+        console.log(`自动解决完成，共执行 ${stepCount} 步。`);
+    }
 
-        // --- 排行榜显示 (使用 CSS Class 替代内联样式) ---
 
-        function showLeaderboard(mode, showAll) {
-             let records = [...gameState.allGameRecords];
-            records.sort((a, b) => b.score - a.score || a.time - b.time);
-            
-            if (mode === 'challenge') {
-                records = records.filter(record => record.isChallenge);
-            } else if (mode === 'normal') {
-                records = records.filter(record => !record.isChallenge);
-            }
-            
-            const recordsToShow = showAll ? records : records.slice(0, TOP_RECORDS_COUNT);
-
-            document.getElementById('toggleShowAll').textContent = showAll ? `仅显示前 ${TOP_RECORDS_COUNT} 条` : '显示全部记录';
-            document.getElementById('toggleShowAll').dataset.show = showAll ? 'all' : 'top10';
-            
-            leaderboardList.innerHTML = '';
-            
-            if (recordsToShow.length === 0) {
-                const item = document.createElement('li');
-                item.className = 'leaderboard-item';
-                item.innerHTML = '暂无记录';
-                leaderboardList.appendChild(item);
-            } else {
-                recordsToShow.forEach((record, index) => {
-                    const time = record.time;
-                    const minutes = Math.floor(time / 60).toString().padStart(2, '0');
-                    const seconds = (time % 60).toString().padStart(2, '0');
-                    const modeLabel = record.isChallenge ? '<span style="color:#e65100;">[挑战]</span>' : '<span style="color:#2196F3;">[普通]</span>';
-                    const formattedDate = record.date ? formatRecordDate(record.date) : '';
-                    const difficultyDisplay = record.difficulty !== undefined ? ` (难度: ${record.difficulty})` : '';
-
-                    const item = document.createElement('li');
-                    item.className = 'leaderboard-item'; // 使用 CSS 类
-                    item.innerHTML = `
-                        <div class="info">
-                            <span>${index + 1}. ${modeLabel} 分数: ${record.score}${difficultyDisplay}</span>
-                            <span>用时: ${minutes}:${seconds}</span>
-                        </div>
-                        <span class="date-time">${formattedDate}</span>
-                    `;
-                    leaderboardList.appendChild(item);
-                });
-            }
-            leaderboardModal.style.display = 'flex';
-        }
-
-        // --- 设置页面逻辑 (保持不变) ---
+    // --- 事件监听器 (添加 autoSolve 绑定) ---
+    function setupEventListeners() {
+        // 游戏控制
+        document.getElementById('restartBtn').addEventListener('click', () => { initGame(gameState.isChallengeMode); });
+        document.getElementById('newGameBtn').addEventListener('click', () => { initGame(false); });
+        document.getElementById('challengeBtn').addEventListener('click', () => { initGame(true); });
+        document.getElementById('endGameBtn').addEventListener('click', endGame);
+        document.getElementById('helpBtn').addEventListener('click', helpme);
+        document.getElementById('autoBtn').addEventListener('click', autoSolve); // <-- 绑定 autoSolve
         
-        function openSettingsModal() {
-            difficultySlider.value = gameState.currentDifficulty;
-            difficultyLevelDisplay.textContent = gameState.currentDifficulty;
-            settingsModal.style.display = 'flex';
-        }
-
-        function saveSettings() {
-            const newDifficulty = parseInt(difficultySlider.value);
-            
-            if (newDifficulty !== gameState.currentDifficulty) {
-                gameState.currentDifficulty = newDifficulty;
-                saveCurrentSettings();
-                alert(`难度已设置为 ${newDifficulty}。游戏将重新开始以应用新难度。`);
-                initGame(gameState.isChallengeMode); 
-            }
-            settingsModal.style.display = 'none';
-        }
+        // 排行榜控制
+        document.getElementById('leaderboardBtn').addEventListener('click', () => {
+            const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+            const showAll = document.getElementById('toggleShowAll').dataset.show === 'all';
+            showLeaderboard(activeMode, showAll);
+        });
+        document.getElementById('closeBtn').addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
         
-        // --- 事件监听器 (保持不变) ---
-        function setupEventListeners() {
-            // 游戏控制
-            document.getElementById('restartBtn').addEventListener('click', () => { initGame(gameState.isChallengeMode); });
-            document.getElementById('newGameBtn').addEventListener('click', () => { initGame(false); });
-            document.getElementById('challengeBtn').addEventListener('click', () => { initGame(true); });
-            document.getElementById('endGameBtn').addEventListener('click', endGame);
-			document.getElementById('helpBtn').addEventListener('click', helpme);
-            
-            // 排行榜控制
-            document.getElementById('leaderboardBtn').addEventListener('click', () => {
-                const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+        // 设置控制
+        document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => { settingsModal.style.display = 'none'; });
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        
+        // 难度滑块变化时更新显示
+        document.getElementById('difficultySlider').addEventListener('input', () => {
+            const level = parseInt(document.getElementById('difficultySlider').value);
+            document.getElementById('difficultyLevelDisplay').textContent = level;
+        });
+        
+        // 排行榜模式切换
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
                 const showAll = document.getElementById('toggleShowAll').dataset.show === 'all';
-                showLeaderboard(activeMode, showAll);
+                showLeaderboard(e.currentTarget.dataset.mode, showAll);
             });
-            document.getElementById('closeBtn').addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
-            
-            // 设置控制
-            document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
-            document.getElementById('closeSettingsBtn').addEventListener('click', () => { settingsModal.style.display = 'none'; });
-            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-            
-            // 难度滑块变化时更新显示
-            document.getElementById('difficultySlider').addEventListener('input', () => {
-                const level = parseInt(document.getElementById('difficultySlider').value);
-                document.getElementById('difficultyLevelDisplay').textContent = level;
-            });
-            
-            // 排行榜模式切换
-            modeBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
-                    const showAll = document.getElementById('toggleShowAll').dataset.show === 'all';
-                    showLeaderboard(e.currentTarget.dataset.mode, showAll);
-                });
-            });
+        });
 
-            // 排行榜显示全部/部分切换
-            document.getElementById('toggleShowAll').addEventListener('click', () => {
-                const currentState = document.getElementById('toggleShowAll').dataset.show;
-                const newState = currentState === 'top10' ? 'all' : 'top10';
-                const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
-                showLeaderboard(activeMode, newState === 'all');
-            });
-            
-            document.getElementById('clearLeaderboardBtn').addEventListener('click', clearLeaderboard);
+        // 排行榜显示全部/部分切换
+        document.getElementById('toggleShowAll').addEventListener('click', () => {
+            const currentState = document.getElementById('toggleShowAll').dataset.show;
+            const newState = currentState === 'top10' ? 'all' : 'top10';
+            const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
+            showLeaderboard(activeMode, newState === 'all');
+        });
+        
+        document.getElementById('clearLeaderboardBtn').addEventListener('click', clearLeaderboard);
 
-            // 触摸和鼠标事件监听
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd);
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
+        // 触摸和鼠标事件监听
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
 
-        // 初始化
-        function init() {
-            loadSettings();
-            loadRecords();
-            setupEventListeners();
-            initGame();
-        }
+    // 初始化
+    function init() {
+        loadSettings();
+        loadRecords();
+        setupEventListeners();
+        initGame();
+    }
 
-        // 启动游戏
-        init();
-    </script>
+    // 启动游戏
+    init();
+</script>
 </body>
 </html>
