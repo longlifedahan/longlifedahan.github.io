@@ -483,10 +483,9 @@
                 <button class="control-btn" id="saveMapBtn" style="flex: 1;">保存地图</button>
                 <button class="control-btn" id="loadMapBtn" style="flex: 1;">读取地图</button>
             </div>
-            <p>初始解(无需重启,增加耗时):<span id="initLevelDisplay">75</span></p>
+            <p>初始解(无需重启,增加耗时):<span id="initLevelDisplay">55</span></p>
             <input type="range" min="0" max="100" value="55" class="difficulty-slider" id="initSlider">
         </div>
-    </div>
 
     <script>
         // 【游戏状态和常量】
@@ -534,6 +533,7 @@
         };
         // 2.自动解决控制标志
         let isAutoSolving = false; 
+        let firstInit = true; // 标记是否为首次初始化
         // 3.获取DOM 元素
         const gridElement = document.getElementById('grid');
         const scoreElement = document.getElementById('score');
@@ -687,6 +687,7 @@
         // 1.生成初始地图
         function generateGrid() {
             let initVal = document.getElementById('initSlider').value;
+            let totalSum = 0; // 用于统计前面所有数字的和
             let count = 0;
             do{
                 const currentDifficulty = gameState.currentDifficulty;
@@ -694,18 +695,42 @@
                 for (let i = 0; i < ROWS; i++) {
                     const row = [];
                     for (let j = 0; j < COLS; j++) {
-                        row.push({
-                            value: generateRandomNumber(currentDifficulty),
-                        });
+                        // 判断是否是最后一行最后一列的单元格
+                        const isLastCell = i === ROWS - 1 && j === COLS - 1;
+                        let value;
+                        if (!isLastCell) {
+                            // 非最后一个单元格，正常生成并累加总和
+                            value = generateRandomNumber(currentDifficulty);
+                            totalSum += value;
+                        } else {
+                            // 最后一个单元格：计算互补值
+                            const remainder = totalSum % 10;
+                            // 计算需要的互补值（使总和能被10整除）
+                            const complement = remainder === 0 ? 0 : 10 - remainder;
+                            
+                            // 根据规则处理：1-9用互补值，0则随机生成
+                            if (complement >= 1 && complement <= 9) {
+                                value = complement;
+                            } else {
+                                value = generateRandomNumber(currentDifficulty);
+                            }
+                            
+                            // 累加最后一个值到总和（可选，用于日志）
+                            totalSum += value;
+                        }
+                        row.push({ value: value });
                     }
                     gameState.grid.push(row);
                 }
                 // 确保初始地图有足够的可消除空间
                 count = count + 1;
                 console.log("初始可消除空间:", testGrid(), "尝试次数:", count);
+                // 适当降低初始解数要求，防止死循环
                 if(count%10000===0){
-                    initVal --;
-                    console.log("降低初始解数要求为:", initVal);
+                    if(initVal>=95-parseInt(document.getElementById('difficultySlider').value)){
+                        initVal --;
+                        console.log("降低初始解数要求为:", initVal);
+                    }
                 }
             }while(testGrid()<initVal);
         }
@@ -742,11 +767,21 @@
             document.getElementById('finalTime').textContent = '00:00';
             gameOverElement.style.display = 'none';
             selectionBox.style.display = 'none';
-            
+
             generateGrid();
+            
             // 保存原始地图的深拷贝
             gameState.originalGrid = JSON.parse(JSON.stringify(gameState.grid));
             renderGrid();
+            
+            if(firstInit){
+                alert("游戏规则：框选数字，达到10消除，普通模式无时间限制，挑战模式3分钟内尽可能多得分。设置中可调整难度和初始解数。祝你好运！");
+                firstInit = false;
+            }else{
+                if(testGrid()>=80){
+                    alert("地图生成完毕，初始可消除空间:"+ testGrid());
+                }
+            }
         }
         // 3.渲染游戏地图
         function renderGrid() {
