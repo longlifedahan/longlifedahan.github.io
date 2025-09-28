@@ -286,7 +286,7 @@
 		}
 
 		.difficulty-slider{
-			width: 200px;
+			width: 250px;
 		}
 
 		/* 排行榜控制区域 */
@@ -464,7 +464,7 @@
                 <h2>游戏设置</h2>
                 <button class="close-btn" id="closeSettingsBtn">&times;</button>
             </div>
-            <p style="margin-bottom: 10px;">当前难度等级: <span id="difficultyLevelDisplay">10</span></p>
+            <p>当前难度等级: <span id="difficultyLevelDisplay">10</span></p>
             <input type="range" min="0" max="10" value="10" class="difficulty-slider" id="difficultySlider">
             <div>
 				<button class="control-btn" id="saveSettingsBtn" style="width: 100%; margin-top: 15px;">保存难度设置并重启</button>
@@ -473,16 +473,18 @@
             <p>搜索深度(无需重启)</p>
             <select id="searchDepthSelect" style="margin-top: 15px; width: 100%;">
                 <option value="1" selected>搜索深度: 1 (快速)</option>
-                <option value="2" selected>搜索深度: 1 (慢速)</option>
+                <option value="2">搜索深度: 1 (慢速)</option>
                 <option value="3">搜索深度: 2 (快速)</option>
                 <option value="4">搜索深度: 2 (慢速)</option>
             </select>
             <!-- 新增保存/读取地图按钮 -->
-             <p>保存/读取地图(不含操作)</p>
+            <p>保存/读取地图(不含操作)</p>
             <div style="margin: 15px 0; display: flex; gap: 10px;">
                 <button class="control-btn" id="saveMapBtn" style="flex: 1;">保存地图</button>
                 <button class="control-btn" id="loadMapBtn" style="flex: 1;">读取地图</button>
             </div>
+            <p>初始解(无需重启,增加耗时):<span id="initLevelDisplay">75</span></p>
+            <input type="range" min="0" max="100" value="55" class="difficulty-slider" id="initSlider">
         </div>
     </div>
 
@@ -545,6 +547,8 @@
         const settingsModal = document.getElementById('settingsModal');
         const difficultySlider = document.getElementById('difficultySlider');
         const difficultyLevelDisplay = document.getElementById('difficultyLevelDisplay');
+        const initSlider = document.getElementById('initSlider');
+        const initLevelDisplay = document.getElementById('initLevelDisplay');
         const selectionBox = document.getElementById('selectionBox');
 
         // 【事件监听器 (添加 autoSolve 绑定) 】
@@ -574,6 +578,12 @@
             document.getElementById('difficultySlider').addEventListener('input', () => {
                 const level = parseInt(document.getElementById('difficultySlider').value);
                 document.getElementById('difficultyLevelDisplay').textContent = level;
+            });
+
+            // 初始解数滑块变化时更新显示
+            document.getElementById('initSlider').addEventListener('input', () => {
+                const level = parseInt(document.getElementById('initSlider').value);
+                document.getElementById('initLevelDisplay').textContent = level;
             });
             
             // 排行榜模式切换
@@ -676,18 +686,34 @@
         }
         // 1.生成初始地图
         function generateGrid() {
-            const currentDifficulty = gameState.currentDifficulty;
-            gameState.grid = []; 
-            for (let i = 0; i < ROWS; i++) {
-                const row = [];
-                for (let j = 0; j < COLS; j++) {
-                    row.push({
-                        value: generateRandomNumber(currentDifficulty),
-                    });
+            let initVal = document.getElementById('initSlider').value;
+            let count = 0;
+            do{
+                const currentDifficulty = gameState.currentDifficulty;
+                gameState.grid = []; 
+                for (let i = 0; i < ROWS; i++) {
+                    const row = [];
+                    for (let j = 0; j < COLS; j++) {
+                        row.push({
+                            value: generateRandomNumber(currentDifficulty),
+                        });
+                    }
+                    gameState.grid.push(row);
                 }
-                gameState.grid.push(row);
-            }
+                // 确保初始地图有足够的可消除空间
+                count = count + 1;
+                console.log("初始可消除空间:", testGrid(), "尝试次数:", count);
+                if(count%10000===0){
+                    initVal --;
+                    console.log("降低初始解数要求为:", initVal);
+                }
+            }while(testGrid()<initVal);
         }
+
+        function testGrid(){
+            return findAllPossibleMoves(gameState.grid).length;
+        }
+
         // 2.初始化游戏
         function initGame(isChallenge = false) {
             gameState.score = 0;
@@ -1403,9 +1429,6 @@
                     alert("没有保存的地图");
                     return false;
                 }
-                // 重新初始化游戏状态
-                initGame(gameState.isChallengeMode); 
-                
                 const mapData = JSON.parse(savedData);
                 gameState.grid = JSON.parse(JSON.stringify(mapData.grid));
                 gameState.currentDifficulty = mapData.difficulty;
