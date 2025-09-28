@@ -169,6 +169,13 @@
 			pointer-events: none;
 			display: none;
 		}
+		
+		/* --- 新增：帮助模式下的黄色虚线框样式 --- */
+		.selection-box.help-selection {
+			border: 3px dashed yellow; /* 醒目的黄色虚线 */
+			/* 提升层级，确保在其他元素之上 */
+			z-index: 999; 
+		}
 
 		/* --- 底部控制按钮 CSS --- */
 		.controls {
@@ -213,6 +220,10 @@
 
 		.control-btn.end-game:hover {
 			background-color: #d32f2f;
+		}
+		
+		.control-btn.help {
+			background-color: green;
 		}
 
 		/* --- 模态框和排行榜样式 --- */
@@ -395,11 +406,11 @@
         <div class="score-time">
             <div class="score">得分: <span id="score">0</span></div>
             <div class="time">时间: <span id="time">00:00</span></div>
-            <div class="mode-indicator" id="modeIndicator">普通模式 (难度: 10)</div>
+            <div class="mode-indicator" id="modeIndicator">普通(10)</div>
         </div>
         <div class="header-buttons">
             <button class="header-btn" id="settingsBtn">设置</button> 
-            <button class="header-btn" id="leaderboardBtn">排行榜</button>
+            <button class="header-btn" id="leaderboardBtn">排行</button>
         </div>
     </div>
     
@@ -415,9 +426,10 @@
     </div>
     
     <div class="controls">
-        <button class="control-btn" id="newGameBtn">开始普通模式</button>
-        <button class="control-btn challenge" id="challengeBtn">开始挑战模式</button>
-        <button class="control-btn end-game" id="endGameBtn">结束游戏</button>
+        <button class="control-btn" id="newGameBtn">普通模式</button>
+        <button class="control-btn challenge" id="challengeBtn">挑战模式</button>
+        <button class="control-btn end-game" id="endGameBtn">结束</button>
+		<button class="control-btn help" id="helpBtn">帮助</button>
     </div>
     
     <div class="modal" id="leaderboardModal">
@@ -608,8 +620,8 @@
             gameState.isChallengeMode = isChallenge;
             gameState.startTime = new Date();
             
-            const modeName = isChallenge ? "挑战模式" : "普通模式";
-            document.getElementById('modeIndicator').textContent = `${modeName} (难度: ${gameState.currentDifficulty})`;
+            const modeName = isChallenge ? "挑战" : "普通";
+            document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
             document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
             
             scoreElement.textContent = '0';
@@ -722,6 +734,8 @@
             gameState.endX = row;
             gameState.endY = col;
             gameState.selectedCells = [[row, col]];
+			// *** 新增：清除任何帮助高亮 ***
+			clearHighlightSuggestion(); 
             updateSelectionBox();
             selectionBox.style.display = 'block';
             updateSelectedCells();
@@ -824,38 +838,44 @@
 				checkGameOver();
 			}, 300);
 		}
-        
-        function checkGameOver() {
-            if (gameState.isChallengeMode) return;
-            
-            // 检查是否还有可消除的矩形区域
-            for (let startRow = 0; startRow < 16; startRow++) {
-                for (let startCol = 0; startCol < 10; startCol++) {
-                    if (gameState.grid[startRow][startCol].value === 0) continue;
-                    for (let endRow = startRow; endRow < 16; endRow++) {
-                        for (let endCol = startCol; endCol < 10; endCol++) {
-                            if (gameState.grid[endRow][endCol].value === 0) continue;
-                            let sum = 0;
-                            let hasZero = false;
-                            for (let i = startRow; i <= endRow; i++) {
-                                for (let j = startCol; j <= endCol; j++) {
-                                    if (gameState.grid[i][j].value === 0) {
-                                        hasZero = true;
-                                        break;
-                                    }
-                                    sum += gameState.grid[i][j].value;
-                                }
-                                if (hasZero) break;
-                            }
-                            if (sum === 10 && !hasZero) {
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-            endGame();
-        }
+				
+		function checkGameOver() {
+			if (gameState.isChallengeMode) return;
+			
+			// 检查是否还有可消除的矩形区域
+			for (let startRow = 0; startRow < 16; startRow++) {
+				for (let startCol = 0; startCol < 10; startCol++) {
+					// 注意：外层循环可以保留 start/end 点不为 0 的检查，因为一个格子都没数字肯定不能消除
+					if (gameState.grid[startRow][startCol].value === 0) continue; 
+					
+					for (let endRow = startRow; endRow < 16; endRow++) {
+						for (let endCol = startCol; endCol < 10; endCol++) {
+							// end点也建议保留不为 0 的检查，提高一点效率
+							if (gameState.grid[endRow][endCol].value === 0) continue; 
+							
+							let sum = 0;
+							// *** 关键变化：移除 hasZero 变量及其所有相关逻辑 ***
+							
+							for (let i = startRow; i <= endRow; i++) {
+								for (let j = startCol; j <= endCol; j++) {
+									
+									// *** 这里不再检查值是否为 0 ***
+									sum += gameState.grid[i][j].value; 
+								}
+							}
+							
+							// 只要矩形区域内的数字之和为 10，就证明游戏未结束
+							if (sum === 10) { 
+								return; // 找到了一个可消除的矩形区域，游戏继续
+							}
+						}
+					}
+				}
+			}
+			
+			// 遍历所有矩形区域后没有找到和为 10 的组合，游戏结束
+			endGame();
+		}
 
         function endGame() {
             if (gameState.gameOver) return;
@@ -886,6 +906,87 @@
             gameState.allGameRecords.push(newRecord);
             saveRecords();
         }
+		
+		function helpme(){
+			if (gameState.gameOver || gameState.isSelecting) return;
+			
+			// 清除上次的帮助高亮
+			clearHighlightSuggestion(); 
+			
+			let foundSuggestion = false;
+
+			// 遍历所有可能的矩形区域 (与 checkGameOver 逻辑完全相同)
+			for (let startRow = 0; startRow < 16; startRow++) {
+				for (let startCol = 0; startCol < 10; startCol++) {
+					// 矩形区域必须至少包含一个数字
+					if (gameState.grid[startRow][startCol].value === 0) continue; 
+					
+					for (let endRow = startRow; endRow < 16; endRow++) {
+						for (let endCol = startCol; endCol < 10; endCol++) {
+							if (gameState.grid[endRow][endCol].value === 0) continue; 
+							
+							let sum = 0;
+							
+							// 内部循环计算矩形区域的和
+							for (let i = startRow; i <= endRow; i++) {
+								for (let j = startCol; j <= endCol; j++) {
+									sum += gameState.grid[i][j].value; 
+								}
+							}
+							
+							// 找到和为 10 的组合
+							if (sum === 10) { 
+								highlightSuggestion(startRow, startCol, endRow, endCol);
+								foundSuggestion = true;
+								return; // 找到第一个就退出
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		/**
+		 * 高亮建议区域（黄色虚线框）
+		 * @param {number} startRow, startCol - 矩形左上角
+		 * @param {number} endRow, endCol - 矩形右下角
+		 */
+		function highlightSuggestion(startRow, startCol, endRow, endCol) {
+			const startCell = document.querySelector(`.cell[data-row="${startRow}"][data-col="${startCol}"]`);
+			const endCell = document.querySelector(`.cell[data-row="${endRow}"][data-col="${endCol}"]`);
+
+			if (!startCell || !endCell) return;
+
+			const startRect = startCell.getBoundingClientRect();
+			const endRect = endCell.getBoundingClientRect();
+			const gridRect = gridElement.getBoundingClientRect();
+
+			// 计算黄色虚线框的尺寸和位置
+			const left = Math.min(startRect.left, endRect.left) - gridRect.left;
+			const top = Math.min(startRect.top, endRect.top) - gridRect.top;
+			const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth + 8; 
+			const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight + 8;
+
+			selectionBox.style.left = `${left}px`;
+			selectionBox.style.top = `${top}px`;
+			selectionBox.style.width = `${width}px`;
+			selectionBox.style.height = `${height}px`;
+			
+			// 添加黄色虚线类，并显示
+			selectionBox.classList.add('help-selection');
+			selectionBox.style.display = 'block';
+
+			// 自动清除高亮（可选，保持干净）
+			setTimeout(clearHighlightSuggestion, 5000); // 5秒后自动清除
+		}
+		
+		/**
+		 * 清除黄色虚线框
+		 */
+		function clearHighlightSuggestion() {
+			selectionBox.classList.remove('help-selection');
+			selectionBox.style.display = 'none';
+		}
 
         // --- 时间/格式化 (保持不变) ---
 
@@ -995,6 +1096,7 @@
             document.getElementById('newGameBtn').addEventListener('click', () => { initGame(false); });
             document.getElementById('challengeBtn').addEventListener('click', () => { initGame(true); });
             document.getElementById('endGameBtn').addEventListener('click', endGame);
+			document.getElementById('helpBtn').addEventListener('click', helpme);
             
             // 排行榜控制
             document.getElementById('leaderboardBtn').addEventListener('click', () => {
