@@ -58,13 +58,14 @@
 
         .score,
         .time {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             color: red;
         }
 
-        .mode-indicator {
-            font-size: 13px;
+        .mode-indicator,
+        .test-indicator {
+            font-size: 11px;
             padding: 3px 6px;
             border-radius: 4px;
             background-color: #e0e0e0;
@@ -81,7 +82,7 @@
         }
 
         .header-btn {
-            padding: 4px 8px;
+            padding: 4px 4px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -204,15 +205,15 @@
 
         .control-btn {
             flex-grow: 1;
-            padding: 10px 15px;
+            padding: 10px 5px;
             background-color: #2196F3;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 12px;
             transition: background-color 0.3s;
-            max-width: 180px;
+            max-width: 120px;
         }
 
         .control-btn:hover {
@@ -424,9 +425,10 @@
 <body>
     <div class="game-header">
         <div class="score-time">
-            <div class="score">分:<span id="score">0</span></div>
-            <div class="time">时:<span id="time">00:00</span></div>
+            <div class="score"><span id="score">0</span>分</div>
+            <div class="time">时<span id="time">00:00</span></div>
             <div class="mode-indicator" id="modeIndicator">普(10)</div>
+            <div class="test-indicator" id="testIndicator">度(0)</div>
         </div>
         <div class="header-buttons">
             <button class="header-btn" id="settingsBtn">设置</button>
@@ -749,7 +751,7 @@
                     if (possibleMoves > bestcount) {
                         bestcount = possibleMoves;
                         gameState.bestgrid = JSON.parse(JSON.stringify(gameState.grid));
-                    }else{
+                    } else {
                         gameState.grid = JSON.parse(JSON.stringify(gameState.bestgrid));
                     }
                     // 确保初始地图有足够的可消除空间
@@ -806,6 +808,8 @@
                 // 保存原始地图的深拷贝
                 gameState.originalGrid = JSON.parse(JSON.stringify(gameState.grid));
                 renderGrid();
+
+                document.getElementById('testIndicator').textContent = `度(${testGrid()})`;
 
                 if (firstInit) {
                     alert("游戏规则：框选数字，达到10消除，普通模式无时间限制，挑战模式3分钟内尽可能多得分。设置中可调整难度和初始解数。祝你好运！");
@@ -1007,6 +1011,7 @@
                 });
                 gameState.score += gameState.selectedCells.length;
                 scoreElement.textContent = gameState.score;
+                document.getElementById('testIndicator').textContent = `度(${testGrid()})`;
                 checkGameOver();
             }
             // 12.检查游戏是否结束        
@@ -1065,7 +1070,7 @@
                 // 查找第一个可消除的移动并高亮
                 const moves = findAllPossibleMoves(gameState.grid);
                 if (moves.length > 0) {
-                    const move = moves[0];
+                    const move = moves[Math.floor(Math.random() * moves.length)];
                     highlightSuggestion(move.r1, move.c1, move.r2, move.c2);
                     return;
                 }
@@ -1195,6 +1200,7 @@
                     alert(`难度已设置为 ${newDifficulty}。游戏将重新开始以应用新难度。`);
                     initGame(gameState.isChallengeMode);
                 }
+
                 settingsModal.style.display = 'none';
             }
 
@@ -1290,8 +1296,15 @@
                 const retentionBonus = smallCells / 5.0;
                 // 大数字惩罚 (P_big): 作为浮点数惩罚，影响平局决策
                 const bigPenalty = bigCells / 15.0;
+                // 自由度
+                let remainingDepth = document.getElementById('searchDepthSelect').value;
+                let possibleMoves = 0;
+                // 仅一阶搜索加入自由度辅助
+                if (remainingDepth === '1' || remainingDepth === '2') {
+                    possibleMoves = testGrid() / 10.0;
+                }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
-                return potentialScore + retentionBonus - bigPenalty;
+                return potentialScore + retentionBonus - bigPenalty + possibleMoves;
             }
 
             // 4.递归深度搜索，用于计算从当前状态开始的 N 步内能获得的最高分数估值。
@@ -1492,6 +1505,34 @@
             // 2.添加读取保存的地图的函数
             function loadSavedMap() {
                 try {
+                    // 初始化
+                    gameState.score = 0;
+                    gameState.gameOver = false;
+                    isChallenge = gameState.isChallengeMode;
+                    gameState.startTime = new Date();
+
+                    // 停止任何正在进行的自动解决进程
+                    if (isAutoSolving) autoSolve();
+
+                    const modeName = isChallenge ? "挑" : "普";
+                    document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
+                    document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
+
+                    scoreElement.textContent = '0';
+
+                    if (gameState.timer) clearInterval(gameState.timer);
+                    if (isChallenge) {
+                        gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
+                        gameState.timer = setInterval(updateChallengeTime, 1000);
+                    } else {
+                        gameState.timer = setInterval(updateTime, 1000);
+                    }
+
+                    document.getElementById('finalScore').textContent = '0';
+                    document.getElementById('finalTime').textContent = '00:00';
+                    gameOverElement.style.display = 'none';
+                    selectionBox.style.display = 'none';
+                    // 读取并更新
                     const savedData = localStorage.getItem(SAVED_MAP_KEY);
                     if (!savedData) {
                         alert("没有保存的地图");
