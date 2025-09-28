@@ -5,331 +5,389 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>数字消除游戏</title>
     <style>
-        * {
-            touch-action: manipulation;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-        
-        /* 核心适配: Flexbox 垂直布局，不再强制 100vh 以避免溢出问题 */
-        body {
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; /* 保持内容水平居中 */
-            background-color: #f0f0f0;
-            padding: 15px;
-            min-height: 100vh; /* 确保内容少时占满屏幕 */
-            overflow-y: auto; /* 允许在内容过多时垂直滚动 */
-            overflow-x: hidden; /* 防止水平滚动 */
-            overscroll-behavior: contain;
-        }
-        
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            flex-shrink: 0; /* 防止被收缩 */
-        }
-        
-        .score-time {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .score, .time {
-            font-size: 16px;
-            font-weight: bold;
+		* {
+			touch-action: manipulation;
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Arial', sans-serif;
+		}
+
+		/* 禁用下拉刷新/上滑刷新 */
+		html, body {
+			overscroll-behavior: none; 
+		}
+
+		body {
+			display: flex; 
+			flex-direction: column; 
+			align-items: center; 
+			/* (1) 背景改成深绿 */
+			background-color: #006400; /* 深绿色 */
+			padding: 15px;
+			min-height: 100vh;
+			overflow-y: auto; 
+			overflow-x: hidden; 
+		}
+
+		/* --- 头部区域 --- */
+		.game-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			width: 100%;
+			max-width: 600px;
+			margin-bottom: 5px;
+			padding: 10px;
+			background-color: #fff;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			flex-shrink: 0; 
+		}
+
+		.score-time {
+			display: flex;
+			gap: 15px;
+			flex-wrap: wrap;
+		}
+
+		.score, .time {
+			font-size: 16px;
+			font-weight: bold;
 			color: red;
-        }
-        
-        .mode-indicator {
-            font-size: 12px;
-            padding: 3px 6px;
-            border-radius: 4px;
-            background-color: #e0e0e0;
-        }
-        
-        .mode-indicator.challenge {
-            background-color: #ffe0b2;
-            color: #e65100;
-        }
-        
-        .leaderboard-btn {
-            padding: 6px 12px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            font-size: 14px;
-        }
-        
-        .leaderboard-btn:hover {
-            background-color: #45a049;
-        }
-        
-        /* 关键修正: 使用 min() 确保网格宽度适应屏幕，且高度不会溢出 */
-        .game-container {
-            position: relative;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            
-            /* 设定宽度：取 600px、视口宽度（减去边距）、以及高度约束下的最大宽度（高 / 1.6）的最小值 */
-            width: min(
-                600px, 
-                calc(100vw - 30px),
-                calc((100vh - 150px) / 1.6) /* 1.6 = 16/10 比例。150px 是估算的 header/controls/padding 占用空间 */
-            );
-            
-            /* 设定高度：保持 10:16 比例，与 width 联用确保正方形 */
-            aspect-ratio: 10 / 16;
-            
-            overflow: hidden; 
-            margin-bottom: 15px;
-            flex-shrink: 0; /* 防止被收缩 */
-        }
-        
-        /* 网格: 占满 game-container 且不需要额外的比例设置 */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 2px;
-            background-color: gray;
-            
-            width: 100%;
-            height: 100%; /* 占满 game-container 的高度 */
-        }
-        
-        /* 单元格: 单元格由网格比例自动确定为正方形 */
-        .cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: lightgreen;
-            font-size: clamp(10px, 3.5vw, 16px); 
-            font-weight: bold;
-            cursor: default;
-            user-select: none;
-        }
-        
-        .cell.selected {
-            color: red;
-            background-color: #f8f8f8;
-        }
-        
-        .cell.eliminated {
-            animation: eliminate 0.3s ease-out;
-        }
-        
-        @keyframes eliminate {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.5; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-        
-        .selection-box {
-            position: absolute;
-            border: 2px dashed #ffcc00;
-            background-color: rgba(255, 204, 0, 0.1);
-            pointer-events: none;
-            display: none;
-            z-index: 10;
-        }
-        
-        .controls {
-            margin-top: 0;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-            max-width: 600px;
-            flex-shrink: 0;
-        }
-        
-        .control-btn {
-            padding: 8px 12px;
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            font-size: 14px;
-            flex: 1;
-            min-width: 60px;
-        }
-        
-        .control-btn:hover {
-            background-color: #0b7dda;
-        }
-        
-        .control-btn.challenge {
-            background-color: #ff9800;
-        }
-        
-        .control-btn.challenge:hover {
-            background-color: #e65100;
-        }
-        
-        .control-btn.end-game {
-            background-color: #f44336;
-        }
-        
-        .control-btn.end-game:hover {
-            background-color: #d32f2f;
-        }
-        
-        /* Modal and Leaderboard Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px; /* 调整宽度以容纳更多内容 */
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        
-        .leaderboard-list {
-            list-style: none;
-            font-size: 14px;
-        }
-        
-        .leaderboard-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            gap: 10px; /* 增加间隔 */
-            flex-wrap: wrap; /* 允许换行 */
-        }
+		}
 
-        .leaderboard-item .info {
-            display: flex;
-            gap: 15px;
-        }
+		.mode-indicator {
+			font-size: 12px;
+			padding: 3px 6px;
+			border-radius: 4px;
+			background-color: #e0e0e0;
+		}
 
-        .leaderboard-item .date-time {
-            font-size: 12px;
-            color: #666;
-            min-width: 150px; /* 确保时间完整显示 */
-            text-align: right;
-        }
-        
-        .sort-controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-        }
+		.mode-indicator.challenge {
+			background-color: #ffe0b2;
+			color: #e65100;
+		}
 
-        /* 新增：清空按钮样式 */
-        .clear-btn {
-            padding: 5px 8px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-			margin-left: auto;
-        }
+		.header-buttons { 
+			display: flex;
+			gap: 8px;
+		}
 
-        .mode-btn, .sort-btn, .toggle-btn {
-            padding: 5px 8px;
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        
-        .mode-btn.active {
-            background-color: #4CAF50;
-            color: white;
-            border-color: #4CAF50;
-        }
-        
-        .sort-btn.active {
-            background-color: #2196F3;
-            color: white;
-            border-color: #2196F3;
-			visibility: hidden; 
-        }
+		.header-btn {
+			padding: 6px 12px;
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			transition: background-color 0.3s;
+			font-size: 14px;
+		}
 
-        .toggle-btn.active {
-            background-color: #e91e63; 
-            color: white;
-            border-color: #e91e63;
-        }
-        
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0,0,0,0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            display: none;
-            width: 80%;
-        }
-        
-        .restart-btn {
-            margin-top: 15px;
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+		.header-btn:hover {
+			background-color: #45a049;
+		}
 
+		/* --- 游戏网格区域 --- */
+		.game-container {
+			position: relative;
+			/* (2) 黑框和方块间有一定间隙 */
+			border: 5px solid black; 
+			padding: 5px; 
+			background-color: transparent; 
+			box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+			
+			width: min(
+				600px, 
+				calc(100vw - 30px),
+				calc((100vh - 150px) / 1.6) 
+			);
+			
+			aspect-ratio: 10 / 16;
+			
+			overflow: hidden; 
+			margin-bottom: 5px;
+			flex-shrink: 0; 
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(10, 1fr);
+			grid-template-rows: repeat(16, 1fr); 
+			gap: 5px; 
+			background-color: transparent; 
+			width: 100%;
+			height: 100%; 
+		}
+
+		.cell {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			/* 默认方块样式 */
+			background-color: white; 
+			color: black; 
+			font-size: clamp(10px, 3.5vw, 16px); 
+			font-weight: bold;
+			cursor: default;
+			user-select: none;
+			transition: background-color 0.1s;
+			border-radius: 4px; 
+		}
+
+		/* 消除后的空方块样式：无背景，无内容颜色 */
+		.cell.empty-cell {
+			background-color: transparent !important; /* 强制无背景 */
+			color: transparent !important; /* 确保无数字残留 */
+		}
+
+		.cell.selected {
+			color: red; 
+			background-color: #f8f8f8; 
+		}
+
+		/* 消除特效 CSS */
+		.cell.eliminated {
+			animation: fadeOut 0.3s forwards;
+			background-color: white; 
+		}
+
+		@keyframes fadeOut {
+			0% { transform: scale(1); opacity: 1; background-color: white; }
+			/* 最终状态透明 */
+			100% { 
+				transform: scale(0.1); 
+				opacity: 0; 
+				background-color: transparent; 
+			} 
+		}
+		/* 其他 CSS 保持不变 */
+		.selection-box {
+			position: absolute;
+			border: 2px dashed red;
+			pointer-events: none;
+			display: none;
+		}
+
+		/* --- 底部控制按钮 CSS --- */
+		.controls {
+			display: flex;
+			gap: 10px;
+			margin-top: 5px;
+			width: 100%;
+			max-width: 600px;
+			justify-content: center;
+			flex-wrap: wrap;
+			flex-shrink: 0;
+		}
+
+		.control-btn {
+			flex-grow: 1;
+			padding: 10px 15px;
+			background-color: #2196F3;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 16px;
+			transition: background-color 0.3s;
+			max-width: 180px;
+		}
+
+		.control-btn:hover {
+			background-color: #1e87db;
+		}
+
+		.control-btn.challenge {
+			background-color: #FF9800;
+		}
+
+		.control-btn.challenge:hover {
+			background-color: #fb8c00;
+		}
+
+		.control-btn.end-game {
+			background-color: #f44336;
+		}
+
+		.control-btn.end-game:hover {
+			background-color: #d32f2f;
+		}
+
+		/* --- 模态框和排行榜样式 --- */
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.5);
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.modal-content {
+			background-color: white;
+			padding: 20px;
+			border-radius: 8px;
+			width: 90%;
+			max-width: 600px;
+			max-height: 80vh;
+			overflow-y: auto;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+		}
+
+		.modal-content2 {
+			background-color: white;
+			padding: 20px;
+			border-radius: 8px;
+			width: 90%;
+			max-width: 300px;
+			max-height: 80vh;
+			overflow-y: auto;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 15px;
+			border-bottom: 1px solid #ddd;
+			padding-bottom: 10px;
+		}
+
+		.close-btn {
+			background: none;
+			border: none;
+			font-size: 28px;
+			cursor: pointer;
+			color: #555;
+			transition: color 0.3s;
+		}
+
+		.close-btn:hover {
+			color: #f44336;
+		}
+
+		.difficulty-slider{
+			width: 200px;
+		}
+
+		/* 排行榜控制区域 */
+		.sort-controls {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 10px;
+			margin-bottom: 15px;
+			flex-wrap: wrap;
+		}
+
+		.sort-left, .sort-right {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		/* 模式/排序/切换按钮基础样式 */
+		.mode-btn, .sort-btn, .toggle-btn {
+			padding: 5px 8px;
+			background-color: #f0f0f0;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 13px;
+			transition: all 0.2s;
+		}
+
+		.mode-btn.active, .sort-btn.active, .toggle-btn:hover {
+			background-color: #4CAF50;
+			color: white;
+			border-color: #4CAF50;
+		}
+
+		/* 清空按钮 */
+		.clear-btn {
+			padding: 5px 8px;
+			background-color: #f44336;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 13px;
+			transition: background-color 0.3s;
+		}
+		.clear-btn:hover {
+			background-color: #d32f2f;
+		}
+
+		/* 排行榜列表 */
+		.leaderboard-list {
+			list-style: none;
+			padding: 0;
+		}
+
+		.leaderboard-item {
+			padding: 10px 0;
+			border-bottom: 1px solid #eee;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 10px;
+			font-size: 14px;
+		}
+
+		.leaderboard-item:last-child {
+			border-bottom: none;
+		}
+
+		.leaderboard-item .info {
+			display: flex;
+			gap: 15px;
+			flex-wrap: wrap;
+			font-weight: bold;
+		}
+
+		.leaderboard-item .date-time {
+			font-size: 12px;
+			color: #666;
+			min-width: 150px;
+			text-align: right;
+			flex-shrink: 0;
+		}
+
+		/* 游戏结束界面 */
+		.game-over {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(255, 255, 255, 0.95);
+			display: none;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			font-size: 24px;
+			font-weight: bold;
+		}
+
+		.restart-btn {
+			margin-top: 15px;
+			padding: 10px 20px;
+			background-color: #2196F3;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 18px;
+		}
     </style>
 </head>
 <body>
@@ -337,9 +395,12 @@
         <div class="score-time">
             <div class="score">得分: <span id="score">0</span></div>
             <div class="time">时间: <span id="time">00:00</span></div>
-            <div class="mode-indicator" id="modeIndicator">普通模式</div>
+            <div class="mode-indicator" id="modeIndicator">普通模式 (难度: 10)</div>
         </div>
-        <button class="leaderboard-btn" id="leaderboardBtn">排行榜</button>
+        <div class="header-buttons">
+            <button class="header-btn" id="settingsBtn">设置</button> 
+            <button class="header-btn" id="leaderboardBtn">排行榜</button>
+        </div>
     </div>
     
     <div class="game-container">
@@ -366,19 +427,37 @@
                 <button class="close-btn" id="closeBtn">&times;</button>
             </div>
             <div class="sort-controls">
-                <button class="mode-btn active" data-mode="all">全部记录</button>
-                <button class="mode-btn" data-mode="challenge">挑战榜</button>
-                <button class="mode-btn" data-mode="normal">普通榜</button>
-                <button class="toggle-btn" id="toggleShowAll" data-show="top10">显示全部记录</button>
-                <button class="sort-btn active" data-sort="score-desc">按分数降序</button>
-				<button class="clear-btn" id="clearLeaderboardBtn">清空记录</button>
+                <div class="sort-left">
+                    <button class="mode-btn active" data-mode="all">全部记录</button>
+                    <button class="mode-btn" data-mode="challenge">挑战榜</button>
+                    <button class="mode-btn" data-mode="normal">普通榜</button>
+                </div>
+                <div class="sort-right">
+                    <button class="toggle-btn" id="toggleShowAll" data-show="top10">显示全部记录</button>
+                    <button class="clear-btn" id="clearLeaderboardBtn">清空记录</button>
+                </div>
+                <button class="sort-btn active" data-sort="score-desc" style="display: none;"></button>
             </div>
             <ul class="leaderboard-list" id="leaderboardList"></ul>
         </div>
     </div>
 
+    <div class="modal" id="settingsModal">
+        <div class="modal-content2">
+            <div class="modal-header">
+                <h2>游戏设置 (0-10 级)</h2>
+                <button class="close-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+            <p style="margin-bottom: 10px;">当前难度等级: <span id="difficultyLevelDisplay">10</span></p>
+            <input type="range" min="0" max="10" value="10" class="difficulty-slider" id="difficultySlider">
+            <div>
+				<button class="control-btn" id="saveSettingsBtn" style="width: 100%; margin-top: 15px;">保存设置并重启</button>
+			</div>
+        </div>
+    </div>
+
     <script>
-        // 游戏状态
+        // --- 游戏状态和常量 ---
         const gameState = {
             grid: [],
             score: 0,
@@ -394,90 +473,148 @@
             isChallengeMode: false,
             challengeTimeLimit: 180,
             challengeTimeRemaining: 0,
-            allGameRecords: [] 
+            allGameRecords: [],
+            currentDifficulty: 10 
         };
 
         const LOCAL_STORAGE_KEY = 'numberEliminationRecords';
+        const SETTINGS_STORAGE_KEY = 'numberEliminationSettings'; 
         const TOP_RECORDS_COUNT = 10;
-
-        // --- 本地持久化函数 ---
         
+        // --- 核心常量: 难度生成常量数组 (0-10 级) ---
+        const DIFFICULTY_PROBABILITIES_DATA = [
+            // 难度 0: 1和2的概率最高 (0.15)
+            {1: 0.1500, 2: 0.1500, 3: 0.1000, 4: 0.1000, 5: 0.1000, 6: 0.1000, 7: 0.1000, 8: 0.1000, 9: 0.1000},
+            // 难度 1: 
+            {1: 0.1460, 2: 0.1460, 3: 0.1011, 4: 0.1011, 5: 0.1011, 6: 0.1011, 7: 0.1011, 8: 0.1011, 9: 0.1011},
+            // 难度 2:
+            {1: 0.1420, 2: 0.1420, 3: 0.1023, 4: 0.1023, 5: 0.1023, 6: 0.1023, 7: 0.1023, 8: 0.1023, 9: 0.1023},
+            // 难度 3:
+            {1: 0.1380, 2: 0.1380, 3: 0.1034, 4: 0.1034, 5: 0.1034, 6: 0.1034, 7: 0.1034, 8: 0.1034, 9: 0.1034},
+            // 难度 4:
+            {1: 0.1340, 2: 0.1340, 3: 0.1046, 4: 0.1046, 5: 0.1046, 6: 0.1046, 7: 0.1046, 8: 0.1046, 9: 0.1046},
+            // 难度 5:
+            {1: 0.1300, 2: 0.1300, 3: 0.1057, 4: 0.1057, 5: 0.1057, 6: 0.1057, 7: 0.1057, 8: 0.1057, 9: 0.1057},
+            // 难度 6:
+            {1: 0.1260, 2: 0.1260, 3: 0.1069, 4: 0.1069, 5: 0.1069, 6: 0.1069, 7: 0.1069, 8: 0.1069, 9: 0.1069},
+            // 难度 7:
+            {1: 0.1220, 2: 0.1220, 3: 0.1080, 4: 0.1080, 5: 0.1080, 6: 0.1080, 7: 0.1080, 8: 0.1080, 9: 0.1080},
+            // 难度 8:
+            {1: 0.1180, 2: 0.1180, 3: 0.1092, 4: 0.1092, 5: 0.1092, 6: 0.1092, 7: 0.1092, 8: 0.1092, 9: 0.1092},
+            // 难度 9:
+            {1: 0.1140, 2: 0.1140, 3: 0.1103, 4: 0.1103, 5: 0.1103, 6: 0.1103, 7: 0.1103, 8: 0.1103, 9: 0.1103},
+            // 难度 10: 等概率 (1/9 ≈ 0.1111)
+            {1: 0.1111, 2: 0.1111, 3: 0.1111, 4: 0.1111, 5: 0.1111, 6: 0.1111, 7: 0.1111, 8: 0.1111, 9: 0.1111}
+        ];
+
+        // --- DOM 元素 ---
+        const gridElement = document.getElementById('grid');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const gameOverElement = document.getElementById('gameOver');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const toggleShowAllBtn = document.getElementById('toggleShowAll');
+        const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const difficultySlider = document.getElementById('difficultySlider');
+        const difficultyLevelDisplay = document.getElementById('difficultyLevelDisplay');
+        const selectionBox = document.getElementById('selectionBox');
+
+        // --- 本地存储和设置逻辑 (保持不变) ---
+
         function loadRecords() {
             try {
                 const records = localStorage.getItem(LOCAL_STORAGE_KEY);
                 gameState.allGameRecords = records ? JSON.parse(records) : [];
             } catch (error) {
-                console.error("加载游戏记录失败:", error);
                 gameState.allGameRecords = [];
             }
         }
 
         function saveRecords() {
             try {
-                sortRecords(gameState.allGameRecords);
+                gameState.allGameRecords.sort((a, b) => b.score - a.score || a.time - b.time);
                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState.allGameRecords));
-            } catch (error) {
-                console.error("保存游戏记录失败:", error);
-            }
+            } catch (error) {}
         }
 
-        function sortRecords(records) {
-            // 先按分数降序，分数相同时按时间升序
-            records.sort((a, b) => b.score - a.score || a.time - b.time);
+        function loadSettings() {
+            try {
+                const settings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (settings) {
+                    const parsed = JSON.parse(settings);
+                    gameState.currentDifficulty = Math.min(10, Math.max(0, parseInt(parsed.difficulty) || 10));
+                }
+            } catch (e) {}
         }
 
-        // --- 新增：清空排行榜逻辑 ---
+        function saveCurrentSettings() {
+            try {
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ difficulty: gameState.currentDifficulty }));
+            } catch (e) {}
+        }
+
         function clearLeaderboard() {
             if (confirm("确定要清除所有本地游戏记录吗？此操作不可撤销。")) {
                 gameState.allGameRecords = [];
                 localStorage.removeItem(LOCAL_STORAGE_KEY);
-                // 关闭并重新打开模态框，或者直接刷新列表
-                leaderboardModal.style.display = 'none';
+                document.getElementById('leaderboardModal').style.display = 'none';
                 alert("所有记录已清除。");
-                // 刷新排行榜显示
-                showLeaderboard('all', 'score-desc', false);
+                // 确保在清空后能正确显示空列表
+                const activeMode = document.querySelector('.mode-btn.active') ? document.querySelector('.mode-btn.active').dataset.mode : 'all';
+                showLeaderboard(activeMode, false);
             }
         }
 
-        // --- DOM 元素 ---
+        // --- 游戏核心逻辑函数 (保持不变) ---
 
-        const gridElement = document.getElementById('grid');
-        const scoreElement = document.getElementById('score');
-        const timeElement = document.getElementById('time');
-        const gameOverElement = document.getElementById('gameOver');
-        const finalScoreElement = document.getElementById('finalScore');
-        const finalTimeElement = document.getElementById('finalTime');
-        const restartBtn = document.getElementById('restartBtn');
-        const newGameBtn = document.getElementById('newGameBtn');
-        const challengeBtn = document.getElementById('challengeBtn');
-        const endGameBtn = document.getElementById('endGameBtn');
-        const modeIndicator = document.getElementById('modeIndicator');
-        const leaderboardBtn = document.getElementById('leaderboardBtn');
-        const leaderboardModal = document.getElementById('leaderboardModal');
-        const closeBtn = document.getElementById('closeBtn');
-        const leaderboardList = document.getElementById('leaderboardList');
-        const modeBtns = document.querySelectorAll('.mode-btn');
-        const sortBtns = document.querySelectorAll('.sort-btn');
-        const selectionBox = document.getElementById('selectionBox');
-        const toggleShowAllBtn = document.getElementById('toggleShowAll');
-        const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn'); // 新增
+        function generateRandomNumber(difficulty) {
+            const probs = DIFFICULTY_PROBABILITIES_DATA[difficulty];
+            const random = Math.random();
+            let cumulativeProb = 0;
+            let result = 1;
 
-        // 初始化游戏
+            for (let value = 1; value <= 9; value++) {
+                const prob = probs[value] || 0; 
+                cumulativeProb += prob;
+                
+                if (random < cumulativeProb) { 
+                    result = value;
+                    break;
+                }
+            }
+            return result; 
+        }
+
+        function generateGrid() {
+            const currentDifficulty = gameState.currentDifficulty;
+            gameState.grid = []; 
+            for (let i = 0; i < 16; i++) {
+                const row = [];
+                for (let j = 0; j < 10; j++) {
+                    row.push({
+                        value: generateRandomNumber(currentDifficulty),
+                    });
+                }
+                gameState.grid.push(row);
+            }
+        }
+
         function initGame(isChallenge = false) {
-            gameState.grid = [];
             gameState.score = 0;
             gameState.gameOver = false;
             gameState.isChallengeMode = isChallenge;
             gameState.startTime = new Date();
             
-            modeIndicator.textContent = isChallenge ? "挑战模式" : "普通模式";
-            modeIndicator.classList.toggle('challenge', isChallenge);
+            const modeName = isChallenge ? "挑战模式" : "普通模式";
+            document.getElementById('modeIndicator').textContent = `${modeName} (难度: ${gameState.currentDifficulty})`;
+            document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
             
             scoreElement.textContent = '0';
-            updateTime();
             
             if (gameState.timer) clearInterval(gameState.timer);
-            
             if (isChallenge) {
                 gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
                 gameState.timer = setInterval(updateChallengeTime, 1000);
@@ -485,6 +622,8 @@
                 gameState.timer = setInterval(updateTime, 1000);
             }
             
+            document.getElementById('finalScore').textContent = '0';
+            document.getElementById('finalTime').textContent = '00:00';
             gameOverElement.style.display = 'none';
             selectionBox.style.display = 'none';
             
@@ -492,62 +631,42 @@
             renderGrid();
         }
 
-        // 生成网格
-        function generateGrid() {
-            // 确保网格大小是 16x10
-            for (let i = 0; i < 16; i++) {
-                const row = [];
-                for (let j = 0; j < 10; j++) {
-                    row.push({
-                        value: Math.floor(Math.random() * 9) + 1,
-                    });
-                }
-                gameState.grid.push(row);
-            }
-        }
-
-        // 渲染网格
-        function renderGrid() {
-            gridElement.innerHTML = '';
-            
-            for (let i = 0; i < 16; i++) {
-                for (let j = 0; j < 10; j++) {
-                    const cell = gameState.grid[i][j];
-                    
-                    const cellElement = document.createElement('div');
-                    cellElement.className = 'cell';
-                    cellElement.textContent = cell.value !== 0 ? cell.value : '';
-                    cellElement.dataset.row = i;
-                    cellElement.dataset.col = j;
-                    
-                    cellElement.addEventListener('touchstart', handleTouchStart);
-                    cellElement.addEventListener('mousedown', handleMouseDown);
-                    
-                    gridElement.appendChild(cellElement);
-                }
-            }
-        }
+		function renderGrid() {
+			gridElement.innerHTML = '';
+			for (let i = 0; i < 16; i++) {
+				for (let j = 0; j < 10; j++) {
+					const cell = gameState.grid[i][j];
+					const cellElement = document.createElement('div');
+					cellElement.className = 'cell';
+					
+					if (cell.value === 0) {
+						 // >>>>> 关键修正：如果值为0，默认添加 'empty-cell' 类 <<<<<
+						cellElement.classList.add('empty-cell');
+					}
+					
+					cellElement.textContent = cell.value !== 0 ? cell.value : '';
+					cellElement.dataset.row = i;
+					cellElement.dataset.col = j;
+					cellElement.addEventListener('touchstart', handleTouchStart);
+					cellElement.addEventListener('mousedown', handleMouseDown);
+					gridElement.appendChild(cellElement);
+				}
+			}
+		}
         
-        // --- 省略选择和消除逻辑函数 (与原版逻辑相同) ---
+        // --- 选择/消除逻辑 (精简后保持不变) ---
+        
         function handleTouchStart(e) {
             e.stopPropagation();
             if (gameState.gameOver) return;
             const cell = e.currentTarget;
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-            if (gameState.grid[row][col].value !== 0) {
-                startSelection(row, col);
-            }
+            startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
         }
 
         function handleMouseDown(e) {
             if (e.button !== 0 || gameState.gameOver) return;
             const cell = e.currentTarget;
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-            if (gameState.grid[row][col].value !== 0) {
-                startSelection(row, col);
-            }
+            startSelection(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
         }
         
         function handleTouchMove(e) {
@@ -611,13 +730,15 @@
         function updateSelectionFromCell(cell) {
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
-            if (gameState.grid[row][col].value === 0) return;
+            
             gameState.endX = row;
             gameState.endY = col;
+            
             const minRow = Math.min(gameState.startX, gameState.endX);
             const maxRow = Math.max(gameState.startX, gameState.endX);
             const minCol = Math.min(gameState.startY, gameState.endY);
             const maxCol = Math.max(gameState.startY, gameState.endY);
+            
             gameState.selectedCells = [];
             for (let i = minRow; i <= maxRow; i++) {
                 for (let j = minCol; j <= maxCol; j++) {
@@ -633,14 +754,18 @@
         function updateSelectionBox() {
             const startCell = document.querySelector(`.cell[data-row="${gameState.startX}"][data-col="${gameState.startY}"]`);
             const endCell = document.querySelector(`.cell[data-row="${gameState.endX}"][data-col="${gameState.endY}"]`);
+            
             if (!startCell || !endCell) return;
+            
             const startRect = startCell.getBoundingClientRect();
             const endRect = endCell.getBoundingClientRect();
             const gridRect = gridElement.getBoundingClientRect();
+            
             const left = Math.min(startRect.left, endRect.left) - gridRect.left;
             const top = Math.min(startRect.top, endRect.top) - gridRect.top;
-            const width = Math.abs(startRect.left - endRect.left) + startRect.width;
-            const height = Math.abs(startRect.top - endRect.top) + startRect.height;
+            const width = Math.abs(startRect.left - endRect.left) + startCell.offsetWidth; 
+            const height = Math.abs(startRect.top - endRect.top) + startCell.offsetHeight;
+            
             selectionBox.style.left = `${left}px`;
             selectionBox.style.top = `${top}px`;
             selectionBox.style.width = `${width}px`;
@@ -659,10 +784,12 @@
 
         function endSelection() {
             selectionBox.style.display = 'none';
+            
             let sum = 0;
             gameState.selectedCells.forEach(([row, col]) => {
                 sum += gameState.grid[row][col].value;
             });
+            
             if (sum === 10) {
                 eliminateCells();
             } else {
@@ -670,20 +797,24 @@
                     cell.classList.remove('selected');
                 });
             }
+            
             gameState.isSelecting = false;
             gameState.selectedCells = [];
         }
 
-        function eliminateCells() {
+		function eliminateCells() {
 			gameState.selectedCells.forEach(([row, col]) => {
 				gameState.grid[row][col].value = 0;
 				const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
 				if (cell) {
-					cell.classList.add('eliminated');
+					// 触发消除特效
+					cell.classList.add('eliminated'); 
 					cell.classList.remove('selected'); 
 					setTimeout(() => {
 						cell.classList.remove('eliminated');
 						cell.textContent = '';
+						// >>>>> 关键修正：移除 'eliminated' 动画类后，添加 'empty-cell' 类 <<<<<
+						cell.classList.add('empty-cell'); 
 					}, 300);
 				}
 			});
@@ -693,22 +824,19 @@
 				checkGameOver();
 			}, 300);
 		}
-
+        
         function checkGameOver() {
-            // ... (省略 checkGameOver 逻辑，与原版相同)
             if (gameState.isChallengeMode) return;
             
+            // 检查是否还有可消除的矩形区域
             for (let startRow = 0; startRow < 16; startRow++) {
                 for (let startCol = 0; startCol < 10; startCol++) {
                     if (gameState.grid[startRow][startCol].value === 0) continue;
-                    
                     for (let endRow = startRow; endRow < 16; endRow++) {
                         for (let endCol = startCol; endCol < 10; endCol++) {
                             if (gameState.grid[endRow][endCol].value === 0) continue;
-                            
                             let sum = 0;
                             let hasZero = false;
-                            
                             for (let i = startRow; i <= endRow; i++) {
                                 for (let j = startCol; j <= endCol; j++) {
                                     if (gameState.grid[i][j].value === 0) {
@@ -719,7 +847,6 @@
                                 }
                                 if (hasZero) break;
                             }
-                            
                             if (sum === 10 && !hasZero) {
                                 return;
                             }
@@ -729,9 +856,7 @@
             }
             endGame();
         }
-        // --- 结束选择/消除逻辑 ---
 
-        // 结束游戏
         function endGame() {
             if (gameState.gameOver) return;
             
@@ -746,55 +871,44 @@
             const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
             const seconds = (timeTaken % 60).toString().padStart(2, '0');
             
-            finalScoreElement.textContent = gameState.score;
-            finalTimeElement.textContent = `${minutes}:${seconds}`;
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalTime').textContent = `${minutes}:${seconds}`;
             gameOverElement.style.display = 'block';
             
-            // 保存到本地持久化记录
-            saveNewRecord(gameState.score, timeTaken, gameState.isChallengeMode);
-        }
-
-        // 修正点 (1): 保存新记录时记录当前时间
-        function saveNewRecord(score, time, isChallenge) {
             const now = new Date();
             const newRecord = {
-                score: score,
-                time: time,
-                isChallenge: isChallenge,
-                date: now.toISOString() // 记录当前时间
+                score: gameState.score,
+                time: timeTaken,
+                isChallenge: gameState.isChallengeMode,
+                date: now.toISOString(),
+                difficulty: gameState.currentDifficulty 
             };
-
             gameState.allGameRecords.push(newRecord);
             saveRecords();
         }
 
+        // --- 时间/格式化 (保持不变) ---
+
         function updateTime() {
             if (!gameState.startTime || gameState.gameOver) return;
-            
             const currentTime = new Date();
             const timeTaken = Math.floor((currentTime - gameState.startTime) / 1000);
             const minutes = Math.floor(timeTaken / 60).toString().padStart(2, '0');
             const seconds = (timeTaken % 60).toString().padStart(2, '0');
-            
-            timeElement.textContent = `${minutes}:${seconds}`;
+            document.getElementById('time').textContent = `${minutes}:${seconds}`;
         }
 
         function updateChallengeTime() {
             if (gameState.gameOver) return;
-            
             gameState.challengeTimeRemaining--;
-            
             const minutes = Math.floor(gameState.challengeTimeRemaining / 60).toString().padStart(2, '0');
             const seconds = (gameState.challengeTimeRemaining % 60).toString().padStart(2, '0');
-            
-            timeElement.textContent = `${minutes}:${seconds}`;
-            
+            document.getElementById('time').textContent = `${minutes}:${seconds}`;
             if (gameState.challengeTimeRemaining <= 0) {
                 endGame();
             }
         }
-
-        // 辅助函数：格式化时间
+        
         function formatRecordDate(isoString) {
             const date = new Date(isoString);
             const Y = date.getFullYear();
@@ -806,11 +920,11 @@
             return `${Y}-${M}-${D} ${h}:${m}:${s}`;
         }
 
-        // 修正点 (2): 显示排行榜时，显示记录时间
-        function showLeaderboard(mode = 'all', sort = 'score-desc', showAll = false) {
-            let records = [...gameState.allGameRecords];
-            
-            sortRecords(records);
+        // --- 排行榜显示 (使用 CSS Class 替代内联样式) ---
+
+        function showLeaderboard(mode, showAll) {
+             let records = [...gameState.allGameRecords];
+            records.sort((a, b) => b.score - a.score || a.time - b.time);
             
             if (mode === 'challenge') {
                 records = records.filter(record => record.isChallenge);
@@ -820,31 +934,30 @@
             
             const recordsToShow = showAll ? records : records.slice(0, TOP_RECORDS_COUNT);
 
-            toggleShowAllBtn.textContent = showAll ? `仅显示前 ${TOP_RECORDS_COUNT} 条` : '显示全部记录';
-            toggleShowAllBtn.dataset.show = showAll ? 'all' : 'top10';
-            toggleShowAllBtn.classList.toggle('active', showAll);
+            document.getElementById('toggleShowAll').textContent = showAll ? `仅显示前 ${TOP_RECORDS_COUNT} 条` : '显示全部记录';
+            document.getElementById('toggleShowAll').dataset.show = showAll ? 'all' : 'top10';
             
             leaderboardList.innerHTML = '';
             
             if (recordsToShow.length === 0) {
-                const emptyItem = document.createElement('li');
-                emptyItem.className = 'leaderboard-item';
-                emptyItem.textContent = '暂无记录';
-                leaderboardList.appendChild(emptyItem);
+                const item = document.createElement('li');
+                item.className = 'leaderboard-item';
+                item.innerHTML = '暂无记录';
+                leaderboardList.appendChild(item);
             } else {
                 recordsToShow.forEach((record, index) => {
-                    const time = record.isChallenge ? record.time : record.time;
+                    const time = record.time;
                     const minutes = Math.floor(time / 60).toString().padStart(2, '0');
                     const seconds = (time % 60).toString().padStart(2, '0');
                     const modeLabel = record.isChallenge ? '<span style="color:#e65100;">[挑战]</span>' : '<span style="color:#2196F3;">[普通]</span>';
-                    
                     const formattedDate = record.date ? formatRecordDate(record.date) : '';
-                    
+                    const difficultyDisplay = record.difficulty !== undefined ? ` (难度: ${record.difficulty})` : '';
+
                     const item = document.createElement('li');
-                    item.className = 'leaderboard-item';
+                    item.className = 'leaderboard-item'; // 使用 CSS 类
                     item.innerHTML = `
                         <div class="info">
-                            <span>${index + 1}. ${modeLabel} 分数: ${record.score}</span>
+                            <span>${index + 1}. ${modeLabel} 分数: ${record.score}${difficultyDisplay}</span>
                             <span>用时: ${minutes}:${seconds}</span>
                         </div>
                         <span class="date-time">${formattedDate}</span>
@@ -852,73 +965,75 @@
                     leaderboardList.appendChild(item);
                 });
             }
-            
             leaderboardModal.style.display = 'flex';
         }
 
-        // 事件监听器
+        // --- 设置页面逻辑 (保持不变) ---
+        
+        function openSettingsModal() {
+            difficultySlider.value = gameState.currentDifficulty;
+            difficultyLevelDisplay.textContent = gameState.currentDifficulty;
+            settingsModal.style.display = 'flex';
+        }
+
+        function saveSettings() {
+            const newDifficulty = parseInt(difficultySlider.value);
+            
+            if (newDifficulty !== gameState.currentDifficulty) {
+                gameState.currentDifficulty = newDifficulty;
+                saveCurrentSettings();
+                alert(`难度已设置为 ${newDifficulty}。游戏将重新开始以应用新难度。`);
+                initGame(gameState.isChallengeMode); 
+            }
+            settingsModal.style.display = 'none';
+        }
+        
+        // --- 事件监听器 (保持不变) ---
         function setupEventListeners() {
-            restartBtn.addEventListener('click', () => {
-                initGame(gameState.isChallengeMode);
-            });
+            // 游戏控制
+            document.getElementById('restartBtn').addEventListener('click', () => { initGame(gameState.isChallengeMode); });
+            document.getElementById('newGameBtn').addEventListener('click', () => { initGame(false); });
+            document.getElementById('challengeBtn').addEventListener('click', () => { initGame(true); });
+            document.getElementById('endGameBtn').addEventListener('click', endGame);
             
-            newGameBtn.addEventListener('click', () => {
-                initGame(false);
-            });
-            
-            challengeBtn.addEventListener('click', () => {
-                initGame(true);
-            });
-            
-            endGameBtn.addEventListener('click', endGame);
-            
-            leaderboardBtn.addEventListener('click', () => {
+            // 排行榜控制
+            document.getElementById('leaderboardBtn').addEventListener('click', () => {
                 const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
-                const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
-                const showAll = toggleShowAllBtn.dataset.show === 'all';
-                showLeaderboard(activeMode, activeSort, showAll);
+                const showAll = document.getElementById('toggleShowAll').dataset.show === 'all';
+                showLeaderboard(activeMode, showAll);
+            });
+            document.getElementById('closeBtn').addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
+            
+            // 设置控制
+            document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+            document.getElementById('closeSettingsBtn').addEventListener('click', () => { settingsModal.style.display = 'none'; });
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            
+            // 难度滑块变化时更新显示
+            document.getElementById('difficultySlider').addEventListener('input', () => {
+                const level = parseInt(document.getElementById('difficultySlider').value);
+                document.getElementById('difficultyLevelDisplay').textContent = level;
             });
             
-            closeBtn.addEventListener('click', () => {
-                leaderboardModal.style.display = 'none';
-            });
-            
+            // 排行榜模式切换
             modeBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    modeBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
-                    const showAll = toggleShowAllBtn.dataset.show === 'all';
-                    showLeaderboard(btn.dataset.mode, activeSort, showAll);
-                });
-            });
-            
-            sortBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    sortBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
-                    const showAll = toggleShowAllBtn.dataset.show === 'all';
-                    showLeaderboard(activeMode, btn.dataset.sort, showAll);
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    const showAll = document.getElementById('toggleShowAll').dataset.show === 'all';
+                    showLeaderboard(e.currentTarget.dataset.mode, showAll);
                 });
             });
 
-            toggleShowAllBtn.addEventListener('click', () => {
-                const currentState = toggleShowAllBtn.dataset.show;
+            // 排行榜显示全部/部分切换
+            document.getElementById('toggleShowAll').addEventListener('click', () => {
+                const currentState = document.getElementById('toggleShowAll').dataset.show;
                 const newState = currentState === 'top10' ? 'all' : 'top10';
                 const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
-                const activeSort = document.querySelector('.sort-btn.active').dataset.sort;
-                showLeaderboard(activeMode, activeSort, newState === 'all');
+                showLeaderboard(activeMode, newState === 'all');
             });
             
-            leaderboardModal.addEventListener('click', (e) => {
-                if (e.target === leaderboardModal) {
-                    leaderboardModal.style.display = 'none';
-                }
-            });
-
-            // 新增：清空排行榜按钮事件
-            clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
+            document.getElementById('clearLeaderboardBtn').addEventListener('click', clearLeaderboard);
 
             // 触摸和鼠标事件监听
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -929,6 +1044,7 @@
 
         // 初始化
         function init() {
+            loadSettings();
             loadRecords();
             setupEventListeners();
             initGame();
