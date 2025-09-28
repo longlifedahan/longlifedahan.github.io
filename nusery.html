@@ -203,6 +203,18 @@
             flex-shrink: 0;
         }
 
+        .control-btn2 {
+            flex-grow: 1;
+            padding: 10px 5px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+
         .control-btn {
             flex-grow: 1;
             padding: 10px 5px;
@@ -445,6 +457,7 @@
             <p>最终得分:<span id="finalScore">0</span></p>
             <p>用时:<span id="finalTime">00:00</span></p>
             <button class="restart-btn" id="restartBtn">重新开始</button>
+            <button class="restart-btn" id="restartThisGameBtn">重开本局</button>
         </div>
     </div>
 
@@ -488,11 +501,11 @@
             <p>当前难度等级: <span id="difficultyLevelDisplay">10</span></p>
             <input type="range" min="0" max="10" value="10" class="difficulty-slider" id="difficultySlider">
             <div>
-                <button class="control-btn" id="saveSettingsBtn"
+                <button class="control-btn2" id="saveSettingsBtn"
                     style="width: 100%; margin-top: 15px;">保存难度设置并重启</button>
             </div>
             <!-- 搜索阶数，单选 -->
-            <p>搜索深度(无需重启)</p>
+            <p>搜索深度(无需重启)<input type="checkbox" id="allowTestGridCheckbox">使用自由度</input></p>
             <select id="searchDepthSelect" style="margin-top: 15px; width: 100%;">
                 <option value="1" selected>搜索深度: 1 (快速)</option>
                 <option value="2">搜索深度: 1 (慢速)</option>
@@ -505,9 +518,12 @@
                 <button class="control-btn" id="saveMapBtn" style="flex: 1;">保存地图</button>
                 <button class="control-btn" id="loadMapBtn" style="flex: 1;">读取地图</button>
             </div>
-            <p>初始解(无需重启,耗时↑):<span id="initLevelDisplay">55</span><input type="checkbox" id="allowSpeedUpCheckbox"
-                    checked>加速</input></p>
+            <p>初始解(无需重启,耗时↑):<span id="initLevelDisplay">55</span><input type="checkbox" id="allowSpeedUpCheckbox" checked>加速</input></p>
             <input type="range" min="0" max="100" value="55" class="difficulty-slider" id="initSlider">
+            <!-- 重开本局 -->
+            <div style="margin: 15px 0; display: flex; gap: 10px;">
+                <button class="control-btn2" id="restartThisGameBtn2">重开本局</button>
+            </div>
         </div>
 
         <script>
@@ -641,6 +657,9 @@
                 document.getElementById('saveMapBtn').addEventListener('click', saveCurrentMap);
                 // 读取地图按钮事件
                 document.getElementById('loadMapBtn').addEventListener('click', loadSavedMap);
+                // 重开按钮事件
+                document.getElementById('restartThisGameBtn').addEventListener('click', restartMap);
+                document.getElementById('restartThisGameBtn2').addEventListener('click', restartMap);
 
             }
 
@@ -1300,8 +1319,8 @@
                 let remainingDepth = document.getElementById('searchDepthSelect').value;
                 let possibleMoves = 0;
                 // 仅一阶搜索加入自由度辅助
-                if (remainingDepth === '1' || remainingDepth === '2') {
-                    possibleMoves = testGrid() / 10.0;
+                if ((remainingDepth === '1' || remainingDepth === '2') && document.getElementById('allowTestGridCheckbox').checked) {
+                    possibleMoves = testGrid()/2.0;
                 }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
                 return potentialScore + retentionBonus - bigPenalty + possibleMoves;
@@ -1369,7 +1388,7 @@
                     let remainingDepth = document.getElementById('searchDepthSelect').value;
 
                     // 2. 递归计算剩余 X 步的最佳分数估值 (h(n))
-                    if (remainingDepth === '1' || remainingDepth === '2') {
+                    if ((remainingDepth === '1' || remainingDepth === '2')) {
                         h_n = findMaxScoreInNSteps(nextGrid1, 1); // 2 步深度
                     } else {
                         h_n = findMaxScoreInNSteps(nextGrid1, 2); // 3 步深度
@@ -1502,36 +1521,41 @@
                 }
             }
 
+            // （辅助）重开辅助准备
+            function prepareForRestart() {
+                // 初始化
+                gameState.score = 0;
+                gameState.gameOver = false;
+                isChallenge = gameState.isChallengeMode;
+                gameState.startTime = new Date();
+
+                // 停止任何正在进行的自动解决进程
+                if (isAutoSolving) autoSolve();
+
+                const modeName = isChallenge ? "挑" : "普";
+                document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
+                document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
+
+                scoreElement.textContent = '0';
+
+                if (gameState.timer) clearInterval(gameState.timer);
+                if (isChallenge) {
+                    gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
+                    gameState.timer = setInterval(updateChallengeTime, 1000);
+                } else {
+                    gameState.timer = setInterval(updateTime, 1000);
+                }
+
+                document.getElementById('finalScore').textContent = '0';
+                document.getElementById('finalTime').textContent = '00:00';
+                gameOverElement.style.display = 'none';
+                selectionBox.style.display = 'none';
+            }
+
             // 2.添加读取保存的地图的函数
             function loadSavedMap() {
                 try {
-                    // 初始化
-                    gameState.score = 0;
-                    gameState.gameOver = false;
-                    isChallenge = gameState.isChallengeMode;
-                    gameState.startTime = new Date();
-
-                    // 停止任何正在进行的自动解决进程
-                    if (isAutoSolving) autoSolve();
-
-                    const modeName = isChallenge ? "挑" : "普";
-                    document.getElementById('modeIndicator').textContent = `${modeName}(${gameState.currentDifficulty})`;
-                    document.getElementById('modeIndicator').classList.toggle('challenge', isChallenge);
-
-                    scoreElement.textContent = '0';
-
-                    if (gameState.timer) clearInterval(gameState.timer);
-                    if (isChallenge) {
-                        gameState.challengeTimeRemaining = gameState.challengeTimeLimit;
-                        gameState.timer = setInterval(updateChallengeTime, 1000);
-                    } else {
-                        gameState.timer = setInterval(updateTime, 1000);
-                    }
-
-                    document.getElementById('finalScore').textContent = '0';
-                    document.getElementById('finalTime').textContent = '00:00';
-                    gameOverElement.style.display = 'none';
-                    selectionBox.style.display = 'none';
+                    prepareForRestart();
                     // 读取并更新
                     const savedData = localStorage.getItem(SAVED_MAP_KEY);
                     if (!savedData) {
@@ -1562,7 +1586,18 @@
                 }
             }
 
-            // 3.撤回功能
+            // 3.重开功能
+            function restartMap() {
+                prepareForRestart();
+                const mapData = gameState.originalGrid;
+                gameState.grid = JSON.parse(JSON.stringify(mapData));
+                gameState.score = 0;
+                gameState.history = []; // 清空历史记录
+                scoreElement.textContent = '0';
+                renderGrid();
+            }
+
+            // 4.撤回功能
             function undoLastMove() {
                 if (gameState.history.length === 0) {
                     alert("没有可撤回的操作");
