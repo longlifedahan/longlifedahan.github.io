@@ -502,7 +502,7 @@
             <input type="range" min="0" max="10" value="10" class="difficulty-slider" id="difficultySlider">
             <div>
                 <button class="control-btn2" id="saveSettingsBtn"
-                    style="width: 100%; margin-top: 15px;">保存难度设置并重启</button>
+                    style="width: 100%; margin-top: 15px;">确认难度设置</button>
             </div>
             <!-- 搜索阶数，单选 -->
             <p>搜索深度(无需重启)<input type="checkbox" id="allowTestGridCheckbox">使用自由度</input></p>
@@ -690,22 +690,6 @@
                     showLeaderboard(activeMode, false);
                 }
             }
-            // 2.设置
-            function loadSettings() {
-                try {
-                    const settings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-                    if (settings) {
-                        const parsed = JSON.parse(settings);
-                        gameState.currentDifficulty = Math.min(10, Math.max(0, parseInt(parsed.difficulty) || 10));
-                    }
-                } catch (e) { }
-            }
-            function saveCurrentSettings() {
-                try {
-                    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ difficulty: gameState.currentDifficulty }));
-                } catch (e) { }
-            }
-
 
             // 【游戏核心逻辑函数】
             // （辅助）生成随机数（根据概率）
@@ -1209,15 +1193,12 @@
                 difficultyLevelDisplay.textContent = gameState.currentDifficulty;
                 settingsModal.style.display = 'flex';
             }
-            // 8.保存设置并重启游戏
+            // 8.
             function saveSettings() {
                 const newDifficulty = parseInt(difficultySlider.value);
 
                 if (newDifficulty !== gameState.currentDifficulty) {
                     gameState.currentDifficulty = newDifficulty;
-                    saveCurrentSettings();
-                    alert(`难度已设置为 ${newDifficulty}。游戏将重新开始以应用新难度。`);
-                    initGame(gameState.isChallengeMode);
                 }
 
                 settingsModal.style.display = 'none';
@@ -1260,8 +1241,6 @@
                 // O((R*C)^2) 搜索
                 for (let r1 = 0; r1 < R; r1++) {
                     for (let c1 = 0; c1 < C; c1++) {
-                        // **【已修正】移除此处错误的剪枝，确保以空单元格为起点的有效矩形也能被检查**
-                        // if (currentGrid[r1][c1].value === 0) continue; // 之前错误的剪枝
 
                         for (let r2 = r1; r2 < R; r2++) {
                             for (let c2 = c1; c2 < C; c2++) {
@@ -1273,11 +1252,18 @@
 
                                 if (sum === 10) {
                                     const cellsCount = getRectValue(prefixCount, r1, c1, r2, c2);
+                                    // 检查四个边界是否包含非零元素（完整范围检查，不排除任何行）
+                                    // 1. 第一行（r1）从c1到c2的完整范围
+                                    const hasFirstRowNonZero = getRectValue(prefixCount, r1, c1, r1, c2) > 0;
+                                    // 2. 最后一行（r2）从c1到c2的完整范围
+                                    const hasLastRowNonZero = getRectValue(prefixCount, r2, c1, r2, c2) > 0;
+                                    // 3. 第一列（c1）从r1到r2的完整范围（包括r1和r2）
+                                    const hasFirstColNonZero = getRectValue(prefixCount, r1, c1, r2, c1) > 0;
+                                    // 4. 最后一列（c2）从r1到r2的完整范围（包括r1和r2）
+                                    const hasLastColNonZero = getRectValue(prefixCount, r1, c2, r2, c2) > 0;
 
-                                    // 必须满足和为 10，并且至少包含 2 个非零方块
-                                    if (cellsCount >= 2) {
-                                        // 注意：此 SAT 优化无法检查选定的非零方块是否连通。
-                                        // 如果您的游戏规则要求连通性，则需要添加一个 O(R*C) 的连通性检查，但这会降低整体性能。
+                                    // 四个边界都有非零元素才视为有效
+                                    if (hasFirstRowNonZero && hasLastRowNonZero && hasFirstColNonZero && hasLastColNonZero) {
                                         moves.push({ r1, c1, r2, c2, cellsCount });
                                     }
                                 }
@@ -1320,7 +1306,23 @@
                 let possibleMoves = 0;
                 // 仅一阶搜索加入自由度辅助
                 if ((remainingDepth === '1' || remainingDepth === '2') && document.getElementById('allowTestGridCheckbox').checked) {
-                    possibleMoves = testGrid()/2.0;
+                    possibleMoves = testGrid();
+                    // 自由度<5时，需要尽量增加自由度
+                    if(possibleMoves < 5) {
+                        possibleMoves = possibleMoves * 2.0;
+                    }
+                    // 自由度5-15时，保持自由度权重
+                    else if(possibleMoves < 15) {
+                        possibleMoves = possibleMoves;
+                    }
+                    // 自由度15-35时，略微降低自由度权重
+                    else if(possibleMoves < 35) {
+                        possibleMoves = possibleMoves / 5.0;
+                    }
+                    // 自由度>35时，大幅降低自由度权重
+                    else {
+                        possibleMoves = possibleMoves / 10.0;
+                    }
                 }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
                 return potentialScore + retentionBonus - bigPenalty + possibleMoves;
@@ -1564,6 +1566,7 @@
                     }
                     const mapData = JSON.parse(savedData);
                     gameState.grid = JSON.parse(JSON.stringify(mapData.grid));
+                    gameState.originalGrid = JSON.parse(JSON.stringify(mapData.grid));
                     gameState.currentDifficulty = mapData.difficulty;
                     gameState.score = 0;
                     gameState.history = []; // 清空历史记录
@@ -1630,7 +1633,6 @@
 
             // 初始化
             function init() {
-                loadSettings();
                 loadRecords();
                 setupEventListeners();
                 initGame();
