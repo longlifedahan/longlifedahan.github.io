@@ -710,6 +710,7 @@
                 let initVal = document.getElementById('initSlider').value;
                 let totalSum = 0; // 用于统计前面所有数字的和
                 let count = 0;
+                let bestcount = 0;
                 do {
                     const currentDifficulty = gameState.currentDifficulty;
                     gameState.grid = [];
@@ -743,12 +744,20 @@
                         }
                         gameState.grid.push(row);
                     }
+                    // 始终记录当前最佳（最多初始解）地图
+                    let possibleMoves = testGrid();
+                    if (possibleMoves > bestcount) {
+                        bestcount = possibleMoves;
+                        gameState.bestgrid = JSON.parse(JSON.stringify(gameState.grid));
+                    }else{
+                        gameState.grid = JSON.parse(JSON.stringify(gameState.bestgrid));
+                    }
                     // 确保初始地图有足够的可消除空间
                     count = count + 1;
                     // console.log("初始可消除空间:", testGrid(), "尝试次数:", count);
                     // 适当降低初始解数要求，防止死循环
                     if (count % 10000 === 0) {
-                        if (document.getElementById('allowSpeedUpCheckbox').checked || initVal + parseInt(document.getElementById('difficultySlider').value > 100)) {
+                        if (document.getElementById('allowSpeedUpCheckbox').checked || (initVal + parseInt(document.getElementById('difficultySlider').value) > 97)) {
                             if (initVal > 95 - parseInt(document.getElementById('difficultySlider').value)) {
                                 initVal--;
                                 console.log("降低初始解数要求为:", initVal);
