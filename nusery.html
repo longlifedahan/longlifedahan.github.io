@@ -761,12 +761,12 @@
                     count = count + 1;
                     // console.log("初始可消除空间:", testGrid(), "尝试次数:", count);
                     // 适当降低初始解数要求，防止死循环
-                    if (count % 10000 === 0) {
-                        if (document.getElementById('allowSpeedUpCheckbox').checked || (initVal + parseInt(document.getElementById('difficultySlider').value) > 97)) {
-                            if (initVal > 95 - parseInt(document.getElementById('difficultySlider').value)) {
-                                initVal--;
-                                console.log("降低初始解数要求为:", initVal);
-                            }
+                    if (count % 1000 === 0) {
+                        console.log("尝试开局第", count , "次");
+                        if (document.getElementById('allowSpeedUpCheckbox').checked && count % 10000 ===0) {
+                            break;
+                        }else if(count % 100000 === 0){
+                            break;
                         }
                     }
                 } while (testGrid() < initVal);
@@ -1306,26 +1306,26 @@
                 let possibleMoves = 0;
                 // 仅一阶搜索加入自由度辅助
                 if ((remainingDepth === '1' || remainingDepth === '2') && document.getElementById('allowTestGridCheckbox').checked) {
-                    possibleMoves = testGrid();
-                    // 自由度<5时，需要尽量增加自由度
-                    if(possibleMoves < 5) {
-                        possibleMoves = possibleMoves * 2.0;
+                    possibleMoves = testGrid() / totalCells;
+                    // 自由度<15时，需要尽量增加自由度
+                    if(possibleMoves < 15) {
+                        possibleMoves = possibleMoves * 1.5;
                     }
-                    // 自由度5-15时，保持自由度权重
-                    else if(possibleMoves < 15) {
+                    // 自由度15-30时，保持自由度权重
+                    else if(possibleMoves < 30) {
                         possibleMoves = possibleMoves;
                     }
-                    // 自由度15-35时，略微降低自由度权重
-                    else if(possibleMoves < 35) {
-                        possibleMoves = possibleMoves / 5.0;
+                    // 自由度30-45时，略微降低自由度权重
+                    else if(possibleMoves < 45) {
+                        possibleMoves = possibleMoves / 2.0;
                     }
-                    // 自由度>35时，大幅降低自由度权重
+                    // 自由度>45时，大幅降低自由度权重
                     else {
-                        possibleMoves = possibleMoves / 10.0;
+                        possibleMoves = possibleMoves / 4.0;
                     }
                 }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
-                return potentialScore + retentionBonus - bigPenalty + possibleMoves;
+                return (potentialScore + retentionBonus - bigPenalty) * ( 1 + possibleMoves);
             }
 
             // 4.递归深度搜索，用于计算从当前状态开始的 N 步内能获得的最高分数估值。
@@ -1496,6 +1496,7 @@
                     // G. 重新渲染网格
                     renderGrid();
                     stepCount++;
+                    console.log('自动解决中，当前第',stepCount,'步，自由度',testGrid(),'度');
                 }
 
                 // 自动解决结束后重置标志
