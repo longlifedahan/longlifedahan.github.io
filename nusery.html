@@ -1325,7 +1325,7 @@
                     }
                 }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
-                return (potentialScore + retentionBonus - bigPenalty) * ( 1 + possibleMoves);
+                return (potentialScore + retentionBonus * 1.5 - bigPenalty) * ( 1 + possibleMoves * 8);
             }
 
             // 4.递归深度搜索，用于计算从当前状态开始的 N 步内能获得的最高分数估值。
