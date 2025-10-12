@@ -1309,7 +1309,7 @@
                     possibleMoves = testGrid() / totalCells;
                     // 自由度<15时，需要尽量增加自由度
                     if(possibleMoves < 15) {
-                        possibleMoves = possibleMoves * 1.5;
+                        possibleMoves = possibleMoves * 2.0;
                     }
                     // 自由度15-30时，保持自由度权重
                     else if(possibleMoves < 30) {
@@ -1325,7 +1325,7 @@
                     }
                 }
                 // 启发式分数 = 潜在得分 + 浮点奖励 - 浮点惩罚
-                return (potentialScore + retentionBonus * 1.5 - bigPenalty) * ( 1 + possibleMoves * 8);
+                return (potentialScore + retentionBonus - bigPenalty) * ( 1 + possibleMoves * 10.0);
             }
 
             // 4.递归深度搜索，用于计算从当前状态开始的 N 步内能获得的最高分数估值。
