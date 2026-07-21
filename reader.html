@@ -88,7 +88,8 @@
 		
 		<select id="fontSize" onchange="changeBook(this.value)">
 			<option value="1">斗罗之我的老婆是银龙王</option>
-            <option value="2">黑斗罗唐三</option>
+			<option value="2">斗罗大陆之我能抽取无限武魂</option>
+			<option value="3">黑斗罗唐三</option>
         </select>
 		
     </div>
@@ -294,6 +295,9 @@
 				fileName = "novels/银龙王.txt"
 			}
 			if(book==2){
+				fileName = "novels/无限武魂.txt"
+			}
+			if(book==3){
 				fileName = "novels/黑斗罗唐三.txt"
 			}
 			fetch(fileName)
