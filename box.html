@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>元素方块消除</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0a0a1a; color: #e0e0e0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+body { display: flex; justify-content: center; align-items: center; }
+#app { width: 100%; max-width: 480px; height: 100%; display: flex; flex-direction: column; position: relative; }
+
+.screen { display: none; flex-direction: column; width: 100%; height: 100%; padding: 20px; }
+.screen.active { display: flex; }
+.btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; padding: 10px 18px; transition: transform 0.1s, opacity 0.15s; color: #fff; min-height: 42px; white-space: nowrap; }
+.btn:active { transform: scale(0.94); }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+.btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
+.btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: #1a1a2e; }
+.btn-warning { background: linear-gradient(135deg, #f2994a, #f2c94c); color: #1a1a2e; }
+.btn-danger { background: linear-gradient(135deg, #eb3349, #f45c43); }
+.btn-ghost { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+
+/* 菜单 */
+#menu-screen { justify-content: center; align-items: center; gap: 14px; background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1a 70%); }
+#menu-screen .title { font-size: 44px; font-weight: 900; background: linear-gradient(135deg, #667eea, #38ef7d, #f2c94c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; text-align: center; letter-spacing: 4px; }
+#menu-screen .subtitle { font-size: 14px; color: #888; margin-bottom: 10px; text-align: center; }
+#menu-screen .btn { width: 220px; }
+#btn-continue { opacity: 0.5; pointer-events: none; }
+#btn-continue.has-save { opacity: 1; pointer-events: auto; }
+
+/* 游戏 */
+#game-screen { padding: 0 4px; gap: 0; }
+.game-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-shrink: 0; padding: 2px 4px; }
+.game-stats { display: flex; gap: 8px; font-size: 11px; flex-wrap: wrap; }
+.game-stats .stat { display: flex; align-items: baseline; gap: 3px; }
+.game-stats .stat-label { color: #777; font-size: 10px; flex-shrink: 0; }
+.game-stats .stat-value { color: #f2c94c; font-weight: 700; font-variant-numeric: tabular-nums; font-family: "SF Mono","Consolas","Menlo",monospace; font-size: 13px; display: inline-block; min-width: 4.2ch; text-align: right; }
+.next-piece-box { text-align: center; flex-shrink: 0; }
+.next-piece-box .label { font-size: 10px; color: #777; margin-bottom: 1px; }
+#next-canvas { border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; background: rgba(0,0,0,0.3); display: block; width: 64px; height: 52px; }
+
+.canvas-wrap { flex: 1; display: flex; justify-content: center; align-items: center; min-height: 0; padding: 0; overflow: hidden; }
+#game-canvas { display: block; border: none; border-radius: 0; background: rgba(0,0,0,0.45); }
+
+/* D-pad 在中间 — 放大、等大按键 */
+.dpad-wrap { flex-shrink: 0; padding: 0; }
+.dpad { display: grid; grid-template-columns: repeat(3, 45px); gap: 6px; justify-content: center; }
+.dpad .dpad-btn { width: 45px; height: 45px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.08); color: #ddd; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dpad .dpad-btn:active { background: rgba(255,255,255,0.22); }
+.dpad .dpad-spacer { visibility: hidden; }
+
+/* 功能按钮栏在最下 */
+.control-bar { display: flex; gap: 4px; flex-shrink: 0; justify-content: center; flex-wrap: wrap; }
+.control-bar .btn { padding: 10px 6px; font-size: 13px; border-radius: 10px; min-height: 44px; flex: 1; min-width: 48px; flex-direction: column; gap: 2px; }
+.btn .ks { display: block; font-size: 9px; opacity: 0.5; font-weight: 400; letter-spacing: 0.5px; }
+
+/* 排行榜 */
+#leaderboard-screen { gap: 10px; }
+#leaderboard-screen h2 { text-align: center; font-size: 20px; color: #f2c94c; }
+.leaderboard-tabs { display: flex; gap: 6px; }
+.leaderboard-tabs .tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 13px; }
+.leaderboard-tabs .tab.active { background: rgba(102,126,234,0.3); color: #fff; }
+.rank-list { flex: 1; overflow-y: auto; }
+.rank-item { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.rank-item .rank-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.rank-item .rank-num.gold { background: #f2c94c; color: #1a1a2e; }
+.rank-item .rank-num.silver { background: #bdc3c7; color: #1a1a2e; }
+.rank-item .rank-num.bronze { background: #e67e22; color: #fff; }
+.rank-item .rank-num.normal { background: rgba(255,255,255,0.1); }
+.rank-item .rank-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); }
+.rank-item .rank-name { flex: 1; font-size: 13px; }
+.rank-item .rank-score { font-weight: 700; color: #f2c94c; font-size: 14px; }
+.loading-text { text-align: center; color: #888; padding: 16px; }
+
+/* 说明 */
+#instructions-screen { gap: 10px; overflow-y: auto; }
+#instructions-screen h2 { text-align: center; font-size: 20px; color: #f2c94c; }
+.inst-section { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px; }
+.inst-section h3 { font-size: 14px; color: #667eea; margin-bottom: 4px; }
+.inst-section p { font-size: 12px; color: #aaa; line-height: 1.6; }
+
+/* 弹窗 */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; justify-content: center; align-items: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: #1a1a3e; border-radius: 16px; padding: 24px; text-align: center; max-width: 300px; width: 90%; }
+.modal h3 { font-size: 19px; margin-bottom: 10px; }
+.modal p { color: #aaa; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+.modal .btn-row { display: flex; gap: 8px; justify-content: center; }
+.modal .score-big { font-size: 34px; font-weight: 900; color: #f2c94c; margin: 6px 0; }
+
+.key-hint { display: inline-block; background: rgba(255,255,255,0.1); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-family: "SF Mono", "Consolas", monospace; margin: 0 1px; }
+
+/* 设置 */
+#settings-screen { gap: 10px; overflow-y: auto; }
+#settings-screen h2 { text-align: center; font-size: 20px; color: #f2c94c; }
+.preset-tabs { display: flex; gap: 6px; }
+.preset-tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 13px; }
+.preset-tab.active { background: rgba(102,126,234,0.3); color: #fff; }
+.upload-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.upload-row .color-dot { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+.upload-row .color-name { width: 36px; font-size: 12px; flex-shrink: 0; }
+.upload-row input[type=file] { flex: 1; font-size: 11px; color: #aaa; }
+.upload-row .thumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; background: rgba(255,255,255,0.05); display: none; }
+.upload-row .thumb.has { display: block; }
+
+@media (min-width: 768px) {
+  #game-screen { padding: 0 8px; }
+  .game-stats { font-size: 13px; gap: 14px; }
+  .game-stats .stat-label { font-size: 12px; }
+  .game-stats .stat-value { font-size: 15px; }
+  .control-bar .btn { font-size: 14px; padding: 10px 10px; min-height: 48px; }
+  .dpad .dpad-btn { width: 50px; height: 50px; font-size: 22px; }
+  .dpad { grid-template-columns: repeat(3, 50px); gap: 8px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 菜单 -->
+  <div id="menu-screen" class="screen active">
+    <div class="title">元素方块消除</div>
+    <div class="subtitle">“元素反应”版俄罗斯方块</div>
+    <button class="btn btn-primary" id="btn-start">开始游戏</button>
+    <button class="btn btn-ghost" id="btn-continue">继续游戏</button>
+    <button class="btn btn-ghost" id="btn-leaderboard">排行榜</button>
+    <button class="btn btn-ghost" id="btn-instructions">游戏说明</button>
+    <button class="btn btn-ghost" id="btn-settings">设置</button>
+  </div>
+
+  <!-- 游戏 -->
+  <div id="game-screen" class="screen">
+    <div class="game-top">
+      <div class="game-stats">
+        <div class="stat"><span class="stat-label">分数</span><span class="stat-value" id="stat-score">0</span></div>
+        <div class="stat"><span class="stat-label">层数</span><span class="stat-value" id="stat-lines">0</span></div>
+        <div class="stat"><span class="stat-label">时间</span><span class="stat-value" id="stat-time">00:00</span></div>
+        <div class="stat"><span class="stat-label">速度</span><span class="stat-value" id="stat-speed">5/10</span></div>
+      </div>
+      <div class="next-piece-box">
+        <div class="label">下一块</div>
+        <canvas id="next-canvas" width="120" height="100"></canvas>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+    </div>
+    <div class="dpad-wrap">
+      <div class="dpad">
+        <div class="dpad-spacer"></div>
+        <button class="dpad-btn" id="dpad-up">↻</button>
+        <div class="dpad-spacer"></div>
+        <button class="dpad-btn" id="dpad-left">←</button>
+        <button class="dpad-btn" id="dpad-down">↓</button>
+        <button class="dpad-btn" id="dpad-right">→</button>
+      </div>
+    </div>
+    <div class="control-bar">
+      <button class="btn btn-ghost" id="btn-speed-down">减速<span class="ks">-</span></button>
+      <button class="btn btn-ghost" id="btn-speed-up">加速<span class="ks">+</span></button>
+      <button class="btn btn-warning" id="btn-drop">落下<span class="ks">Space</span></button>
+      <button class="btn btn-ghost" id="btn-pause">暂停<span class="ks">P</span></button>
+      <button class="btn btn-ghost" id="btn-save">保存</button>
+      <button class="btn btn-danger" id="btn-exit">退出<span class="ks">Esc</span></button>
+    </div>
+  </div>
+
+  <!-- 排行榜 -->
+  <div id="leaderboard-screen" class="screen">
+    <h2>排行榜</h2>
+    <div class="leaderboard-tabs">
+      <div class="tab active" data-tab="local">本地排行</div>
+      <div class="tab" data-tab="global">全局排行</div>
+    </div>
+    <div class="rank-list" id="rank-list"></div>
+    <button class="btn btn-ghost" id="btn-clear-ranks" style="font-size:12px">清空本地排行</button>
+    <button class="btn btn-ghost" id="btn-back-from-leaderboard">返回菜单</button>
+  </div>
+
+  <!-- 说明 -->
+  <div id="instructions-screen" class="screen">
+    <h2>操作指南</h2>
+    <div class="inst-section">
+      <h3>电脑端</h3>
+      <p><span class="key-hint">W</span><span class="key-hint">↑</span> 旋转 <span class="key-hint">A</span><span class="key-hint">←</span> 左移 <span class="key-hint">D</span><span class="key-hint">→</span> 右移 <span class="key-hint">S</span><span class="key-hint">↓</span> 软降 <span class="key-hint">Space</span> 硬降</p>
+      <p><span class="key-hint">P</span> 暂停 <span class="key-hint">Esc</span> 退出 <span class="key-hint">-</span> 减速 <span class="key-hint">+</span> 加速</p>
+    </div>
+    <div class="inst-section">
+      <h3>手机端</h3>
+      <p>按键：↻ 旋转，← → 移动，↓ 软降（<b>双击↓</b>硬降）。</p>
+	  <p>手势：<b>上滑</b>/<b>点击</b>旋转，<b>左右滑</b>移动，<b>连续两次下滑</b>硬降。</p>
+    </div>
+    <div class="inst-section">
+      <h3>普通反应</h3>
+	  <p>累计填满一行即可消除，同时消除多行，获得额外奖励得分——</p>
+      <p>得分 = 1层10分 | 2层30分 | 3层60分 | 4层100分</p>
+      <p>某层全为同一元素，触发<b>元素共鸣</b>，额外 +150 分/层</p>
+    </div>
+    <div class="inst-section">
+      <h3>元素反应</h3>
+      <p>同元素方块相邻连通 ≥ 20 高亮闪烁，≥ 22 时触发<b>元素反应</b>消除及<b>粒子特效</b></p>
+      <p>得分 = (1+2+...+N)，但是不会增加消除层数</p>
+    </div>
+    <div class="inst-section">
+      <h3>连锁反应</h3>
+      <p>基础消除 ⇄ 元素反应可互相触发形成<b>连锁反应</b>。每次切换消除类型，分数倍率翻倍（×1 → ×2 → ×4 → ×8...），连击越多奖励越高！</p>
+    </div>
+	<div class="inst-section">
+      <h3>奖励系数</h3>
+      <p>速度系数：1.1-2.0</p>
+      <p>消除层数：1+累计层数/100</p>
+	  <p>最终分数 = 基础分数 * 速度系数 * 消除层数</p>
+    </div>
+    <div class="inst-section">
+      <h3>速度档位</h3>
+      <p>共10档，初始5档。档位越高下落越快，分数倍率也越高（1.1~2.0）。</p>
+    </div>
+    <button class="btn btn-ghost" id="btn-back-from-instructions">返回菜单</button>
+  </div>
+
+  <!-- 设置 -->
+  <div id="settings-screen" class="screen">
+    <h2>方块风格设置</h2>
+    <div class="inst-section">
+      <h3>选择预设</h3>
+      <div class="preset-tabs" id="preset-tabs">
+        <div class="preset-tab" data-preset="genshin">原神</div>
+        <div class="preset-tab active" data-preset="dragon">龙族</div>
+        <div class="preset-tab" data-preset="custom">自定义</div>
+      </div>
+    </div>
+    <div class="inst-section" id="preset-preview">
+      <h3>元素预览</h3>
+      <div id="preset-preview-content"></div>
+    </div>
+    <div id="custom-upload" style="display:none">
+      <div class="inst-section">
+        <h3>上传自定义图片</h3>
+        <div id="upload-list"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="btn-clear-custom" style="font-size:12px">清空自定义图片</button>
+    <button class="btn btn-ghost" id="btn-back-from-settings">返回菜单</button>
+  </div>
+
+  <!-- 暂停弹窗 -->
+  <div class="modal-overlay" id="pause-modal">
+    <div class="modal">
+      <h3>游戏暂停</h3>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-resume">继续游戏</button>
+        <button class="btn btn-danger" id="btn-quit">退出游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏结束弹窗 -->
+  <div class="modal-overlay" id="gameover-modal">
+    <div class="modal">
+      <h3>游戏结束</h3>
+      <div class="score-big" id="final-score">0</div>
+      <p id="final-stats"></p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-restart">重新开始</button>
+        <button class="btn btn-ghost" id="btn-to-menu">返回菜单</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== Toy SDK 按需加载（不阻塞游戏启动） =====================
+let sdkPromise = null;
+function loadToySDK() {
+  if (window.toy) return Promise.resolve();
+  if (sdkPromise) return sdkPromise;
+  sdkPromise = new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = '//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js';
+    s.onload = () => { sdkPromise = null; resolve(); };
+    s.onerror = () => { sdkPromise = null; resolve(); };
+    document.head.appendChild(s);
+  });
+  return sdkPromise;
+}
+
+// ===================== 俄罗斯方块引擎 =====================
+const COLS = 10;
+const ROWS = 20;
+const CELL = 30;
+const COLORS = ['blue', 'yellow', 'purple', 'green', 'red'];
+const COLOR_HEX = {
+  blue: '#3498db', yellow: '#f1c40f', purple: '#9b59b6', green: '#2ecc71', red: '#e74c3c'
+};
+
+const PIECE_TYPES = {
+  I: { color: 'blue', shapes: [
+    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],
+    [[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],
+    [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]
+  ]},
+  O: { color: 'yellow', shapes: [[[1,1],[1,1]],[[1,1],[1,1]],[[1,1],[1,1]],[[1,1],[1,1]]] },
+  T: { color: 'purple', shapes: [
+    [[0,1,0],[1,1,1],[0,0,0]], [[0,1,0],[0,1,1],[0,1,0]],
+    [[0,0,0],[1,1,1],[0,1,0]], [[0,1,0],[1,1,0],[0,1,0]]
+  ]},
+  S: { color: 'green', shapes: [
+    [[0,1,1],[1,1,0],[0,0,0]], [[0,1,0],[0,1,1],[0,0,1]],
+    [[0,0,0],[0,1,1],[1,1,0]], [[1,0,0],[1,1,0],[0,1,0]]
+  ]},
+  Z: { color: 'red', shapes: [
+    [[1,1,0],[0,1,1],[0,0,0]], [[0,0,1],[0,1,1],[0,1,0]],
+    [[0,0,0],[1,1,0],[0,1,1]], [[0,1,0],[1,1,0],[1,0,0]]
+  ]},
+  J: { color: 'blue', shapes: [
+    [[1,0,0],[1,1,1],[0,0,0]], [[0,1,1],[0,1,0],[0,1,0]],
+    [[0,0,0],[1,1,1],[0,0,1]], [[0,1,0],[0,1,0],[1,1,0]]
+  ]},
+  L: { color: 'purple', shapes: [
+    [[0,0,1],[1,1,1],[0,0,0]], [[0,1,0],[0,1,0],[0,1,1]],
+    [[0,0,0],[1,1,1],[1,0,0]], [[1,1,0],[0,1,0],[0,1,0]]
+  ]}
+};
+const PIECE_NAMES = ['I','O','T','S','Z','J','L'];
+
+// ===================== 预设系统 =====================
+const PRESETS = {
+  genshin: { name: '原神', suffix: '' },
+  dragon:  { name: '龙族', suffix: '1' }
+};
+const CUSTOM_IMG_KEY = 'tetris_custom_images';
+let currentPreset = 'dragon';
+
+function getPreset() {
+  try { return localStorage.getItem('tetris_preset') || 'dragon'; } catch(e) { return 'dragon'; }
+}
+function setPreset(p) {
+  currentPreset = p;
+  try { localStorage.setItem('tetris_preset', p); } catch(e) {}
+}
+
+function getCustomImages() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_IMG_KEY) || '{}'); } catch(e) { return {}; }
+}
+function setCustomImages(data) {
+  try { localStorage.setItem(CUSTOM_IMG_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+// 图像加载
+const imgCache = {};
+function loadImages() {
+  const preset = getPreset();
+  currentPreset = preset;
+  if (preset === 'custom') {
+    const saved = getCustomImages();
+    return Promise.all(COLORS.map(c => new Promise((resolve) => {
+      if (saved[c]) {
+        const img = new Image();
+        img.onload = () => { imgCache[c] = img; resolve(); };
+        img.onerror = () => { resolve(); };
+        img.src = saved[c];
+      } else { resolve(); }
+    })));
+  }
+  const info = PRESETS[preset] || PRESETS.genshin;
+  const sfx = info.suffix || '';
+  return Promise.all(COLORS.map(c => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => { imgCache[c] = img; resolve(); };
+    img.onerror = () => { resolve(); };
+    img.src = 'images/' + c + sfx + '.jpg';
+  })));
+}
+
+// 图片压缩到 200x200
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200; canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 200, 200);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===================== 游戏状态 =====================
+let board = [];
+let currentPiece = null;
+let nextPieceType = null;
+let nextPieceColor = null;
+let bag = [];
+let score = 0;
+let linesCleared = 0;
+let speedLevel = 5;
+let gameTime = 0;
+let timerInterval = null;
+let dropInterval = null;
+let gameRunning = false;
+let gamePaused = false;
+let gameOver = false;
+let gameCanvas, gameCtx, nextCanvas, nextCtx;
+let particles = [], particleRAF = null;
+let highlightedCells = null;
+let chainAnimating = false;
+let floatTexts = []; // { text, color, time }
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function addFloatText(text, color) { floatTexts.push({ text, time: Date.now(), color }); }
+
+function createBoard() {
+  return Array.from({length: ROWS}, () => Array(COLS).fill(null));
+}
+
+function refillBag() {
+  const shuffled = [...PIECE_NAMES];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  bag.push(...shuffled);
+}
+
+function nextFromBag() {
+  if (bag.length === 0) refillBag();
+  return bag.shift();
+}
+
+function randomColor() { return COLORS[Math.floor(Math.random() * COLORS.length)]; }
+
+function createPiece(type, color) {
+  const def = PIECE_TYPES[type];
+  const shape = def.shapes[0];
+  return { type, shape, color: color || randomColor(), x: Math.floor((COLS - shape[0].length) / 2), y: 0, rotation: 0 };
+}
+
+function getShape(type, rotation) {
+  return PIECE_TYPES[type].shapes[rotation % 4];
+}
+
+function isValid(board, shape, px, py) {
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (!shape[r][c]) continue;
+      const x = px + c, y = py + r;
+      if (x < 0 || x >= COLS || y >= ROWS) return false;
+      if (y < 0) continue;
+      if (board[y][x]) return false;
+    }
+  }
+  return true;
+}
+
+function placePiece(board, piece) {
+  const shape = piece.shape;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (!shape[r][c]) continue;
+      const y = piece.y + r;
+      if (y < 0) continue;
+      board[y][piece.x + c] = { color: piece.color };
+    }
+  }
+}
+
+function getGhostY(board, piece) {
+  let gy = piece.y;
+  while (isValid(board, piece.shape, piece.x, gy + 1)) gy++;
+  return gy;
+}
+
+function rotatePiece(piece) {
+  const newRotation = (piece.rotation + 1) % 4;
+  const newShape = getShape(piece.type, newRotation);
+  const kicks = [0, -1, 1, -2, 2];
+  for (const dx of kicks) {
+    if (isValid(board, newShape, piece.x + dx, piece.y)) {
+      return { ...piece, shape: newShape, rotation: newRotation, x: piece.x + dx };
+    }
+  }
+  return piece;
+}
+
+function clearLines(board) {
+  const clearedRows = [];
+  for (let r = 0; r < ROWS; r++) {
+    if (board[r].every(cell => cell !== null)) clearedRows.push(r);
+  }
+  if (clearedRows.length === 0) return { count: 0, sameColorCount: 0 };
+
+  let sameColorCount = 0;
+  for (const r of clearedRows) {
+    if (new Set(board[r].map(c => c.color)).size === 1) sameColorCount++;
+  }
+
+  for (const r of clearedRows.sort((a,b) => b - a)) board.splice(r, 1);
+  for (let i = 0; i < clearedRows.length; i++) board.unshift(Array(COLS).fill(null));
+
+  return { count: clearedRows.length, sameColorCount };
+}
+
+// ===================== 同色连通块消除 =====================
+function findConnectedComponents(board, threshold) {
+  const minSize = threshold || 22;
+  const visited = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+  const components = [];
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!board[r][c] || visited[r][c]) continue;
+      const color = board[r][c].color;
+      const cells = [];
+      const stack = [[r, c]];
+      visited[r][c] = true;
+      while (stack.length > 0) {
+        const [cr, cc] = stack.pop();
+        cells.push([cr, cc]);
+        for (const [nr, nc] of [[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]]) {
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !visited[nr][nc] && board[nr][nc] && board[nr][nc].color === color) {
+            visited[nr][nc] = true;
+            stack.push([nr, nc]);
+          }
+        }
+      }
+      if (cells.length >= minSize) components.push(cells);
+    }
+  }
+  return components;
+}
+
+function applyGravity(board) {
+  for (let c = 0; c < COLS; c++) {
+    let wr = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (board[r][c]) {
+        if (r !== wr) { board[wr][c] = board[r][c]; board[r][c] = null; }
+        wr--;
+      }
+    }
+  }
+}
+
+function clearConnectedComponents(board) {
+  const components = findConnectedComponents(board);
+  if (components.length === 0) return 0;
+  let totalCells = 0;
+  for (const cells of components) {
+    totalCells += cells.length;
+    const color = board[cells[0][0]][cells[0][1]].color;
+    for (const [r, c] of cells) board[r][c] = null;
+    spawnElementalParticles(cells, color);
+  }
+  applyGravity(board);
+  return totalCells;
+}
+
+// ===================== 元素粒子特效 =====================
+const ELEMENT_HEX = {
+  blue: '#3498db', yellow: '#f1c40f', purple: '#9b59b6', green: '#2ecc71', red: '#e74c3c', white: '#ffffff'
+};
+
+function spawnElementalParticles(cells, color, count) {
+  const n = count || 3;
+  const hex = ELEMENT_HEX[color] || COLOR_HEX[color] || '#ffffff';
+  for (const [r, c] of cells) {
+    const cx = c * CELL + CELL / 2;
+    const cy = r * CELL + CELL / 2;
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x: cx, y: cy,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6 - 3,
+        life: 1, decay: 0.015 + Math.random() * 0.025,
+        size: 2 + Math.random() * 5,
+        color: hex
+      });
+    }
+  }
+  if (!particleRAF) startParticleLoop();
+}
+
+function startParticleLoop() {
+  particleRAF = requestAnimationFrame(() => {
+    updateParticles();
+    renderGame();
+    if (particles.length > 0) { startParticleLoop(); }
+    else { particleRAF = null; cancelAnimationFrame(particleRAF); }
+  });
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.08;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+// ===================== 计分（只有消除才得分） =====================
+const LINE_SCORES = { 1: 10, 2: 30, 3: 60, 4: 100 };
+const SAME_COLOR_BONUS = 150;
+
+function calcScore(linesCount, sameColorCount, oldTotalLines, speedLvl) {
+  const base = LINE_SCORES[linesCount] || 0;
+  const lineMult = 1 + oldTotalLines / 100;
+  const speedCoeff = 1.0 + speedLvl * 0.1;
+  return Math.floor(base * lineMult * speedCoeff + sameColorCount * SAME_COLOR_BONUS);
+}
+
+// ===================== 渲染 =====================
+function drawBlock(ctx, x, y, color, alpha, size) {
+  const hex = COLOR_HEX[color];
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = hex;
+  ctx.fillRect(x, y, size, size);
+  if (imgCache[color]) {
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.drawImage(imgCache[color], x, y, size, size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+}
+
+function renderGame() {
+  if (!gameCtx) return;
+  const w = gameCanvas.width, h = gameCanvas.height;
+  gameCtx.clearRect(0, 0, w, h);
+
+  gameCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+  gameCtx.lineWidth = 0.5;
+  for (let r = 0; r <= ROWS; r++) { gameCtx.beginPath(); gameCtx.moveTo(0, r * CELL); gameCtx.lineTo(COLS * CELL, r * CELL); gameCtx.stroke(); }
+  for (let c = 0; c <= COLS; c++) { gameCtx.beginPath(); gameCtx.moveTo(c * CELL, 0); gameCtx.lineTo(c * CELL, ROWS * CELL); gameCtx.stroke(); }
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c]) drawBlock(gameCtx, c * CELL, r * CELL, board[r][c].color, 1, CELL);
+    }
+  }
+
+  // 高亮 ≥20 连通块
+  if (highlightedCells && highlightedCells.cells.length > 0) {
+    const glow = 0.35 + 0.15 * Math.sin(Date.now() / 200);
+    for (const [r, c] of highlightedCells.cells) {
+      gameCtx.globalAlpha = glow;
+      gameCtx.strokeStyle = '#fff';
+      gameCtx.lineWidth = 2;
+      gameCtx.strokeRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+    }
+    gameCtx.globalAlpha = 1;
+  }
+
+  if (!currentPiece || !gameRunning) return;
+
+  // Ghost
+  const ghostY = getGhostY(board, currentPiece);
+  if (ghostY !== currentPiece.y) {
+    const shape = currentPiece.shape;
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const px = (currentPiece.x + c) * CELL, py = (ghostY + r) * CELL;
+        gameCtx.globalAlpha = 0.25;
+        gameCtx.fillStyle = COLOR_HEX[currentPiece.color];
+        gameCtx.fillRect(px, py, CELL, CELL);
+        gameCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+        gameCtx.lineWidth = 1;
+        gameCtx.strokeRect(px + 0.5, py + 0.5, CELL - 1, CELL - 1);
+        gameCtx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Current piece
+  const shape = currentPiece.shape;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (!shape[r][c]) continue;
+      const py = (currentPiece.y + r) * CELL;
+      if (py >= 0) drawBlock(gameCtx, (currentPiece.x + c) * CELL, py, currentPiece.color, 1, CELL);
+    }
+  }
+
+  // 元素粒子特效（最上层）
+  for (const p of particles) {
+    gameCtx.globalAlpha = p.life;
+    gameCtx.fillStyle = p.color;
+    gameCtx.beginPath();
+    gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    gameCtx.fill();
+    // 发光
+    gameCtx.fillStyle = '#fff';
+    gameCtx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+    gameCtx.fill();
+  }
+  gameCtx.globalAlpha = 1;
+
+  // 浮动文字（分数/倍率/特效提示）
+  const now = Date.now();
+  floatTexts = floatTexts.filter(ft => now - ft.time < 1500);
+  if (floatTexts.length > 0) {
+    const cx = gameCanvas.width / 2;
+    let baseY = gameCanvas.height * 0.4;
+    for (let i = 0; i < floatTexts.length; i++) {
+      const ft = floatTexts[i];
+      const elapsed = (now - ft.time) / 1000;
+      const alpha = elapsed < 0.15 ? elapsed / 0.15 : elapsed > 1.0 ? (1.5 - elapsed) / 0.5 : 1;
+      const y = baseY + i * 36 - elapsed * 30;
+      gameCtx.save();
+      gameCtx.globalAlpha = alpha;
+      gameCtx.font = `bold ${ft.color === '#ff3333' ? 36 : 20}px sans-serif`;
+      gameCtx.textAlign = 'center';
+      gameCtx.fillStyle = ft.color;
+      gameCtx.shadowColor = ft.color;
+      gameCtx.shadowBlur = ft.color === '#ff3333' ? 12 : 6;
+      gameCtx.fillText(ft.text, cx, y);
+      gameCtx.shadowBlur = 0;
+      gameCtx.restore();
+    }
+  }
+}
+
+function renderNext() {
+  if (!nextCtx || !nextPieceType) return;
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  const shape = PIECE_TYPES[nextPieceType].shapes[0];
+  const color = nextPieceColor || 'blue';
+  const size = 22;
+  const offX = (nextCanvas.width - shape[0].length * size) / 2;
+  const offY = (nextCanvas.height - shape.length * size) / 2;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (shape[r][c]) drawBlock(nextCtx, offX + c * size, offY + r * size, color, 1, size);
+    }
+  }
+}
+
+// ===================== 游戏循环 =====================
+function getDropInterval() {
+  return 1000 - (speedLevel - 1) * 100;
+}
+
+function clearTimers() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (dropInterval) { clearInterval(dropInterval); dropInterval = null; }
+}
+
+function startTimers() {
+  clearTimers();
+  timerInterval = setInterval(() => {
+    if (!gamePaused && gameRunning) { gameTime++; updateStatDisplay(); }
+  }, 1000);
+  scheduleDrop();
+}
+
+function scheduleDrop() {
+  if (dropInterval) clearInterval(dropInterval);
+  dropInterval = setInterval(() => {
+    if (!gamePaused && gameRunning && currentPiece) tick();
+  }, getDropInterval());
+}
+
+function tick() {
+  if (!currentPiece || !gameRunning || gamePaused || chainAnimating) return;
+  if (isValid(board, currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
+    currentPiece.y++;
+    renderGame();
+  } else {
+    lockPiece();
+  }
+}
+
+async function lockPiece() {
+  if (chainAnimating) return;
+  chainAnimating = true;
+  try {
+  placePiece(board, currentPiece);
+
+  // 检测 ≥20 连通块用于高亮
+  const hlComps = findConnectedComponents(board, 20);
+  if (hlComps.length > 0) {
+    const allHL = [];
+    for (const comp of hlComps) allHL.push(...comp);
+    highlightedCells = { cells: allHL, color: hlComps[0].length > 0 ? board[hlComps[0][0][0]][hlComps[0][0][1]].color : null };
+  } else {
+    highlightedCells = null;
+  }
+
+  let multiplier = 1;
+  let anyCleared = false;
+  let safety = 0;
+
+  while (safety++ < 10) {
+    // 同时检测两种类型
+    const fullRows = [];
+    for (let r = 0; r < ROWS; r++) {
+      if (board[r].every(c => c !== null)) fullRows.push(r);
+    }
+    const components = findConnectedComponents(board, 22);
+
+    let hasRow = fullRows.length > 0;
+    let hasConn = components.length > 0;
+    if (!hasRow && !hasConn) break;
+
+    // 保存连通块数据（行清除前），含颜色和坐标
+    const savedConnData = [];
+    if (hasConn) {
+      for (const cells of components) {
+        savedConnData.push({
+          color: board[cells[0][0]][cells[0][1]].color,
+          cells: [...cells]
+        });
+      }
+    }
+
+    // 行消除（物理先行）
+    if (hasRow) {
+      let sameCount = 0;
+      for (const r of fullRows) {
+        if (new Set(board[r].map(c => c.color)).size === 1) sameCount++;
+      }
+      const rowScore = calcScore(fullRows.length, sameCount, linesCleared, speedLevel) * multiplier;
+      score += rowScore;
+      linesCleared += fullRows.length;
+      const rowCells = [];
+      for (const r of fullRows) for (let c = 0; c < COLS; c++) rowCells.push([r, c]);
+      spawnElementalParticles(rowCells, 'white', 5);
+      for (const r of fullRows.sort((a,b) => b - a)) board.splice(r, 1);
+      for (let i = 0; i < fullRows.length; i++) board.unshift(Array(COLS).fill(null));
+      if (sameCount > 0) addFloatText('触发元素共鸣！+' + rowScore, '#ffaa00');
+      else addFloatText('+' + rowScore, '#ffffff');
+    }
+
+    // 连通消除（使用行清除前保存的颜色和原始大小积分）
+    if (hasConn) {
+      const connMult = hasRow ? 2 : 1;
+      let totalCells = 0;
+      for (const cd of savedConnData) {
+        totalCells += cd.cells.length;
+        const validCells = [];
+        for (const [r, c] of cd.cells) {
+          if (board[r] && board[r][c]) { board[r][c] = null; validCells.push([r, c]); }
+        }
+        if (validCells.length > 0 && cd.color) spawnElementalParticles(validCells, cd.color);
+      }
+      applyGravity(board);
+      const base = totalCells * (totalCells + 1) / 2;
+      const lineMult = 1 + linesCleared / 100;
+      const speedCoeff = 1.0 + speedLevel * 0.1;
+      const connScore = Math.floor(base * lineMult * speedCoeff * multiplier * connMult);
+      score += connScore;
+      addFloatText('触发元素反应！+' + connScore, '#00ccff');
+    }
+
+    anyCleared = true;
+    const displayMult = (hasRow && hasConn) ? 2 : multiplier;
+    if (displayMult > 1) { addFloatText('x' + displayMult, '#ff3333'); }
+    multiplier *= (hasRow && hasConn) ? 4 : 2;
+
+    highlightedCells = null;
+    renderGame();
+    updateStatDisplay();
+    await delay(500);
+  }
+
+  if (anyCleared) {
+    renderGame();
+    updateStatDisplay();
+    scheduleDrop();
+  }
+  spawnPiece();
+  } finally { chainAnimating = false; }
+}
+
+function spawnPiece() {
+  currentPiece = createPiece(nextPieceType, nextPieceColor);
+  nextPieceType = nextFromBag(); nextPieceColor = randomColor();
+  renderNext();
+  if (!isValid(board, currentPiece.shape, currentPiece.x, currentPiece.y)) {
+    endGame();
+    return;
+  }
+  renderGame();
+}
+
+function hardDrop() {
+  if (!currentPiece || !gameRunning || gamePaused || chainAnimating) return;
+  currentPiece.y = getGhostY(board, currentPiece);
+  lockPiece();
+}
+
+function softDrop() {
+  if (!currentPiece || !gameRunning || gamePaused || chainAnimating) return;
+  if (isValid(board, currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
+    currentPiece.y++;
+    renderGame();
+  }
+}
+
+function movePiece(dx) {
+  if (!currentPiece || !gameRunning || gamePaused || chainAnimating) return;
+  if (isValid(board, currentPiece.shape, currentPiece.x + dx, currentPiece.y)) {
+    currentPiece.x += dx;
+    renderGame();
+  }
+}
+
+function rotateCurPiece() {
+  if (!currentPiece || !gameRunning || gamePaused || chainAnimating) return;
+  const p = rotatePiece(currentPiece);
+  if (p !== currentPiece) { currentPiece = p; renderGame(); }
+}
+
+// ===================== 游戏流程 =====================
+function initGame() {
+  board = createBoard(); bag = []; score = 0; linesCleared = 0; speedLevel = 5; gameTime = 0;
+  particles = []; highlightedCells = null;
+  chainAnimating = false; floatTexts = [];
+  if (particleRAF) { cancelAnimationFrame(particleRAF); particleRAF = null; }
+  gamePaused = false; gameOver = false;
+  refillBag(); nextPieceType = nextFromBag(); nextPieceColor = randomColor();
+  updateStatDisplay(); renderNext();
+  spawnPiece();
+}
+
+function startGame() {
+  initGame();
+  gameRunning = true;
+  showScreen('game-screen');
+  resizeCanvas();
+  startTimers();
+  renderGame();
+}
+
+function endGame() {
+  gameRunning = false;
+  clearTimers();
+  showGameOverModal();
+}
+
+function pauseGame() {
+  if (!gameRunning || gameOver || chainAnimating) return;
+  gamePaused = true;
+  document.getElementById('pause-modal').classList.add('active');
+}
+
+function resumeGame() {
+  gamePaused = false;
+  document.getElementById('pause-modal').classList.remove('active');
+  scheduleDrop();
+}
+
+function quitGame() {
+  if (chainAnimating) return;
+  clearTimers();
+  gameRunning = false;
+  gamePaused = false;
+  // 退出时也记录分数
+  if (score > 0) {
+    saveLocalScore(score, gameTime);
+    loadToySDK().then(() => submitGlobalScore(score));
+  }
+  document.getElementById('pause-modal').classList.remove('active');
+  document.getElementById('gameover-modal').classList.remove('active');
+  showScreen('menu-screen');
+}
+
+function changeSpeed(delta) {
+  const lv = speedLevel + delta;
+  if (lv < 1 || lv > 10) return;
+  speedLevel = lv;
+  updateStatDisplay();
+  if (gameRunning && !gamePaused) scheduleDrop();
+}
+
+function updateStatDisplay() {
+  document.getElementById('stat-score').textContent = score;
+  document.getElementById('stat-lines').textContent = linesCleared;
+  document.getElementById('stat-time').textContent =
+    Math.floor(gameTime / 60).toString().padStart(2, '0') + ':' + (gameTime % 60).toString().padStart(2, '0');
+  document.getElementById('stat-speed').textContent = speedLevel + '/10';
+}
+
+function showGameOverModal() {
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('final-stats').textContent =
+    '消除层数: ' + linesCleared + ' | 用时: ' +
+    Math.floor(gameTime / 60).toString().padStart(2, '0') + ':' + (gameTime % 60).toString().padStart(2, '0');
+  document.getElementById('gameover-modal').classList.add('active');
+  saveLocalScore(score, gameTime);
+  loadToySDK().then(() => submitGlobalScore(score));
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===================== 存档 =====================
+const SAVE_KEY = 'tetris_save';
+
+function getSaveData() {
+  return {
+    board: board.map(row => row.map(cell => cell ? { color: cell.color } : null)),
+    currentPiece: currentPiece ? { type: currentPiece.type, color: currentPiece.color, x: currentPiece.x, y: currentPiece.y, rotation: currentPiece.rotation } : null,
+    nextPieceType, nextPieceColor, bag: [...bag], score, linesCleared, speedLevel, gameTime, version: 1
+  };
+}
+
+function saveGame() {
+  if (!gameRunning) return;
+  const json = JSON.stringify(getSaveData());
+  try { localStorage.setItem(SAVE_KEY, json); } catch(e) {}
+  loadToySDK().then(() => {
+    if (window.toy && window.toy.setCloudStorage) {
+      window.toy.setCloudStorage({ [SAVE_KEY]: json }).catch(() => {});
+    }
+  });
+  showToast('游戏已保存');
+}
+
+function hasSaveData() {
+  return localStorage.getItem(SAVE_KEY) !== null;
+}
+
+function loadSaveData() {
+  const local = localStorage.getItem(SAVE_KEY);
+  if (!local) return false;
+  try {
+    const data = JSON.parse(local);
+    if (data.version === 1) { restoreGame(data); return true; }
+  } catch(e) {}
+  return false;
+}
+
+function restoreGame(data) {
+  board = data.board.map(row => row.map(cell => cell ? { color: cell.color } : null));
+  nextPieceType = data.nextPieceType; nextPieceColor = data.nextPieceColor || randomColor(); bag = data.bag; score = data.score;
+  linesCleared = data.linesCleared; speedLevel = data.speedLevel; gameTime = data.gameTime;
+  gamePaused = false; gameOver = false;
+  const pd = data.currentPiece;
+  if (pd) currentPiece = { ...pd, shape: PIECE_TYPES[pd.type].shapes[pd.rotation % 4] };
+  updateStatDisplay(); renderNext(); renderGame();
+  gameRunning = true;
+  showScreen('game-screen');
+  resizeCanvas();
+  startTimers();
+}
+
+async function syncCloudSave() {
+  if (!window.toy || !window.toy.getCloudStorage) return;
+  try {
+    const data = await window.toy.getCloudStorage([SAVE_KEY]);
+    if (data[SAVE_KEY]) localStorage.setItem(SAVE_KEY, data[SAVE_KEY]);
+  } catch(e) {}
+}
+
+// ===================== 排行榜 =====================
+const LEADERBOARD_KEY = 'tetris_local_ranks';
+
+function getLocalRanks() {
+  try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveLocalScore(s, t) {
+  const ranks = getLocalRanks();
+  ranks.push({ score: s, time: t });
+  ranks.sort((a, b) => b.score - a.score || a.time - b.time);
+  try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(ranks.slice(0, 30))); } catch(e) {}
+}
+
+function renderLocalRanks() {
+  const ranks = getLocalRanks();
+  const c = document.getElementById('rank-list');
+  if (ranks.length === 0) { c.innerHTML = '<div class="loading-text">暂无本地记录</div>'; return; }
+  c.innerHTML = ranks.slice(0, 30).map((r, i) => {
+    const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
+    const min = Math.floor(r.time / 60).toString().padStart(2, '0');
+    const sec = (r.time % 60).toString().padStart(2, '0');
+    return `<div class="rank-item"><div class="rank-num ${cls}">${i+1}</div><div class="rank-name" style="flex:1">匿名玩家</div><div class="rank-score">${r.score}</div><div style="font-size:11px;color:#777">${min}:${sec}</div></div>`;
+  }).join('');
+}
+
+async function renderGlobalRanks() {
+  const c = document.getElementById('rank-list');
+  c.innerHTML = '<div class="loading-text">加载中...</div>';
+  await loadToySDK();
+  if (!window.toy || !window.toy.getRankList) {
+    c.innerHTML = '<div class="loading-text">全局排行需要 Toy SDK 支持</div>'; return;
+  }
+  try {
+    const list = await window.toy.getRankList({ board: 1, period: 'all', limit: 50 });
+    if (!list || list.length === 0) { c.innerHTML = '<div class="loading-text">暂无排行数据</div>'; return; }
+    c.innerHTML = list.map(r => {
+      const cls = r.rank === 1 ? 'gold' : r.rank === 2 ? 'silver' : r.rank === 3 ? 'bronze' : 'normal';
+      return `<div class="rank-item"><div class="rank-num ${cls}">${r.rank}</div><img class="rank-avatar" src="${r.avatar||''}" onerror="this.style.display='none'" alt=""><div class="rank-name">${r.nickname||'匿名玩家'}</div><div class="rank-score">${r.score}</div></div>`;
+    }).join('');
+  } catch(e) { c.innerHTML = '<div class="loading-text">加载失败，请登录后重试</div>'; }
+}
+
+async function submitGlobalScore(s) {
+  await loadToySDK();
+  if (!window.toy || !window.toy.submitScore) return;
+  try { await window.toy.submitScore({ board: 1, score: Math.floor(s) }); } catch(e) {}
+}
+
+// ===================== Toast =====================
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:200;pointer-events:none;transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => { t.style.opacity = '0'; }, 1500);
+}
+
+// ===================== 事件处理 =====================
+function setupControls() {
+  // 键盘：Esc 退出，P 暂停
+  document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    if (e.key === 'Escape') { e.preventDefault(); quitGame(); return; }
+    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (gamePaused) resumeGame(); else pauseGame(); return; }
+    if (gamePaused || gameOver) return;
+    switch (e.key) {
+      case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); movePiece(-1); break;
+      case 'ArrowRight': case 'd': case 'D': e.preventDefault(); movePiece(1); break;
+      case 'ArrowDown': case 's': case 'S': e.preventDefault(); softDrop(); break;
+      case 'ArrowUp': case 'w': case 'W': e.preventDefault(); rotateCurPiece(); break;
+      case ' ': e.preventDefault(); hardDrop(); break;
+      case '-': case '_': e.preventDefault(); changeSpeed(-1); break;
+      case '=': case '+': e.preventDefault(); changeSpeed(1); break;
+    }
+  });
+
+  // 画布滑动手势
+  let tsX = 0, tsY = 0, tsT = 0, lastSwipeDown = 0;
+  gameCanvas.addEventListener('touchstart', (e) => {
+    if (!gameRunning || gamePaused || chainAnimating) return;
+    const t = e.touches[0]; tsX = t.clientX; tsY = t.clientY; tsT = Date.now();
+  }, { passive: true });
+
+  gameCanvas.addEventListener('touchend', (e) => {
+    if (!gameRunning || gamePaused) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - tsX, dy = t.clientY - tsY, dt = Date.now() - tsT;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if (adx < 10 && ady < 10 && dt < 300) { rotateCurPiece(); return; }
+    if (ady > adx) {
+      if (dy < -30) { rotateCurPiece(); }                    // 上滑 → 旋转
+      else if (dy > 30) {                                    // 下滑
+        const now = Date.now();
+        if (now - lastSwipeDown < 400) { hardDrop(); lastSwipeDown = 0; }
+        else { softDrop(); lastSwipeDown = now; }
+      }
+    }
+    else if (adx > 20) { movePiece(dx > 0 ? 1 : -1); }
+  });
+
+  // 菜单按钮
+  document.getElementById('btn-start').addEventListener('click', startGame);
+  document.getElementById('btn-continue').addEventListener('click', () => { if (hasSaveData()) loadSaveData(); });
+  document.getElementById('btn-leaderboard').addEventListener('click', () => {
+    showScreen('leaderboard-screen'); renderLocalRanks();
+    document.querySelector('#leaderboard-screen .tab.active').dataset.tab = 'local';
+  });
+  document.getElementById('btn-instructions').addEventListener('click', () => showScreen('instructions-screen'));
+  document.getElementById('btn-back-from-leaderboard').addEventListener('click', () => showScreen('menu-screen'));
+  document.getElementById('btn-back-from-instructions').addEventListener('click', () => showScreen('menu-screen'));
+  document.getElementById('btn-back-from-settings').addEventListener('click', () => showScreen('menu-screen'));
+
+  // 设置页面
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    showScreen('settings-screen');
+    initSettingsPage();
+  });
+
+  // 游戏功能按钮
+  document.getElementById('btn-speed-down').addEventListener('click', () => changeSpeed(-1));
+  document.getElementById('btn-speed-up').addEventListener('click', () => changeSpeed(1));
+  document.getElementById('btn-drop').addEventListener('click', hardDrop);
+  document.getElementById('btn-pause').addEventListener('click', () => { if (gamePaused) resumeGame(); else pauseGame(); });
+  document.getElementById('btn-save').addEventListener('click', saveGame);
+  document.getElementById('btn-exit').addEventListener('click', quitGame);
+
+  // D-pad: ↑旋转
+  document.getElementById('dpad-up').addEventListener('click', rotateCurPiece);
+
+  // D-pad: ←→ 移动（setupLongPress 内 pointerdown 已处理单次+长按）
+  setupLongPress('dpad-left', () => movePiece(-1));
+  setupLongPress('dpad-right', () => movePiece(1));
+
+  // D-pad: ↓ 加速下落，双击立刻下落
+  setupDownButton();
+
+  // 弹窗
+  document.getElementById('btn-resume').addEventListener('click', resumeGame);
+  document.getElementById('btn-quit').addEventListener('click', quitGame);
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    document.getElementById('gameover-modal').classList.remove('active'); startGame();
+  });
+  document.getElementById('btn-to-menu').addEventListener('click', () => {
+    document.getElementById('gameover-modal').classList.remove('active'); showScreen('menu-screen');
+  });
+
+  // 排行榜切换
+  document.querySelectorAll('.leaderboard-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.leaderboard-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      tab.dataset.tab === 'local' ? renderLocalRanks() : renderGlobalRanks();
+    });
+  });
+}
+
+function setupDownButton() {
+  const el = document.getElementById('dpad-down');
+  let lastTap = 0, longTimer = null, longInterval = null;
+
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    longTimer = setTimeout(() => { longInterval = setInterval(softDrop, 50); }, 200);
+  });
+
+  const cleanup = () => {
+    if (longTimer) { clearTimeout(longTimer); longTimer = null; }
+    if (longInterval) { clearInterval(longInterval); longInterval = null; }
+  };
+
+  el.addEventListener('pointerup', () => {
+    if (longInterval) { cleanup(); return; }
+    if (longTimer) {
+      clearTimeout(longTimer); longTimer = null;
+      const now = Date.now();
+      if (now - lastTap < 350) { hardDrop(); lastTap = 0; }
+      else { softDrop(); lastTap = now; }
+    }
+  });
+
+  el.addEventListener('pointerleave', cleanup);
+  el.addEventListener('pointercancel', cleanup);
+}
+
+function setupLongPress(id, callback) {
+  const el = document.getElementById(id);
+  let interval = null, timeout = null;
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    callback();
+    timeout = setTimeout(() => { interval = setInterval(callback, 50); }, 200);
+  });
+  const end = () => { clearTimeout(timeout); clearInterval(interval); };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointerleave', end);
+  el.addEventListener('pointercancel', end);
+}
+
+// ===================== 设置页面 =====================
+const COLOR_NAMES = { blue: '水', yellow: '岩', purple: '雷', green: '风', red: '火' };
+
+function renderPresetPreview(preset) {
+  const div = document.getElementById('preset-preview-content');
+  if (preset === 'custom') {
+    const saved = getCustomImages();
+    div.innerHTML = COLORS.map(c => {
+      const has = !!saved[c];
+      return `<div class="upload-row">
+        <div class="color-dot" style="background:${COLOR_HEX[c]}"></div>
+        <span class="color-name">${COLOR_NAMES[c]}</span>
+        ${has ? `<img class="thumb has" src="${saved[c]}">` : '<span style="font-size:11px;color:#666">未上传</span>'}
+      </div>`;
+    }).join('');
+  } else {
+    const info = PRESETS[preset] || PRESETS.genshin;
+    const sfx = info.suffix || '';
+    div.innerHTML = COLORS.map(c =>
+      `<div class="upload-row">
+        <div class="color-dot" style="background:${COLOR_HEX[c]}"></div>
+        <span class="color-name">${COLOR_NAMES[c]}</span>
+        <img class="thumb has" src="images/${c}${sfx}.jpg" onerror="this.src='';this.classList.remove('has')">
+      </div>`
+    ).join('');
+  }
+}
+
+async function applyPreset(p) {
+  setPreset(p);
+  for (const k in imgCache) delete imgCache[k];
+  await loadImages();
+  document.querySelectorAll('.preset-tab').forEach(t => t.classList.toggle('active', t.dataset.preset === p));
+  document.getElementById('custom-upload').style.display = p === 'custom' ? 'block' : 'none';
+  if (p === 'custom') renderUploadList();
+  renderPresetPreview(p);
+}
+
+function initSettingsPage() {
+  const preset = getPreset();
+  document.querySelectorAll('.preset-tab').forEach(t => t.classList.toggle('active', t.dataset.preset === preset));
+  document.getElementById('custom-upload').style.display = preset === 'custom' ? 'block' : 'none';
+  if (preset === 'custom') renderUploadList();
+  renderPresetPreview(preset);
+}
+
+function renderUploadList() {
+  const list = document.getElementById('upload-list');
+  const saved = getCustomImages();
+  list.innerHTML = COLORS.map(c => {
+    const has = !!saved[c];
+    return `<div class="upload-row">
+      <div class="color-dot" style="background:${COLOR_HEX[c]}"></div>
+      <span class="color-name">${COLOR_NAMES[c]}</span>
+      <input type="file" accept="image/*" data-color="${c}">
+      <img class="thumb${has ? ' has' : ''}" src="${saved[c] || ''}" data-color="${c}">
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('input[type=file]').forEach(inp => {
+    inp.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const color = inp.dataset.color;
+      const base64 = await compressImage(file);
+      const saved = getCustomImages();
+      saved[color] = base64;
+      setCustomImages(saved);
+      const thumb = list.querySelector(`.thumb[data-color="${color}"]`);
+      if (thumb) { thumb.src = base64; thumb.classList.add('has'); }
+      renderPresetPreview('custom');
+      // 如果当前已是自定义预设，立即生效
+      if (getPreset() === 'custom') {
+        for (const k in imgCache) delete imgCache[k];
+        await loadImages();
+      }
+      showToast(COLOR_NAMES[color] + '元素已更新');
+    });
+  });
+}
+
+// 预设切换（点击即生效）
+document.addEventListener('click', async (e) => {
+  if (!e.target.classList.contains('preset-tab')) return;
+  const p = e.target.dataset.preset;
+  if (!p || p === getPreset()) return;
+  await applyPreset(p);
+  showToast('已切换为：' + (PRESETS[p] ? PRESETS[p].name : '自定义'));
+});
+
+// 清空自定义图片
+document.getElementById('btn-clear-custom').addEventListener('click', () => {
+  try { localStorage.removeItem(CUSTOM_IMG_KEY); } catch(e) {}
+  if (getPreset() === 'custom') { for (const k in imgCache) delete imgCache[k]; loadImages(); }
+  renderUploadList();
+  renderPresetPreview('custom');
+  showToast('自定义图片已清空');
+});
+
+// 清空本地排行（在排行榜页）
+document.getElementById('btn-clear-ranks').addEventListener('click', () => {
+  try { localStorage.removeItem(LEADERBOARD_KEY); } catch(e) {}
+  renderLocalRanks();
+  showToast('本地排行已清空');
+});
+
+// ===================== 响应式画布 =====================
+function resizeCanvas() {
+  const wrap = document.querySelector('.canvas-wrap');
+  if (!wrap || !gameCanvas) return;
+  const scale = Math.min(wrap.clientWidth / gameCanvas.width, wrap.clientHeight / gameCanvas.height);
+  gameCanvas.style.width = (gameCanvas.width * scale) + 'px';
+  gameCanvas.style.height = (gameCanvas.height * scale) + 'px';
+}
+
+// ===================== 初始化 =====================
+async function init() {
+  gameCanvas = document.getElementById('game-canvas');
+  gameCtx = gameCanvas.getContext('2d');
+  nextCanvas = document.getElementById('next-canvas');
+  nextCtx = nextCanvas.getContext('2d');
+  gameCanvas.width = COLS * CELL;
+  gameCanvas.height = ROWS * CELL;
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  await loadImages();
+
+  if (hasSaveData()) document.getElementById('btn-continue').classList.add('has-save');
+
+  syncCloudSave().then(() => {
+    if (hasSaveData()) document.getElementById('btn-continue').classList.add('has-save');
+  });
+
+  setupControls();
+}
+
+init();
+</script>
+</body>
+</html>
