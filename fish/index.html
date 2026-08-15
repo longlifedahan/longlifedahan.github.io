@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b2f52">
+  <title>大鱼吃小鱼</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 首页 -->
+    <section id="view-home" class="view active">
+      <div class="home-inner">
+        <h1 class="title">大鱼吃小鱼</h1>
+        <div class="intro">
+          <p>滑动 / 拖动屏幕，操控银色小鱼游动</p>
+          <p>碰到数字<b>相同或更小</b>的鱼：吃掉对方</p>
+          <p>数字<b>比你大</b>的鱼：小心躲避</p>
+        </div>
+        <button class="btn primary" id="btn-start">开始游戏</button>
+        <button class="btn ghost" id="btn-open-lb">排行榜</button>
+
+        <div class="settings-card">
+          <div class="set-row">
+            <span class="set-label">音效</span>
+            <button class="set-toggle" id="btn-sound-home">开</button>
+          </div>
+          <div class="set-row">
+            <span class="set-label">难度</span>
+            <div class="diff-seg" id="diff-seg">
+              <button class="seg" data-diff="easy">简单</button>
+              <button class="seg" data-diff="normal">普通</button>
+              <button class="seg" data-diff="hard">困难</button>
+              <button class="seg" data-diff="hell">地狱</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="best-card">
+          <div class="best-title">最佳战绩</div>
+          <div class="best-row" id="best-row"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏页 -->
+    <section id="view-game" class="view">
+      <canvas id="game"></canvas>
+
+      <div class="hud">
+        <div class="hud-cell">
+          <span class="hud-val" id="hud-score">10</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">时间</span>
+          <span class="hud-val" id="hud-time">0:00</span>
+        </div>
+        <div class="hud-btns">
+          <button class="hud-btn" id="btn-mute" aria-label="音效">🔊</button>
+          <button class="hud-btn" id="btn-pause" aria-label="暂停">⏸</button>
+        </div>
+      </div>
+
+      <div class="hint" id="game-hint">滑动屏幕移动</div>
+
+      <!-- 半透明摇杆（底部中间） -->
+      <div id="joy" aria-hidden="true">
+        <div id="joy-knob"></div>
+      </div>
+
+      <!-- 暂停 -->
+      <div class="overlay" id="pause-overlay" hidden>
+        <div class="panel">
+          <h2>已暂停</h2>
+          <button class="btn primary" id="btn-resume">继续游戏</button>
+          <button class="btn ghost" id="btn-restart">重新开始</button>
+          <button class="btn ghost" id="btn-pause-home">返回首页</button>
+        </div>
+      </div>
+
+      <!-- 结算 -->
+      <div class="overlay" id="over-overlay" hidden>
+        <div class="panel">
+          <h2 class="over-title">游戏结束</h2>
+          <div class="over-score" id="over-score"></div>
+          <div class="over-sub" id="over-sub"></div>
+          <button class="btn primary" id="btn-again">再来一局</button>
+          <button class="btn ghost" id="btn-over-lb">排行榜</button>
+          <button class="btn ghost" id="btn-over-home">返回首页</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-source-tabs">
+        <button class="tab active" data-source="local">本地榜</button>
+        <button class="tab" data-source="global">B站榜</button>
+      </div>
+      <div class="tabs" id="lb-diff-tabs"></div>
+      <div class="tabs" id="lb-period-tabs">
+        <button class="tab active" data-period="all">总榜</button>
+        <button class="tab" data-period="month">月榜</button>
+        <button class="tab" data-period="week">周榜</button>
+        <button class="tab" data-period="day">日榜</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

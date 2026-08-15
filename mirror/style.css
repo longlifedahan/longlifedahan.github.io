@@ -1,0 +1,152 @@
+/* ============ 万花筒 样式：移动端优先，兼容电脑端 ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  background: #04050a;
+  background-image:
+    radial-gradient(circle at 50% 40%, rgba(70, 90, 150, 0.16), transparent 60%);
+  color: #eef;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  height: 100dvh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ---------------- 顶部 ---------------- */
+.top { padding: 10px 14px 6px; text-align: center; }
+.top-title {
+  font-size: 20px; font-weight: 700; letter-spacing: 1px;
+  text-shadow: 0 0 18px rgba(160, 130, 255, 0.6);
+}
+.mode-switch {
+  margin-top: 8px;
+  display: flex; justify-content: center; gap: 8px;
+}
+.mode-btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: #bbc;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.mode-btn.active {
+  background: linear-gradient(135deg, #7c5cff, #e055ff);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 16px rgba(150, 90, 255, 0.45);
+}
+
+/* ---------------- 画布区 ---------------- */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  min-height: 0;
+}
+#kaleid {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: calc(100vh - 210px);
+  max-height: calc(100vh - 210px);
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+  background: #05060f;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.10),
+    0 12px 44px rgba(0,0,0,0.75),
+    0 0 30px rgba(120,150,255,0.12),
+    inset 0 0 70px rgba(0,0,0,0.55);
+}
+#kaleid:active { cursor: grabbing; }
+.hint {
+  margin-top: 8px;
+  font-size: 12px; color: #889;
+  text-align: center;
+  opacity: 0.85;
+}
+
+/* ---------------- 工具栏 ---------------- */
+.toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  flex-wrap: wrap;
+}
+.tbtn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.07);
+  color: #dde;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .15s, background .2s, box-shadow .2s;
+}
+.tbtn:active { transform: scale(0.94); }
+.tbtn:disabled {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  pointer-events: none;
+  box-shadow: none;
+}
+.tbtn-main {
+  background: linear-gradient(135deg, #6a4cff, #d04cff);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 14px rgba(140, 80, 255, 0.4);
+}
+.autospin {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #99a;
+  cursor: pointer;
+}
+.autospin input { width: 34px; height: 18px; appearance: none; position: relative; cursor: pointer;
+  background: rgba(255,255,255,0.14); border-radius: 999px; transition: background .2s; }
+.autospin input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+  border-radius: 50%; background: #fff; transition: transform .2s; }
+.autospin input:checked { background: linear-gradient(135deg, #6a4cff, #d04cff); }
+.autospin input:checked::after { transform: translateX(16px); }
+
+/* 上传按钮为标准 <button>，点击由 JS 触发隐藏 file input */
+
+/* ---------------- Toast ---------------- */
+.toast {
+  position: fixed;
+  left: 50%; bottom: 90px;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 45, 0.92);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  z-index: 99;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: toastIn .25s ease-out;
+  max-width: 80vw;
+  text-align: center;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------------- 电脑端微调 ---------------- */
+@media (min-width: 768px) {
+  #app { max-width: 560px; }
+  .tbtn { padding: 11px 16px; font-size: 15px; }
+}

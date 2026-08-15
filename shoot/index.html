@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b2033">
+  <title>射箭大师</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 首页 -->
+    <section id="view-home" class="view active">
+      <div class="home-inner">
+        <h1 class="title">🏹 射箭大师</h1>
+        <p class="subtitle">蓄力 · 瞄准 · 命中靶心</p>
+
+        <div class="progress-card">
+          <div class="prog-row"><span class="prog-label">当前关卡</span><b id="home-level" class="prog-val">第 1 关</b></div>
+          <div class="prog-row"><span class="prog-label">累计星数</span><b id="home-stars" class="prog-val">★ 0</b></div>
+        </div>
+
+        <div class="home-btns">
+          <button class="btn primary" id="btn-start">开始游戏</button>
+          <button class="btn ghost" id="btn-settings">设置</button>
+          <button class="btn ghost" id="btn-lb">排行榜</button>
+        </div>
+
+        <div class="intro">
+          <p>拖动下方滑动条调整角度，按住<b>蓄力</b>按钮充能，松开即发射</p>
+          <p>障碍物越多、价值越高的标靶越难命中，可用抛物线翻越</p>
+          <p>每关 7 支箭 · 1 次求助机会</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏页 -->
+    <section id="view-game" class="view">
+      <div id="hud">
+        <span class="hud-item">第 <b id="hud-level">1</b> 关</span>
+        <span class="hud-item">★ <b id="hud-stars">0</b></span>
+        <span class="hud-item">箭 <b id="hud-arrows">7</b>/<span class="dim">7</span></span>
+        <span class="hud-item">分 <b id="hud-score">0</b>/<b id="hud-total">0</b></span>
+        <div class="hud-spacer"></div>
+        <button class="hud-btn" id="btn-help" aria-label="求助">💡<span class="badge" id="help-left">1</span></button>
+        <button class="hud-btn" id="btn-mute" aria-label="音效">🔊</button>
+        <button class="hud-btn" id="btn-home" aria-label="返回首页">🏠</button>
+      </div>
+
+      <div id="stage"><canvas id="game"></canvas></div>
+
+      <div id="controls">
+        <div class="ctrl-row" id="angle-row">
+          <span class="ctrl-label">角度</span>
+          <div class="slider" id="angle-slider">
+            <div class="slider-scale">
+              <span>-90°</span><span>0°</span><span>+90°</span>
+            </div>
+            <div class="slider-track"></div>
+            <div class="slider-knob" id="angle-knob"></div>
+          </div>
+          <input type="number" id="angle-input" class="angle-input" min="-90" max="90" step="2" value="0" aria-label="角度数值">
+          <span class="ctrl-unit">°</span>
+        </div>
+
+        <div class="ctrl-row" id="power-row">
+          <span class="ctrl-label">力度</span>
+          <div class="power-wrap">
+            <div class="power-bar" id="power-bar">
+              <div class="power-fill" id="power-fill"></div>
+              <div class="power-target" id="power-target" hidden><span class="power-tag" id="power-target-tag">0</span></div>
+              <div class="power-marker" id="power-marker" hidden><span class="power-tag" id="power-marker-tag">0</span></div>
+              <span class="power-num" id="power-val">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl-row" id="btn-row">
+          <button class="ctrl-btn charge" id="btn-charge">蓄力</button>
+          <button class="ctrl-btn cancel" id="btn-cancel">放弃</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 求助弹层：先选单个标靶 -->
+  <div class="modal" id="help-overlay" hidden>
+    <div class="modal-card">
+      <h2 class="modal-title">求助 · 选择标靶</h2>
+      <div class="help-sub" id="help-angle">当前角度 0°</div>
+      <div class="help-body" id="help-body"></div>
+      <button class="btn primary" id="btn-close-help">关闭</button>
+    </div>
+  </div>
+
+  <!-- 结算弹层 -->
+  <div class="modal" id="result-overlay" hidden>
+    <div class="modal-card">
+      <h2 class="modal-title" id="result-title">本关通过</h2>
+      <div class="result-stars" id="result-stars"></div>
+      <div class="result-score" id="result-score"></div>
+      <div class="result-info" id="result-info"></div>
+      <div class="result-btns">
+        <button class="btn primary" id="btn-result-next">下一关</button>
+        <button class="btn ghost" id="btn-result-lb">排行榜</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 排行榜弹层 -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card lb-card">
+      <div class="modal-head">
+        <h2 class="modal-title">排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-board-tabs">
+        <button class="tab active" data-board="level">等级榜</button>
+        <button class="tab" data-board="star">星数榜</button>
+      </div>
+      <div class="tabs" id="lb-period-tabs">
+        <button class="tab active" data-period="all">总榜</button>
+        <button class="tab" data-period="month">月榜</button>
+        <button class="tab" data-period="week">周榜</button>
+        <button class="tab" data-period="day">日榜</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- 设置弹层 -->
+  <div class="modal" id="settings-overlay" hidden>
+    <div class="modal-card">
+      <h2 class="modal-title">设置</h2>
+      <div class="set-row">
+        <span class="set-label">音效</span>
+        <button class="set-toggle" id="btn-sound-toggle">开</button>
+      </div>
+      <div class="set-row">
+        <span class="set-label">蓄力速度</span>
+        <input type="range" id="charge-rate" class="set-slider" min="25" max="70" step="5" value="40" aria-label="蓄力速度">
+        <span class="set-value" id="charge-rate-val">40</span>
+      </div>
+      <button class="btn primary" id="btn-close-settings">关闭</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

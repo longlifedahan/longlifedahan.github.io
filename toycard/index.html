@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1120">
+  <title>TOYSTORE抽卡版</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== 抽卡 tab（默认） ===== -->
+    <section id="tab-gacha" class="tab-page">
+      <header class="head">
+        <div class="head-title">
+          <span class="title-mark">🎰</span>
+          <h1 class="title">TOYSTORE抽卡版</h1>
+          <a class="home-link" href="https://www.bilibili.com/toy/home/index.html" target="_blank" rel="noopener">🏠 作者首页</a>
+        </div>
+        <div class="head-meta" id="meta-text">加载数据中…</div>
+        <div class="stats-bar" id="stats-bar" hidden></div>
+      </header>
+
+      <section class="card filter-sec">
+        <div class="sec-row">
+          <span class="sec-label">抽取分类</span>
+          <span class="sec-actions">
+            <button class="mini-btn" id="btn-select-all">全选</button>
+            <button class="mini-btn" id="btn-clear-all">清空</button>
+          </span>
+        </div>
+        <div class="chips" id="cat-chips"><span class="chip-loading">…</span></div>
+      </section>
+
+      <section class="card gacha-sec">
+        <button class="btn btn-ten" id="btn-ten">十连抽</button>
+        <button class="btn btn-primary" id="btn-single">单抽</button>
+      </section>
+
+      <section class="result-sec" id="result-sec">
+        <div class="empty-hint" id="empty-hint">选择分类，开始抽卡吧 ✨</div>
+        <div class="result" id="result"></div>
+      </section>
+    </section>
+
+    <!-- ===== 黑名单 tab ===== -->
+    <section id="tab-black" class="tab-page" hidden>
+      <header class="page-head">
+        <h2 class="page-title">⛔ 黑名单</h2>
+        <button class="mini-btn danger" id="btn-clear-black" hidden>清空全部</button>
+      </header>
+      <div class="list-tip" id="black-tip"></div>
+      <div class="list-body" id="black-body"><div class="list-empty">暂无黑名单</div></div>
+    </section>
+
+    <!-- ===== 收藏 tab ===== -->
+    <section id="tab-fav" class="tab-page" hidden>
+      <header class="page-head">
+        <h2 class="page-title">⭐ 收藏</h2>
+        <button class="mini-btn danger" id="btn-clear-fav" hidden>清空全部</button>
+      </header>
+      <div class="list-tip" id="fav-tip"></div>
+      <div class="list-body" id="fav-body"><div class="list-empty">暂无收藏</div></div>
+    </section>
+
+  </div>
+
+  <!-- 底部 3 tab -->
+  <nav class="tab-bar">
+    <button class="tab-btn" data-tab="black">
+      <span class="tb-ico">⛔</span>
+      <span class="tb-label">黑名单<span class="tb-count" id="black-count">0</span></span>
+    </button>
+    <button class="tab-btn active" data-tab="gacha">
+      <span class="tb-ico">🎰</span>
+      <span class="tb-label">抽卡</span>
+    </button>
+    <button class="tab-btn" data-tab="fav">
+      <span class="tb-ico">⭐</span>
+      <span class="tb-label">收藏<span class="tb-count" id="fav-count">0</span></span>
+    </button>
+  </nav>
+
+  <!-- 抽卡召唤特效遮罩 -->
+  <div id="spark-overlay" class="spark-overlay" hidden>
+    <div class="spark-inner">
+      <div class="spark-ring"></div>
+      <div class="spark-text" id="spark-text">召唤中…</div>
+    </div>
+  </div>
+
+  <!-- 自定义确认弹层（Toy WebView 弹不出原生 confirm） -->
+  <div id="confirm-mask" class="confirm-mask" hidden>
+    <div class="confirm-box">
+      <p class="confirm-text" id="confirm-text"></p>
+      <div class="confirm-btns">
+        <button class="confirm-btn cancel" id="confirm-cancel">取消</button>
+        <button class="confirm-btn ok" id="confirm-ok">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- 本地全量数据（离线直读 / 网络兜底），可用 node update-data.js 更新 -->
+  <script src="data.js"></script>
+  <!-- 我的 Toys 配置（自定义条目，一并加入抽卡池） -->
+  <script src="myToys.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0a1a">
+  <title>赛博木鱼</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 顶部信息栏 -->
+    <header class="topbar">
+      <div class="lv-line">
+        <span class="lv-badge" id="lv-badge">Lv.0</span>
+        <span class="lv-name" id="lv-name">信众</span>
+      </div>
+      <div class="lv-prog"><div class="lv-prog-fill" id="lv-prog-fill"></div></div>
+      <div class="lv-th" id="lv-th">累计功德 0 / 10</div>
+      <div class="m-row">
+        <div class="m-cell">
+          <span class="mlabel">当前功德</span>
+          <span class="mvalue" id="m-gold">0</span>
+        </div>
+        <div class="m-cell right">
+          <span class="mlabel">每秒产量</span>
+          <span class="mvalue" id="m-pps">0 /秒</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 右上角工具 -->
+    <div class="corner">
+      <button class="icon-btn" id="btn-mute" aria-label="静音">🔊</button>
+      <button class="icon-btn" id="btn-reborn" aria-label="转世重修">🔄</button>
+      <button class="icon-btn" id="btn-rank" aria-label="排行榜">🏆</button>
+    </div>
+
+    <main id="main">
+
+      <!-- 木鱼 -->
+      <section class="muyu-card" id="muyu-card">
+        <div class="muyu-wrap" id="muyu-wrap">
+          <div class="muyu" id="muyu"><span class="muyu-slot"></span></div>
+          <div class="muyu-glow" id="muyu-glow"></div>
+        </div>
+        <div class="tap-line" id="tap-line">👆 敲木鱼 +1 功德 · 增产 +10%</div>
+        <div class="buff-row">
+          <div class="buff-bar"><div class="buff-fill" id="buff-fill"></div></div>
+          <span class="buff-num" id="buff-num">倍率 ×1.00</span>
+        </div>
+      </section>
+
+      <!-- 功德生产设施 -->
+      <section class="build-sec">
+        <div class="sec-title">⚙️ 功德生产设施 <span class="sec-rate" id="sec-rate">基础产量：0/秒</span></div>
+        <div id="list"></div>
+      </section>
+
+    </main>
+
+    <footer class="foot" id="foot">🙏 敲木鱼增产 · 挂机基础倍率10% · 关注作者可解锁24小时挂机</footer>
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">🏆 B站排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-tabs">
+        <button class="tab active" data-b="1">总功德</button>
+        <button class="tab" data-b="2">每秒产出</button>
+        <button class="tab" data-b="3">功德等级</button>
+      </div>
+      <div class="tabs ptabs" id="lb-ptabs">
+        <button class="ptab" data-p="day">日榜</button>
+        <button class="ptab" data-p="week">周榜</button>
+        <button class="ptab" data-p="month">月榜</button>
+        <button class="ptab active" data-p="all">总榜</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- 批量购买弹窗 -->
+  <div class="modal" id="bulk-modal" hidden>
+    <div class="modal-card bulk-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="bulk-name">批量购买</h2>
+        <button class="icon-close" id="btn-close-bulk" aria-label="关闭">×</button>
+      </div>
+      <div class="bulk-price" id="bulk-price">单台价格：0</div>
+      <div class="bulk-count-row">
+        <input type="text" id="bulk-num" class="bulk-input" inputmode="decimal" autocomplete="off" value="1">
+        <button class="bulk-max-btn" id="btn-bulk-max">MAX</button>
+      </div>
+      <div class="bulk-slider-row">
+        <span class="bulk-edge">1</span>
+        <input type="range" id="bulk-slider" class="bulk-slider" min="1" max="10" value="1">
+        <span class="bulk-edge" id="bulk-max">10</span>
+      </div>
+      <div class="bulk-total">总价：<b id="bulk-total">0</b> 功德</div>
+      <div class="bulk-afford" id="bulk-afford">当前功德：0</div>
+      <div class="bulk-btns">
+        <button class="idle-btn ghost" id="btn-bulk-cancel">取消</button>
+        <button class="idle-btn" id="btn-bulk-ok">确认购买</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 挂机回报弹窗 -->
+  <div class="modal" id="idle-modal" hidden>
+    <div class="modal-card idle-card">
+      <div class="idle-icon">🙏</div>
+      <h2 class="modal-title idle-title">挂机回报</h2>
+      <div class="idle-body">
+        <div class="idle-line">你挂机了 <b id="idle-dur">0</b></div>
+        <div class="idle-line">积累 <b class="gold" id="idle-gain">0 功德</b></div>
+        <div class="idle-note" id="idle-note"></div>
+        <div class="idle-follow" id="idle-follow" hidden>
+          <div class="idle-follow-tip" id="idle-follow-tip">挂机上限 8 小时，关注作者可解锁 24 小时挂机</div>
+          <button class="idle-btn ghost" id="btn-follow">去关注作者</button>
+        </div>
+      </div>
+      <button class="idle-btn" id="btn-idle-ok">开始修行</button>
+    </div>
+  </div>
+
+  <!-- 转世重修弹窗 -->
+  <div class="modal" id="reborn-modal" hidden>
+    <div class="modal-card reborn-card">
+      <div class="reborn-icon">🔄</div>
+      <h2 class="modal-title reborn-title">转世重修</h2>
+      <div class="reborn-tip">转世后将<b>清空所有功德、设施与等级</b>，从头开始修行。<br>此操作不可撤销！</div>
+      <div class="reborn-btns">
+        <button class="idle-btn ghost" id="btn-reborn-cancel">再想想</button>
+        <button class="idle-btn danger" id="btn-reborn-ok">确定转世</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 晋升弹窗 -->
+  <div class="modal promo-modal" id="promo-modal" hidden>
+    <div class="modal-card promo-card">
+      <div class="promo-badge">🎉</div>
+      <h2 class="promo-title">功德圆满</h2>
+      <div class="promo-name" id="promo-name">晋升 信徒</div>
+      <div class="promo-lv" id="promo-lv">Lv.1</div>
+      <button class="idle-btn promo-btn" id="btn-promo-ok">继续修行</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

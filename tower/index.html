@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>无尽魔塔</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="title" id="appTitle">无尽魔塔</div>
+    <div id="floorInfo" class="floor-info"></div>
+    <div class="top-actions">
+      <button class="btn small ghost" data-act="idle" id="btnIdle">挂机</button>
+      <button class="btn small ghost" data-act="settings">设置</button>
+    </div>
+  </header>
+
+  <main id="scene"></main>
+
+  <footer id="statusbar"></footer>
+</div>
+
+<div id="modalRoot" class="modal-root"></div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/save.js"></script>
+<script src="js/rank.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

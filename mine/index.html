@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>扫雷</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e; color: #eee; min-height: 100vh; min-height: 100dvh;
+    display: flex; justify-content: center; align-items: center; touch-action: manipulation;
+  }
+  .container {
+    background: #16213e; padding: 24px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    max-width: 100vw; margin: 16px auto;
+  }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; flex-wrap: wrap; }
+  .header h1 { font-size: 22px; color: #e94560; white-space: nowrap; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .controls select {
+    background: #0f3460; color: #eee; border: none; padding: 6px 10px; border-radius: 8px; font-size: 14px; cursor: pointer;
+  }
+  .controls select:focus { outline: 2px solid #e94560; }
+  .btn {
+    background: #e94560; color: #fff; border: none; padding: 6px 14px; border-radius: 8px;
+    font-size: 14px; cursor: pointer; transition: background .2s;
+  }
+  .btn:hover { background: #d63851; }
+  .btn-rank {
+    background: #0f3460; font-size: 20px; padding: 4px 10px; line-height: 1;
+  }
+  .btn-rank:hover { background: #1a4a8a; }
+  .flag-mode {
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    background: #0f3460; padding: 6px 12px; border-radius: 8px; font-size: 13px;
+    color: #ccc; user-select: none; margin-top: 8px; flex-basis: 100%; justify-content: center;
+  }
+  .flag-mode input { accent-color: #e94560; width: 16px; height: 16px; cursor: pointer; }
+  .flag-mode.active { background: #e94560; color: #fff; }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #0f3460; padding: 8px 16px; border-radius: 8px; margin-bottom: 12px;
+    font-size: 18px; font-variant-numeric: tabular-nums;
+  }
+  .mine-count { color: #e94560; font-weight: bold; }
+  .timer { color: #53d769; font-weight: bold; }
+  .smiley { font-size: 28px; cursor: pointer; line-height: 1; }
+  .board { display: grid; gap: 2px; background: #0f3460; padding: 4px; border-radius: 8px; touch-action: manipulation; width: 100%; margin: 0 auto; }
+  .cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(10px, 2.6vmin, 16px); font-weight: bold; cursor: pointer; border-radius: 4px;
+    background: #1a3a6b; user-select: none; transition: background .1s; touch-action: manipulation;
+  }
+  .cell:hover { background: #234a8a; }
+  .cell.revealed { background: #0d1b3a; cursor: default; }
+  .cell.revealed:hover { background: #0d1b3a; }
+  .cell.chording { background: #3a7bd5 !important; animation: chord-flash .25s ease-in-out; }
+  @keyframes chord-flash {
+    0% { background: #3a7bd5; transform: scale(1.1); }
+    50% { background: #5a9df5; }
+    100% { background: #234a8a; transform: scale(1); }
+  }
+  .cell.flagged { background: #3a1a2e; }
+  .cell.flagged:hover { background: #4a233a; }
+  .cell.mine { background: #e94560; }
+  .cell.mine.exploded { background: #ff6b6b; animation: explode .3s ease; }
+  @keyframes explode { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .cell[data-count="1"] { color: #64b5f6; } .cell[data-count="2"] { color: #81c784; }
+  .cell[data-count="3"] { color: #e57373; } .cell[data-count="4"] { color: #9575cd; }
+  .cell[data-count="5"] { color: #ff8a65; } .cell[data-count="6"] { color: #4dd0e1; }
+  .cell[data-count="7"] { color: #fff; } .cell[data-count="8"] { color: #bbb; }
+  .message { text-align: center; margin-top: 12px; font-size: 14px; min-height: 20px; padding: 6px; border-radius: 8px; }
+  .message.win { color: #53d769; } .message.lose { color: #e94560; }
+  .board-nav { display: flex; gap: 10px; margin-top: 12px; }
+  .nav-btn {
+    flex: 1; padding: 12px 0; font-size: 15px; border: none; border-radius: 10px;
+    background: #0f3460; color: #fff; cursor: pointer; touch-action: manipulation; user-select: none;
+    transition: background .15s;
+  }
+  .nav-btn:active { background: #e94560; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    justify-content: center; align-items: center; z-index: 1000;
+    animation: fadeIn .2s ease;
+  }
+  .modal-overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal {
+    background: #1a2a4a; border-radius: 16px; padding: 24px; max-width: 400px; width: 90vw;
+    max-height: 80vh; animation: slideUp .25s ease; box-shadow: 0 8px 40px rgba(0,0,0,.5);
+  }
+  .modal-hint { max-width: 360px; text-align: center; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .modal-header h2 { font-size: 18px; }
+  .modal-close { font-size: 22px; cursor: pointer; color: #888; line-height: 1; padding: 4px; }
+  .modal-close:hover { color: #fff; }
+
+  /* Leaderboard */
+  .rank-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #0f1a30; border-radius: 10px; padding: 4px; }
+  .rank-tab {
+    flex: 1; text-align: center; padding: 8px; border: none; border-radius: 8px;
+    background: transparent; color: #888; font-size: 14px; cursor: pointer; transition: all .2s;
+  }
+  .rank-tab.active { background: #e94560; color: #fff; }
+  .rank-tab:hover:not(.active) { color: #eee; }
+  .rank-list { max-height: 50vh; overflow-y: auto; min-height: 120px; }
+  .rank-list::-webkit-scrollbar { width: 4px; }
+  .rank-list::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 2px; }
+  .rank-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+    border-bottom: 1px solid #0f3460; font-size: 14px;
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-item.is-me { background: rgba(233,69,96,.15); border-radius: 6px; padding: 8px 4px; }
+  .rank-num { width: 28px; text-align: center; font-weight: bold; color: #888; }
+  .rank-num.top1 { color: #ffd700; } .rank-num.top2 { color: #c0c0c0; } .rank-num.top3 { color: #cd7f32; }
+  .rank-avatar { width: 28px; height: 28px; border-radius: 50%; background: #0f3460; flex-shrink: 0; overflow: hidden; }
+  .rank-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .rank-avatar .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #888; }
+  .rank-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
+  .rank-score { color: #53d769; font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rank-empty { text-align: center; padding: 32px 16px; color: #666; font-size: 14px; }
+  .rank-loading { text-align: center; padding: 32px; color: #888; }
+  .rank-loading::after { content: '...'; animation: dots 1.5s infinite; }
+  @keyframes dots { 0%,20% { content: '.'; } 40% { content: '..'; } 60%,100% { content: '...'; } }
+  .rank-my { margin-top: 12px; padding: 10px; background: #0f1a30; border-radius: 8px; text-align: center; font-size: 13px; color: #888; }
+
+  /* Hint */
+  .hint-content { text-align: left; font-size: 14px; line-height: 1.8; color: #ccc; margin-bottom: 16px; }
+  .hint-content .hint-section { margin-bottom: 12px; }
+  .hint-content .hint-section h3 { color: #e94560; font-size: 15px; margin-bottom: 4px; }
+  .hint-content .hint-section p { padding-left: 8px; }
+  .hint-content .hint-section kbd {
+    background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: inherit; color: #eee;
+  }
+  .btn-hint { margin-top: 8px; width: 100%; padding: 10px; font-size: 16px; }
+
+  /* Mobile responsive */
+  @media (max-width: 540px) {
+    .container { padding: 12px; border-radius: 12px; margin: 12px auto; }
+    .header h1 { font-size: 18px; }
+    .controls select { font-size: 12px; padding: 4px 8px; }
+    .btn { font-size: 12px; padding: 4px 10px; }
+    .btn-rank { font-size: 18px; padding: 2px 8px; }
+    .status-bar { font-size: 15px; padding: 6px 12px; }
+    .modal { padding: 16px; }
+    .board { overflow-x: hidden; }
+  }
+  @media (pointer: coarse) {
+    .cell:hover { background: #1a3a6b; }
+    .cell.revealed:hover { background: #0d1b3a; }
+    .cell.flagged:hover { background: #3a1a2e; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>💣 扫雷</h1>
+    <div class="controls">
+      <select id="difficulty" onchange="initGame()">
+        <option value="easy">初级 9×9</option>
+        <option value="medium" selected>中级 16×16</option>
+        <option value="hard">高级 30×16</option>
+      </select>
+      <button class="btn btn-rank" onclick="openLeaderboard()">🏆</button>
+      <button class="btn btn-rank" id="soundBtn" onclick="toggleSound()" title="声音开关">🔊</button>
+      <button class="btn" onclick="initGame()">新游戏</button>
+    </div>
+    <label id="flagModeWrap" class="flag-mode" style="display:none">
+      <input type="checkbox" id="flagMode" onchange="flagModeChanged(this.checked)">
+      <span>🚩 标记模式</span>
+    </label>
+  </div>
+  <div class="status-bar">
+    <span class="mine-count" id="mineCount">0</span>
+    <span class="smiley" id="smiley" onclick="initGame()">😊</span>
+    <span class="timer" id="timer">000</span>
+  </div>
+  <div id="board" class="board"></div>
+  <div id="boardNav" class="board-nav" style="display:none">
+    <button class="nav-btn" onclick="scrollBoard(-1)">◀ 向左</button>
+    <button class="nav-btn" onclick="scrollBoard(1)">向右 ▶</button>
+  </div>
+  <div id="message" class="message"></div>
+</div>
+
+<!-- 排行榜 -->
+<div id="rankModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🏆 排行榜</h2>
+      <span class="modal-close" onclick="closeLeaderboard()">✕</span>
+    </div>
+    <div class="rank-tabs">
+      <button class="rank-tab active" data-board="1" onclick="switchRankTab(1)">初级</button>
+      <button class="rank-tab" data-board="2" onclick="switchRankTab(2)">中级</button>
+      <button class="rank-tab" data-board="3" onclick="switchRankTab(3)">高级</button>
+    </div>
+    <div id="rankList" class="rank-list"><div class="rank-loading">加载中</div></div>
+    <div id="rankMy" class="rank-my"></div>
+  </div>
+</div>
+
+<!-- 操作提示 -->
+<div id="hintModal" class="modal-overlay">
+  <div class="modal modal-hint">
+    <div class="modal-header"><h2>🎮 操作提示</h2></div>
+    <div id="hintContent" class="hint-content"></div>
+    <button class="btn btn-hint" onclick="dismissHint()">我知道了</button>
+  </div>
+</div>
+
+<script>
+// === Toy SDK 异步加载（绝不阻塞游戏进程）===
+var toyState = 'loading'; // loading | ready | failed
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js';
+  s.async = true;
+  s.onload = function() { toyState = 'ready'; };
+  s.onerror = function() { toyState = 'failed'; };
+  document.head.appendChild(s);
+})();
+
+// SDK 调用统一走此包装：未就绪直接跳过，带超时保护，任何异常不影响游戏
+function toyCall(fn, timeoutMs) {
+  if (toyState !== 'ready' || !window.toy) return Promise.reject(new Error('[ToySDK] not ready'));
+  var ms = timeoutMs || 3000;
+  return Promise.race([
+    Promise.resolve().then(fn),
+    new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('[ToySDK] timeout')); }, ms);
+    })
+  ]);
+}
+
+// === 常量 ===
+var DIFFICULTIES = {
+  easy:   { rows: 9,  cols: 9,  mines: 10 },
+  medium: { rows: 16, cols: 16, mines: 40 },
+  hard:   { rows: 16, cols: 30, mines: 99 },
+};
+var flagMode = false;
+var SCORE_MAX = 16777215;
+var BOARD_MAP = { easy: 1, medium: 2, hard: 3 };
+var BOARD_LABEL = ['', 'easy', 'medium', 'hard'];
+
+// === 音效系统（Web Audio，无需音频文件）===
+var audioCtx = null;
+var soundEnabled = localStorage.getItem('mine_sound') !== 'off';
+
+function ensureAudio() {
+  if (!audioCtx) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  var ctx = ensureAudio();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+  function tone(freq, dur, vol, wave, startDelay) {
+    var delay = startDelay || 0;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = wave || 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol || 0.15, now + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+    osc.start(now + delay);
+    osc.stop(now + delay + dur + 0.02);
+  }
+  switch (type) {
+    case 'reveal':
+      tone(720, 0.06, 0.12);
+      break;
+    case 'flag':
+      tone(520, 0.09, 0.12, 'square');
+      break;
+    case 'unflag':
+      tone(380, 0.09, 0.12, 'square');
+      break;
+    case 'explode':
+      tone(160, 0.45, 0.28, 'sawtooth');
+      tone(80, 0.5, 0.2, 'square', 0.02);
+      break;
+    case 'win':
+      [523, 659, 784, 1047].forEach(function(f, i) { tone(f, 0.2, 0.14, 'sine', i * 0.11); });
+      break;
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('mine_sound', soundEnabled ? 'on' : 'off');
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) playSound('flag');
+}
+
+function initSoundBtn() {
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+// === 状态 ===
+var state = {
+  rows: 0, cols: 0, totalMines: 0,
+  board: [], revealed: [], flagged: [],
+  gameOver: false, firstClick: true,
+  flagCount: 0, timer: 0, timerInterval: null,
+  winSubmitted: false,
+  _leftDown: null, _rightDown: null,
+};
+
+// === 检测设备 ===
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+function flagModeChanged(checked) {
+  flagMode = checked;
+  document.getElementById('flagModeWrap').classList.toggle('active', checked);
+  // 切换标记模式时清除待处理的点击
+  if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; }
+  _lastTap = { r: -1, c: -1, time: 0 };
+}
+
+// === 游戏逻辑 ===
+function getDifficulty() {
+  return DIFFICULTIES[document.getElementById('difficulty').value];
+}
+
+function initGame() {
+  clearInterval(state.timerInterval);
+  var d = getDifficulty();
+  state.rows = d.rows; state.cols = d.cols; state.totalMines = d.mines;
+  state.board = Array(d.rows).fill().map(function() { return Array(d.cols).fill(0); });
+  state.revealed = Array(d.rows).fill().map(function() { return Array(d.cols).fill(false); });
+  state.flagged = Array(d.rows).fill().map(function() { return Array(d.cols).fill(false); });
+  state.gameOver = false; state.firstClick = true;
+  state.flagCount = 0; state.timer = 0; state.winSubmitted = false;
+  state._leftDown = null; state._rightDown = null;
+  bothDownCell = null;
+  _lastTap = { r: -1, c: -1, time: 0 };
+  if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; }
+  document.getElementById('smiley').textContent = '😊';
+  document.getElementById('message').textContent = '';
+  document.getElementById('message').className = 'message';
+  document.getElementById('board').scrollLeft = 0;
+  render();
+  updateUI();
+}
+
+function placeMines(excludeR, excludeC) {
+  var placed = 0;
+  while (placed < state.totalMines) {
+    var r = Math.floor(Math.random() * state.rows);
+    var c = Math.floor(Math.random() * state.cols);
+    if (state.board[r][c] === -1) continue;
+    if (Math.abs(r - excludeR) <= 1 && Math.abs(c - excludeC) <= 1) continue;
+    state.board[r][c] = -1;
+    placed++;
+  }
+  for (var r = 0; r < state.rows; r++) {
+    for (var c = 0; c < state.cols; c++) {
+      if (state.board[r][c] === -1) continue;
+      var count = 0;
+      forEachNeighbor(r, c, function(nr, nc) { if (state.board[nr][nc] === -1) count++; });
+      state.board[r][c] = count;
+    }
+  }
+}
+
+function forEachNeighbor(r, c, fn) {
+  for (var dr = -1; dr <= 1; dr++) {
+    for (var dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      var nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) fn(nr, nc);
+    }
+  }
+}
+
+function reveal(r, c) {
+  if (state.gameOver || state.flagged[r][c] || state.revealed[r][c]) return;
+  state.revealed[r][c] = true;
+  if (state.board[r][c] === -1) {
+    gameOver(r, c); return;
+  }
+  playSound('reveal');
+  if (state.board[r][c] === 0) {
+    forEachNeighbor(r, c, function(nr, nc) { reveal(nr, nc); });
+  }
+  checkWin();
+}
+
+function chord(r, c) {
+  if (!state.revealed[r][c] || state.board[r][c] <= 0) return;
+  var adjFlags = 0;
+  forEachNeighbor(r, c, function(nr, nc) { if (state.flagged[nr][nc]) adjFlags++; });
+  if (adjFlags !== state.board[r][c]) return;
+  forEachNeighbor(r, c, function(nr, nc) { if (!state.flagged[nr][nc]) reveal(nr, nc); });
+}
+
+var bothDownCell = null;
+
+function flashNeighbors(r, c) {
+  var cells = document.querySelectorAll('.cell');
+  forEachNeighbor(r, c, function(nr, nc) {
+    if (!state.flagged[nr][nc] && !state.revealed[nr][nc]) {
+      var idx = nr * state.cols + nc;
+      if (cells[idx]) cells[idx].classList.add('chording');
+    }
+  });
+}
+
+function clearNeighborFlash() {
+  document.querySelectorAll('.cell.chording').forEach(function(el) { el.classList.remove('chording'); });
+}
+
+function chordOrFlash(r, c) {
+  if (!state.revealed[r][c] || state.board[r][c] <= 0) return;
+  var adjFlags = 0;
+  forEachNeighbor(r, c, function(nr, nc) { if (state.flagged[nr][nc]) adjFlags++; });
+  if (adjFlags === state.board[r][c]) {
+    chord(r, c);
+    render();
+    return;
+  }
+  flashNeighbors(r, c);
+  setTimeout(function() { render(); }, 250);
+}
+
+function toggleFlag(r, c) {
+  if (state.gameOver || state.revealed[r][c]) return;
+  state.flagged[r][c] = !state.flagged[r][c];
+  playSound(state.flagged[r][c] ? 'flag' : 'unflag');
+  state.flagCount += state.flagged[r][c] ? 1 : -1;
+  updateUI();
+}
+
+function handleMouseDown(r, c, event) {
+  if (state.gameOver) return;
+  if (event.button === 0) state._leftDown = { r: r, c: c };
+  else if (event.button === 2) state._rightDown = { r: r, c: c };
+  if (state._leftDown && state._rightDown &&
+      state._leftDown.r === state._rightDown.r &&
+      state._leftDown.c === state._rightDown.c) {
+    var br = state._leftDown.r, bc = state._leftDown.c;
+    if (state.revealed[br][bc] && state.board[br][bc] > 0) {
+      bothDownCell = { r: br, c: bc };
+      flashNeighbors(br, bc);
+    }
+  }
+}
+
+document.addEventListener('mouseup', function(e) {
+  if (bothDownCell) {
+    if (e.button === 0 || e.button === 2) {
+      clearNeighborFlash();
+      var br = bothDownCell.r, bc = bothDownCell.c;
+      bothDownCell = null;
+      var adjFlags = 0;
+      forEachNeighbor(br, bc, function(nr, nc) { if (state.flagged[nr][nc]) adjFlags++; });
+      if (adjFlags === state.board[br][bc]) {
+        chord(br, bc);
+        render();
+      }
+    }
+  }
+  if (e.button === 0) state._leftDown = null;
+  if (e.button === 2) state._rightDown = null;
+});
+
+// === 手机端双击标记/取消旗帜 ===
+var _lastTap = { r: -1, c: -1, time: 0 };
+var _tapTimer = null;
+
+function handleTouchStart(r, c, e) {
+  if (state.gameOver) return;
+  var now = Date.now();
+
+  // 标记模式下：单击即标记旗帜，不引爆
+  if (flagMode) {
+    e.preventDefault();
+    if (!state.revealed[r][c]) {
+      toggleFlag(r, c);
+      render();
+    } else if (state.board[r][c] > 0) {
+      chordOrFlash(r, c);
+    }
+    return;
+  }
+
+  // 同一格双击检测
+  if (r === _lastTap.r && c === _lastTap.c && now - _lastTap.time < 400) {
+    if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; }
+    e.preventDefault();
+    if (!state.revealed[r][c]) {
+      toggleFlag(r, c);
+      render();
+    } else if (state.board[r][c] > 0) {
+      chordOrFlash(r, c);
+    }
+    _lastTap = { r: -1, c: -1, time: 0 };
+    return;
+  }
+
+  // 首次触摸：延迟响应，等待可能的双击
+  e.preventDefault();
+  _lastTap = { r: r, c: c, time: now };
+  if (_tapTimer) clearTimeout(_tapTimer);
+  _tapTimer = setTimeout(function() {
+    if (!state.gameOver && !state.flagged[r][c] && !state.revealed[r][c]) {
+      if (state.firstClick) {
+        state.firstClick = false;
+        placeMines(r, c);
+        startTimer();
+      }
+      reveal(r, c);
+      render();
+    }
+    _lastTap = { r: -1, c: -1, time: 0 };
+    _tapTimer = null;
+  }, 300);
+}
+
+// === 排行榜 ===
+var rankTab = 1;
+
+function openLeaderboard() {
+  document.getElementById('rankModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  fetchRankList(rankTab);
+}
+
+function closeLeaderboard() {
+  document.getElementById('rankModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function switchRankTab(board) {
+  rankTab = board;
+  document.querySelectorAll('.rank-tab').forEach(function(el, i) {
+    el.classList.toggle('active', i+1 === board);
+  });
+  document.getElementById('rankList').innerHTML = '<div class="rank-loading">加载中</div>';
+  document.getElementById('rankMy').textContent = '';
+  fetchRankList(board);
+}
+
+function formatTime(seconds) {
+  if (seconds < 60) return seconds + 's';
+  var m = Math.floor(seconds / 60);
+  var s = seconds % 60;
+  return m + 'm ' + s + 's';
+}
+
+function getBoardNum() {
+  return BOARD_MAP[document.getElementById('difficulty').value];
+}
+
+function submitScoreOnWin(seconds) {
+  var board = BOARD_MAP[document.getElementById('difficulty').value];
+  var sec = Math.max(1, Math.round(seconds));
+  var score = SCORE_MAX - sec;
+  // 未就绪/超时/失败均静默跳过，绝不阻塞游戏
+  toyCall(function() { return window.toy.submitScore({ board: board, score: score }); }, 4000)
+    .catch(function() {});
+  // 如果排行榜打开则刷新
+  if (document.getElementById('rankModal').classList.contains('show')) {
+    fetchRankList(rankTab);
+  }
+}
+
+async function fetchRankList(board) {
+  var listEl = document.getElementById('rankList');
+  var myEl = document.getElementById('rankMy');
+  // SDK 未就绪或失败：显示状态提示，不影响游戏
+  if (toyState === 'failed') {
+    listEl.innerHTML = '<div class="rank-empty">SDK 加载失败，排行榜暂不可用</div>';
+    myEl.textContent = '';
+    return;
+  }
+  if (toyState === 'loading') {
+    listEl.innerHTML = '<div class="rank-loading">加载中</div>';
+    myEl.textContent = '';
+    setTimeout(function() {
+      if (document.getElementById('rankModal').classList.contains('show')) fetchRankList(board);
+    }, 1500);
+    return;
+  }
+  try {
+    var list = await toyCall(function() { return window.toy.getRankList({ board: board, limit: 50 }); }, 5000);
+    if (list && list.length) {
+      listEl.innerHTML = list.map(function(item) {
+        var rankClass = item.rank <= 3 ? 'top' + item.rank : '';
+        var avatarHtml = item.avatar
+          ? '<img src="' + item.avatar + '" alt="" onerror="this.style.display=\'none\'">'
+          : '<span class="placeholder">👤</span>';
+        return '<div class="rank-item">'
+          + '<div class="rank-num ' + rankClass + '">' + item.rank + '</div>'
+          + '<div class="rank-avatar">' + avatarHtml + '</div>'
+          + '<div class="rank-name">' + escapeHtml(item.nickname || '匿名') + '</div>'
+          + '<div class="rank-score">' + formatTime(SCORE_MAX - item.score) + '</div>'
+          + '</div>';
+      }).join('');
+    } else {
+      listEl.innerHTML = '<div class="rank-empty">暂无排行数据</div>';
+    }
+    // 我的排名
+    try {
+      var mine = await toyCall(function() { return window.toy.getMyRank({ board: board }); }, 3000);
+      if (mine && mine.ranked) {
+        myEl.textContent = '我的排名：第 ' + mine.rank + ' 名 ｜ ' + formatTime(SCORE_MAX - mine.score);
+      } else {
+        myEl.textContent = '你还未上榜，赢一局就来吧！';
+      }
+    } catch(e) {
+      myEl.textContent = '登录后可查看我的排名';
+    }
+  } catch(e) {
+    listEl.innerHTML = '<div class="rank-empty">加载失败，请重试</div>';
+    myEl.textContent = '';
+  }
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+// 点击遮罩关闭
+document.getElementById('rankModal').addEventListener('click', function(e) {
+  if (e.target === this) closeLeaderboard();
+});
+
+// === 首次进入操作提示 ===
+function showHintIfNeeded() {
+  if (localStorage.getItem('mine_hint_done')) return;
+  document.getElementById('hintModal').classList.add('show');
+  var hintEl = document.getElementById('hintContent');
+  if (isTouchDevice()) {
+    hintEl.innerHTML =
+      '<div class="hint-section">'
+      + '<h3>👆 点击</h3><p>点击未翻开的格子，翻开它</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>👆👆 双击</h3><p>双击未翻开的格子，标记/取消 🚩</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🚩 标记模式</h3><p>开启后单击即标记 🚩，不会误引爆地雷</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🔢 双击数字</h3><p>双击已翻开的数字，周围旗数匹配时自动翻开</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🏆 排行榜</h3><p>赢一局后你的用时将自动上传排行榜</p></div>';
+  } else {
+    hintEl.innerHTML =
+      '<div class="hint-section">'
+      + '<h3>🖱 左键点击</h3><p>点击未翻开的格子，翻开它</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🚩 右键点击</h3><p>右键点击未翻开的格子，标记/取消 🚩</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🚩 标记模式</h3><p>勾选标记模式后，左键单击也改为标记 🚩，不会误引爆</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🔢 双击 / 左右键同按</h3><p>对已翻开的数字双击或同时按下左右键，旗数匹配时自动翻开周围格子</p></div>'
+      + '<div class="hint-section">'
+      + '<h3>🏆 排行榜</h3><p>赢一局后你的用时将自动上传排行榜</p></div>';
+  }
+}
+
+function dismissHint() {
+  document.getElementById('hintModal').classList.remove('show');
+  localStorage.setItem('mine_hint_done', '1');
+}
+
+// === 时间与UI ===
+function startTimer() {
+  if (state.timerInterval) return;
+  state.timerInterval = setInterval(function() {
+    state.timer++;
+    document.getElementById('timer').textContent = String(state.timer).padStart(3, '0');
+  }, 1000);
+}
+
+function updateUI() {
+  document.getElementById('mineCount').textContent = String(state.totalMines - state.flagCount).padStart(3, '0');
+}
+
+function gameOver(hitR, hitC) {
+  state.gameOver = true;
+  clearInterval(state.timerInterval);
+  playSound('explode');
+  document.getElementById('smiley').textContent = '😵';
+  for (var r = 0; r < state.rows; r++) {
+    for (var c = 0; c < state.cols; c++) {
+      if (r === hitR && c === hitC) continue;
+      if (state.board[r][c] === -1) state.revealed[r][c] = true;
+    }
+  }
+  var msg = document.getElementById('message');
+  msg.textContent = '💥 踩到地雷了！点击 😊 重新开始';
+  msg.className = 'message lose';
+  render();
+}
+
+function checkWin() {
+  // 雷未布置(firstClick)或已结束时不判定胜利，避免误提交
+  if (state.gameOver || state.firstClick || state.winSubmitted) return;
+  var unrevealedSafe = 0;
+  for (var r = 0; r < state.rows; r++) {
+    for (var c = 0; c < state.cols; c++) {
+      if (state.board[r][c] !== -1 && !state.revealed[r][c]) unrevealedSafe++;
+    }
+  }
+  if (unrevealedSafe === 0) {
+    state.gameOver = true;
+    state.winSubmitted = true;
+    clearInterval(state.timerInterval);
+    playSound('win');
+    document.getElementById('smiley').textContent = '😎';
+    var msg = document.getElementById('message');
+    msg.textContent = '🎉 恭喜你赢了！';
+    msg.className = 'message win';
+    submitScoreOnWin(state.timer);
+  }
+}
+
+// === 点击与事件处理 ===
+function handleClick(r, c, event) {
+  event.preventDefault();
+  if (state.gameOver) return;
+  if (event.type === 'contextmenu') {
+    if (!bothDownCell) { toggleFlag(r, c); render(); }
+    return;
+  }
+  if (flagMode) {
+    // 标记模式：单击未翻开即标记，点击已翻开数字自动消除
+    if (event.type === 'dblclick') return;
+    if (!state.revealed[r][c]) {
+      toggleFlag(r, c);
+      render();
+    } else if (state.board[r][c] > 0) {
+      chordOrFlash(r, c);
+    }
+    return;
+  }
+  if (state.flagged[r][c]) return;
+  if (state.firstClick) {
+    state.firstClick = false;
+    placeMines(r, c);
+    startTimer();
+  }
+  if (event.type === 'dblclick' && state.revealed[r][c]) {
+    chordOrFlash(r, c);
+    return;
+  }
+  if (state.revealed[r][c]) {
+    return;
+  }
+  reveal(r, c);
+  render();
+}
+
+function scrollBoard(dir) {
+  var boardEl = document.getElementById('board');
+  var step = Math.max(220, Math.round(boardEl.clientWidth * 0.8));
+  boardEl.scrollBy({ left: dir * step, behavior: 'smooth' });
+}
+
+function updateBoardNav() {
+  var navEl = document.getElementById('boardNav');
+  var boardEl = document.getElementById('board');
+  // 高级模式强制显示；其余难度按棋盘横向溢出判断（兼容 iframe 环境）
+  var isHard = document.getElementById('difficulty').value === 'hard';
+  var needs = isHard || boardEl.scrollWidth > boardEl.clientWidth + 2;
+  navEl.style.display = needs ? 'flex' : 'none';
+}
+
+function render() {
+  var boardEl = document.getElementById('board');
+  // 用 1fr 自适应：填满容器宽度，格子用 aspect-ratio 保持方形，不再溢出
+  var maxBoard = state.cols * 36 + (state.cols - 1) * 2 + 8;
+  boardEl.style.gridTemplateColumns = 'repeat(' + state.cols + ', minmax(16px, 1fr))';
+  boardEl.style.maxWidth = maxBoard + 'px';
+  boardEl.innerHTML = '';
+  for (var r = 0; r < state.rows; r++) {
+    for (var c = 0; c < state.cols; c++) {
+      var cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r; cell.dataset.c = c;
+      if (state.revealed[r][c]) {
+        cell.classList.add('revealed');
+        if (state.board[r][c] === -1) {
+          cell.classList.add('mine');
+          cell.textContent = '💣';
+          if (state.gameOver && state.flagged[r][c]) cell.classList.add('exploded');
+        } else if (state.board[r][c] > 0) {
+          cell.textContent = state.board[r][c];
+          cell.dataset.count = state.board[r][c];
+        }
+      } else if (state.flagged[r][c]) {
+        cell.classList.add('flagged');
+        cell.textContent = '🚩';
+      }
+      if (isTouchDevice()) {
+        cell.addEventListener('touchstart', function(ev) { handleTouchStart(+this.dataset.r, +this.dataset.c, ev); }, { passive: false });
+      } else {
+        cell.addEventListener('mousedown', function(ev) { handleMouseDown(+this.dataset.r, +this.dataset.c, ev); });
+      }
+      cell.addEventListener('click', function(ev) { handleClick(+this.dataset.r, +this.dataset.c, ev); });
+      cell.addEventListener('dblclick', function(ev) { handleClick(+this.dataset.r, +this.dataset.c, ev); });
+      cell.addEventListener('contextmenu', function(ev) { handleClick(+this.dataset.r, +this.dataset.c, ev); });
+      boardEl.appendChild(cell);
+    }
+  }
+  setTimeout(updateBoardNav, 60);
+}
+
+// === 启动 ===
+initGame();
+document.getElementById('flagModeWrap').style.display = 'flex';
+initSoundBtn();
+showHintIfNeeded();
+window.addEventListener('resize', updateBoardNav);
+</script>
+</body>
+</html>

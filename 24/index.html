@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#151537">
+  <title>24点</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 顶部：三个模式 tab + 排行榜 -->
+    <header class="topbar">
+      <nav class="tabs" id="mode-tabs">
+        <button class="tab active" data-tab="classic">经典</button>
+        <button class="tab" data-tab="challenge">挑战</button>
+        <button class="tab" data-tab="solver">反解</button>
+      </nav>
+      <button class="top-btn" id="btn-open-lb" aria-label="排行榜">🏆</button>
+    </header>
+
+    <!-- 游戏视图（经典 / 挑战 共用，状态各自保留） -->
+    <section id="view-game" class="view active">
+      <div class="game-meta">
+        <span class="timer" id="timer">0:00</span>
+      </div>
+      <div class="hint-line" id="hint-line"></div>
+
+      <div class="cards" id="cards"></div>
+
+      <div class="ops" id="ops">
+        <button class="op" data-op="+">+</button>
+        <button class="op" data-op="-">−</button>
+        <button class="op" data-op="*">×</button>
+        <button class="op" data-op="/">÷</button>
+      </div>
+
+      <div class="status" id="status">请选择第一张牌</div>
+
+      <div class="ctrl">
+        <button class="ctrl-btn" id="btn-undo">↺ 撤回</button>
+        <button class="ctrl-btn" id="btn-hint">💡 提示</button>
+        <button class="ctrl-btn" id="btn-skip">⏭ 跳过</button>
+      </div>
+
+      <!-- 结算 -->
+      <div class="overlay" id="over-overlay" hidden>
+        <div class="panel">
+          <h2 id="over-title">恭喜！算出 24</h2>
+          <div class="over-score" id="over-score"></div>
+          <div class="over-sub" id="over-sub"></div>
+          <button class="btn primary" id="btn-again">再来一局</button>
+          <button class="btn ghost" id="btn-undo-over">撤回继续</button>
+          <button class="btn ghost" id="btn-over-lb">排行榜</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 反解视图 -->
+    <section id="view-solver" class="view">
+      <div class="solver-inner">
+        <div class="solver-intro">输入四个 1-100 的整数，自动求出所有凑 24 的解法</div>
+        <div class="solver-cards">
+          <input type="number" id="sn0" class="snum" min="1" max="100" step="1" value="3">
+          <input type="number" id="sn1" class="snum" min="1" max="100" step="1" value="3">
+          <input type="number" id="sn2" class="snum" min="1" max="100" step="1" value="8">
+          <input type="number" id="sn3" class="snum" min="1" max="100" step="1" value="8">
+        </div>
+        <button class="btn primary" id="btn-solve">求解</button>
+        <div class="solve-result" id="solve-result"></div>
+      </div>
+    </section>
+
+    <!-- 排行榜弹窗 -->
+    <div class="modal" id="lb-modal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 class="modal-title">排行榜</h2>
+          <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+        </div>
+        <div class="tabs" id="lb-source-tabs">
+          <button class="tab active" data-source="local">本地榜</button>
+          <button class="tab" data-source="global">B站榜</button>
+        </div>
+        <div class="tabs" id="lb-mode-tabs">
+          <button class="tab active" data-lbmode="classic">经典</button>
+          <button class="tab" data-lbmode="challenge">挑战</button>
+        </div>
+        <div class="lb-note" id="lb-note"></div>
+        <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+      </div>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="modal" id="hint-modal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 class="modal-title">提示</h2>
+          <button class="icon-close" id="btn-close-hint" aria-label="关闭">×</button>
+        </div>
+        <div class="hint-body" id="hint-body"></div>
+        <div class="hint-note">使用了提示，本局解出将不记录榜单</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

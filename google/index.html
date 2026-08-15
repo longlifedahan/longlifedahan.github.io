@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f2eee4">
+  <title>小恐龙快跑</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ 首页 ============ -->
+    <section id="view-home" class="view home-view">
+      <div class="home-icon" id="home-icon">🦖</div>
+      <h1 class="home-title">小恐龙快跑</h1>
+      <div class="home-sub">一路奔跑 · 躲避仙人掌 · 收集金币</div>
+      <div class="home-stats">
+        <div class="hstat"><span class="hstat-label">最高分</span><span class="hstat-val" id="home-hi">0</span></div>
+        <div class="hstat"><span class="hstat-label">金币</span><span class="hstat-val" id="home-coins"><i class="coin"></i> 0</span></div>
+        <div class="hstat"><span class="hstat-label">累计金币</span><span class="hstat-val" id="home-total"><i class="coin"></i> 0</span></div>
+      </div>
+      <div class="home-btns">
+        <button class="btn btn-primary btn-big" id="btn-start">▶ 开始游戏</button>
+        <button class="btn" id="btn-shop">🛒 商店</button>
+        <button class="btn" id="btn-rank">🏆 排行榜</button>
+        <button class="btn" id="btn-settings">⚙️ 设置</button>
+        <button class="btn" id="btn-help">❓ 玩法说明</button>
+      </div>
+      <div class="home-foot">
+        <button class="btn-mini" id="btn-mute-home">🔊 音效</button>
+        <span class="home-tip">点击屏幕 / 空格键跳跃</span>
+      </div>
+    </section>
+
+    <!-- ============ 游戏 ============ -->
+    <section id="view-game" class="view game-view" hidden>
+      <div class="hud">
+        <div class="hud-cell">
+          <span class="hud-label">得分</span>
+          <span class="hud-num" id="hud-score">0</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">距离</span>
+          <span class="hud-num" id="hud-meters">0m</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">本局金币</span>
+          <span class="hud-num" id="hud-coins"><i class="coin"></i> 0</span>
+        </div>
+        <div class="hud-cell hud-r">
+          <span class="hud-mini" id="hud-mult" hidden>×2</span>
+          <button class="btn-mini" id="btn-mute-game">🔊</button>
+          <button class="btn-mini" id="btn-pause">⏸</button>
+        </div>
+      </div>
+      <div class="hud2">
+        <span id="hud-lives">❤️ ×1</span>
+        <span id="hud-passives"></span>
+      </div>
+      <div class="game-mid">
+        <div id="game-wrap">
+          <canvas id="game"></canvas>
+          <div id="touch-hint" class="touch-hint">轻触跳跃</div>
+        </div>
+        <div id="skill-row" class="skillbar"></div>
+      </div>
+
+      <!-- 暂停 -->
+      <div id="pause-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">⏸ 已暂停</div>
+          <div class="ov-score">得分 <b id="pause-score">0</b></div>
+          <div class="ov-btns">
+            <button class="btn" id="btn-resume">继续游戏</button>
+            <button class="btn ghost" id="btn-endrun">结束本局</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 结算 -->
+      <div id="over-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title" id="over-title">游戏结束</div>
+          <div class="ov-big">得分 <b id="over-score">0</b></div>
+          <div class="ov-new" id="over-new" hidden>🏆 新纪录！</div>
+          <div class="ov-row"><span>奔跑距离</span><span id="over-meters">0m</span></div>
+          <div class="ov-row"><span>本局金币</span><span id="over-coins">+0</span></div>
+          <div class="ov-row"><span>最高分</span><span id="over-hi">0</span></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-again">再来一局</button>
+            <button class="btn" id="btn-shop2">🛒 商店</button>
+            <button class="btn ghost" id="btn-home">返回首页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 倒计时 -->
+      <div id="count-overlay" class="overlay" hidden>
+        <div class="count-num" id="count-num">3</div>
+      </div>
+    </section>
+
+    <!-- ============ 商店 ============ -->
+    <section id="view-shop" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-shop">← 返回</button>
+        <h2 class="page-title">🛒 商店</h2>
+        <div class="page-coins" id="shop-coins"><i class="coin"></i> 0</div>
+      </header>
+      <div id="shop-list" class="shop-list"></div>
+    </section>
+
+    <!-- ============ 排行榜 ============ -->
+    <section id="view-rank" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-rank">← 返回</button>
+        <h2 class="page-title">🏆 排行榜</h2>
+      </header>
+      <div class="tabs" id="rank-src">
+        <button class="tab active" data-src="local">本地榜</button>
+        <button class="tab" data-src="bili">B站榜</button>
+      </div>
+      <div class="tabs" id="rank-board">
+        <button class="tab active" data-board="1">最高分</button>
+        <button class="tab" data-board="2">累计金币</button>
+        <button class="tab" data-board="3">最远距离</button>
+      </div>
+      <div class="tabs" id="rank-period">
+        <button class="ptab" data-p="day">日榜</button>
+        <button class="ptab" data-p="week">周榜</button>
+        <button class="ptab" data-p="month">月榜</button>
+        <button class="ptab active" data-p="all">总榜</button>
+      </div>
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-settings" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-settings">← 返回</button>
+        <h2 class="page-title">⚙️ 设置</h2>
+      </header>
+      <div class="set-body">
+        <div class="set-sec">
+          <h3>🦖 恐龙颜色</h3>
+          <div class="color-preview-row">
+            <span class="color-preview" id="color-preview"></span>
+            <span class="color-hex" id="color-hex">#6cb544</span>
+          </div>
+          <div class="color-presets" id="color-presets"></div>
+          <div class="color-custom-row">
+            <span class="color-custom-label">自定义</span>
+            <input type="color" id="color-input" value="#6cb544">
+            <button class="btn-mini" id="btn-color-reset">恢复默认</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 说明 ============ -->
+    <section id="view-help" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-help">← 返回</button>
+        <h2 class="page-title">❓ 玩法说明</h2>
+      </header>
+      <div class="help-body">
+        <div class="help-sec">
+          <h3>🦖 基本玩法</h3>
+          <p>小恐龙自动奔跑，<b>点击屏幕 / 空格键</b> 跳跃，躲避仙人掌等障碍。</p>
+          <p>得分＝奔跑得分＋金币分；「距离」按米计，跑到更远会解锁新障碍。</p>
+          <p>速度会持续加速，但上限恒定、越来越平稳。</p>
+        </div>
+        <div class="help-sec">
+          <h3>💠 障碍物（按米数解锁）</h3>
+          <p>· 仙人掌：高低不一，跳过去。<b>500 米</b>后出现更高更大的仙人掌。</p>
+          <p>· 双连仙人掌：<b>1000 米</b>后出现两个连着的仙人掌。</p>
+          <p>· 飞鸟：<b>3000 米</b>后从画面另一侧飞来，别在它经过时起跳。</p>
+          <p>· 陨石：<b>10000 米</b>后从天空坠落，落地会砸出坑，跳过坑。</p>
+          <p>· 地面裂缝：<b>30000 米</b>后地面出现裂缝缺口，必须跳过。</p>
+        </div>
+        <div class="help-sec">
+          <h3>金币</h3>
+          <p>跑道上每 30~50 米会出现金币（<b>1~3 枚</b>，随距离逐渐增多，最远可达 4~6 枚），跳起收集可 <b>+5 分</b>并永久累加到你的钱包（局内只显示本局获得）。拥有「吸铁石」后可自动吸附。</p>
+        </div>
+        <div class="help-sec">
+          <h3>✨ 技能（商店解锁）</h3>
+          <p><b>主动技能</b>（按钮触发，60 秒冷却）：护罩（2s 无敌）/ 冲刺（猛冲 2.5s 且无敌）/ 怒吼（清空本屏障碍，3s 内不生成）/ 双倍得分（8 秒 ×2）/ 飞行（5 秒无视地面障碍，但仍怕飞鸟和陨石）。<b>遇到威胁时会按 护罩→冲刺→怒吼 顺序自动触发保命</b>（飞行不自动）。</p>
+          <p><b>被动技能</b>（无需操作）：二连跳 / 三连跳 / 吸铁石 / 重生守护（复活后 4s 无敌）/ 额外生命（第二、三、四条命），展示在生命值旁。</p>
+          <p>主动技能按钮：电脑端悬浮在画面中间，手机端在画面下方，冷却时显示剩余秒数。</p>
+        </div>
+        <div class="help-sec">
+          <h3>🏆 排行榜</h3>
+          <p>榜单 1 为<b>最高分</b>，榜单 2 为<b>累计金币</b>，榜单 3 为<b>最远距离</b>；分总/月/周/日四榜，展示前 100 名。</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

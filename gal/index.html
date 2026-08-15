@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>寻找你最合适的虚拟主播伴侣</title>
+<style>
+:root {
+  --pink-50: #FFF0F5;
+  --pink-100: #FFE4EC;
+  --pink-200: #FFC0D5;
+  --pink-300: #FF9EBD;
+  --pink-400: #FF7BA6;
+  --pink-500: #FF5C8E;
+  --pink-600: #FF3D76;
+  --pink-700: #E83168;
+  --pink-800: #C42855;
+  --pink-900: #8B1A3D;
+  --text: #3D1028;
+  --text-light: #7A5068;
+  --white: #FFFFFF;
+  --shadow: 0 4px 20px rgba(255,92,142,0.25);
+  --shadow-lg: 0 8px 40px rgba(255,92,142,0.35);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family: 'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background: linear-gradient(135deg, var(--pink-50) 0%, #FFE0EC 30%, var(--pink-100) 60%, #FFF0F5 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+body::before{
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,156,189,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 60%, rgba(255,92,142,0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(255,128,170,0.12) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Floating hearts */
+.hearts-container{
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.heart-float{
+  position: absolute;
+  animation: floatUp linear infinite;
+  opacity: 0.3;
+  font-size: 24px;
+}
+@keyframes floatUp{
+  0%{transform:translateY(100vh) rotate(0deg) scale(0);opacity:0;}
+  10%{opacity:0.3;}
+  90%{opacity:0.3;}
+  100%{transform:translateY(-10vh) rotate(360deg) scale(1);opacity:0;}
+}
+
+/* BGM Toggle */
+.bgm-btn{
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--pink-300);
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  box-shadow: 0 2px 12px rgba(255,92,142,0.15);
+  -webkit-appearance: none;
+  outline: none;
+  padding: 0;
+}
+.bgm-btn:hover{transform:scale(1.1);box-shadow:0 4px 20px rgba(255,92,142,0.25);}
+.bgm-on{opacity:1;}
+.bgm-off{opacity:0.45;}
+
+/* Main container */
+.container{
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  position: relative;
+  z-index: 1;
+}
+.result-screen .container{padding: 12px 20px 40px;}
+
+/* Screen management */
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* Welcome Screen */
+.welcome-screen{
+  text-align: center;
+  padding-top: 24px;
+}
+.welcome-logo{
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--pink-300), var(--pink-500));
+  border-radius: 50%;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50px;
+  box-shadow: var(--shadow-lg);
+  animation: logoPulse 2s ease-in-out infinite;
+}
+@keyframes logoPulse{
+  0%,100%{transform:scale(1);box-shadow:0 8px 40px rgba(255,92,142,0.35);}
+  50%{transform:scale(1.05);box-shadow:0 12px 50px rgba(255,92,142,0.5);}
+}
+.welcome-title{
+  font-size: 26px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--pink-600), var(--pink-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.welcome-subtitle{
+  font-size: 14px;
+  color: var(--text-light);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.welcome-card{
+  background: var(--white);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+}
+.welcome-card p{
+  font-size: 13px;
+  color: var(--text-light);
+  line-height: 1.6;
+  text-align: left;
+}
+.welcome-card .dim-list{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.dim-tag{
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--pink-100);
+  color: var(--pink-700);
+}
+
+/* Buttons */
+.btn{
+  display: inline-block;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  -webkit-appearance: none;
+  outline: none;
+}
+.btn:active{transform:scale(0.96);}
+.btn-primary{
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
+  color: white;
+  box-shadow: 0 6px 24px rgba(255,61,118,0.4);
+}
+.btn-primary:hover{
+  box-shadow: 0 8px 32px rgba(255,61,118,0.55);
+  transform: translateY(-2px);
+}
+.btn-outline{
+  background: white;
+  color: var(--pink-600);
+  border: 2px solid var(--pink-300);
+}
+.btn-sm{
+  padding: 10px 28px;
+  font-size: 14px;
+}
+
+/* Question Screen */
+.question-screen{padding-top: 8px;}
+.progress-wrap{
+  background: var(--pink-100);
+  border-radius: 20px;
+  height: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.progress-bar{
+  height: 100%;
+  background: linear-gradient(90deg, var(--pink-400), var(--pink-600));
+  border-radius: 20px;
+  transition: width 0.5s ease;
+}
+.progress-text{
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 12px;
+}
+.question-number{
+  font-size: 12px;
+  color: var(--pink-500);
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}
+.question-title{
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+.options-list{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.option-btn{
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 2px solid var(--pink-100);
+  border-radius: 14px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+  -webkit-appearance: none;
+  outline: none;
+  font-family: inherit;
+}
+.option-btn:hover{
+  border-color: var(--pink-400);
+  background: #FFF5F8;
+  transform: translateX(4px);
+}
+.option-btn:active{
+  transform: scale(0.98);
+  background: var(--pink-100);
+}
+.option-letter{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--pink-100);
+  color: var(--pink-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+.option-btn:hover .option-letter{
+  background: var(--pink-500);
+  color: white;
+}
+.option-selected{
+  border-color: var(--pink-500) !important;
+  background: #FFF0F5 !important;
+}
+.option-selected .option-letter{
+  background: var(--pink-500);
+  color: white;
+}
+.nav-buttons{
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-back{
+  padding: 10px 24px !important;
+}
+#btnSubmit{
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Result Screen */
+.result-screen{padding-top: 20px;}
+.result-header{
+  text-align: center;
+  margin-bottom: 32px;
+}
+.result-title{
+  font-size: 26px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.result-subtitle{
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+/* Best Match Card */
+.best-match-card{
+  background: linear-gradient(135deg, #FFF0F5, #FFE4EC);
+  border: 2px solid var(--pink-300);
+  border-radius: 24px;
+  padding: 28px;
+  text-align: center;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.best-match-card::before{
+  content: 'BEST MATCH';
+  position: absolute;
+  top: 12px; right: -28px;
+  background: var(--pink-500);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 36px;
+  transform: rotate(45deg);
+  letter-spacing: 2px;
+}
+.best-avatar{
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 5px solid var(--pink-300);
+  object-fit: cover;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(255,92,142,0.3);
+}
+.best-name{
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.best-similarity{
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.best-similarity span{font-size:16px;font-weight:500;}
+
+/* Radar Chart */
+.radar-card{
+  background: var(--white);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+.radar-title{
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+  color: var(--text);
+}
+.radar-wrap{
+  display: flex;
+  justify-content: center;
+}
+canvas{max-width:100%;height:auto;}
+
+/* Top 5 List */
+.match-list{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.match-card{
+  background: var(--white);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 16px rgba(255,92,142,0.1);
+  transition: transform 0.2s;
+  overflow: hidden;
+}
+.match-card:hover{transform:translateX(4px);}
+.match-card-header{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.match-rank{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.rank-1{background:#FFD700;color:#8B6914;}
+.rank-2{background:#C0C0C0;color:#555;}
+.rank-3{background:#CD7F32;color:#fff;}
+.rank-4,.rank-5{background:var(--pink-100);color:var(--pink-600);}
+.match-avatar{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--pink-200);
+  flex-shrink: 0;
+}
+.match-info{flex:1;min-width:0;}
+.match-name{font-size:15px;font-weight:600;margin-bottom:1px;}
+.match-desc{font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.match-score-col{text-align:center;flex-shrink:0;}
+.match-score{
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--pink-600);
+  display: block;
+  line-height: 1;
+}
+.match-score-label{font-size:10px;color:var(--text-light);}
+.match-traits-bars{
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pink-100);
+}
+.match-trait-row{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.match-trait-icon{font-size:13px;flex-shrink:0;width:20px;text-align:center;}
+.match-trait-name{font-size:11px;color:var(--text-light);width:38px;flex-shrink:0;}
+.match-trait-track{
+  flex:1;
+  height: 12px;
+  background: #F0F0F0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.match-trait-fill{
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s ease;
+}
+.match-trait-val{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  width: 16px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* Bilibili links */
+.bili-link{
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 18px;
+  background: linear-gradient(135deg, #FB7299, #FF5C8E);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.bili-link:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(251,114,153,0.4);}
+.bili-link-sm{
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  padding: 6px 0;
+  color: var(--pink-500);
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 10px;
+  transition: all 0.2s;
+  background: var(--pink-50);
+}
+.bili-link-sm:hover{background:var(--pink-100);color:var(--pink-700);}
+
+/* Your vector section */
+.your-vector-card{
+  background: var(--white);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+.vector-title{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.vector-bars{display:flex;flex-direction:column;gap:8px;}
+.vector-bar-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vector-bar-label{
+  width: 50px;
+  font-size: 12px;
+  color: var(--text-light);
+  text-align: right;
+  flex-shrink: 0;
+}
+.vector-bar-track{
+  flex:1;
+  height: 20px;
+  background: var(--pink-100);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.vector-bar-fill{
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--pink-400), var(--pink-600));
+  transition: width 0.8s ease;
+  position: relative;
+}
+.vector-bar-fill::after{
+  content: attr(data-val);
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: white;
+  font-weight: 600;
+}
+.vector-bar-val{
+  width: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pink-700);
+  flex-shrink: 0;
+}
+
+/* Retry button */
+.retry-wrap{text-align:center;margin-bottom:40px;}
+
+/* Footer */
+.footer{
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+/* Animations */
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.animate-in{animation:fadeInUp 0.5s ease forwards;}
+
+/* Responsive */
+@media(max-width:420px){
+  .welcome-screen{padding-top:12px;}
+  .welcome-logo{width:70px;height:70px;font-size:34px;margin-bottom:12px;}
+  .welcome-title{font-size:20px;margin-bottom:6px;}
+  .welcome-subtitle{font-size:13px;margin-bottom:10px;}
+  .welcome-card{margin-bottom:10px;padding:12px 16px;}
+  .welcome-card .dim-list{gap:5px;margin-top:10px;}
+  .dim-tag{padding:3px 10px;font-size:11px;}
+  .question-title{font-size:17px;}
+  .option-btn{padding:10px 12px;font-size:13px;}
+  .best-similarity{font-size:28px;}
+  .best-avatar{width:80px;height:80px;}
+}
+</style>
+</head>
+<body>
+
+<!-- BGM toggle -->
+<audio id="bgmAudio" src="bgm/bgm.mp3" loop preload="auto"></audio>
+<button id="bgmToggle" class="bgm-btn bgm-on" onclick="toggleBgm()" title="背景音乐">🎵</button>
+
+<div class="hearts-container" id="heartsContainer"></div>
+
+<div class="container">
+
+  <!-- ===== WELCOME SCREEN ===== -->
+  <div class="screen active" id="welcomeScreen">
+    <div class="welcome-screen">
+      <div class="welcome-logo">🎀</div>
+      <h1 class="welcome-title">寻找你最合适的<br>虚拟主播伴侣</h1>
+      <p class="welcome-subtitle">回答一些问题，发现与你灵魂最契合的虚拟主播</p>
+      <div class="welcome-card">
+        <p>我们将从以下维度为你匹配：</p>
+        <div class="dim-list">
+          <span class="dim-tag">🎭 抽象力</span>
+          <span class="dim-tag">🌸 温柔度</span>
+          <span class="dim-tag">✨ 热水器</span>
+          <span class="dim-tag">💍 忠贞度</span>
+          <span class="dim-tag">⚡ 元气值</span>
+	          <span class="dim-tag">🎤 才艺值</span>
+        </div>
+        <p style="margin-top:14px;text-align:center;">共计 30 位人气虚拟主播等你来匹配 ✨</p>
+      </div>
+      <div class="welcome-card mode-select">
+        <p style="text-align:center;font-weight:600;color:var(--text);margin-bottom:12px;">选择测试模式</p>
+        <button class="btn btn-primary" onclick="startQuiz(10)" style="width:100%;margin-bottom:10px;">✨ 简单模式（10 题）</button>
+        <button class="btn btn-outline" onclick="startQuiz(20)" style="width:100%;margin-bottom:10px;">🔍 深度模式（20 题）</button>
+        <p id="globalStats" style="text-align:center;font-size:12px;color:var(--text-light);padding-top:8px;border-top:1px solid var(--pink-100);display:none;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUESTION SCREEN ===== -->
+  <div class="screen" id="questionScreen">
+    <div class="question-screen">
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText"></div>
+      <div class="question-number" id="questionNumber"></div>
+      <div class="question-title animate-in" id="questionTitle"></div>
+      <div class="options-list" id="optionsList"></div>
+      <div class="nav-buttons" id="navButtons">
+        <button class="btn btn-outline btn-sm btn-back" id="btnPrev" onclick="goBack()" style="display:none">← 上一题</button>
+        <button class="btn btn-outline btn-sm btn-back" id="btnNext" onclick="goNext()" style="display:none">下一题 →</button>
+        <button class="btn btn-primary" id="btnSubmit" onclick="confirmSubmit()" style="display:none;margin-top:12px;">✅ 确认提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div class="screen" id="resultScreen">
+    <div class="result-screen">
+      <div class="result-header animate-in">
+        <h2 class="result-title">你的最佳虚拟主播伴侣</h2>
+        <p class="result-subtitle">基于你的选择，以下是与你最契合的主播</p>
+      </div>
+
+      <div class="best-match-card animate-in" id="bestMatchCard"></div>
+
+      <div class="your-vector-card animate-in">
+        <div class="vector-title">📊 你的特质画像</div>
+        <div class="vector-bars" id="userVectorBars"></div>
+      </div>
+
+      <div class="radar-card animate-in">
+        <div class="radar-title">🎯 你 vs TOP1 特质对比</div>
+        <div class="radar-wrap">
+          <canvas id="radarChart" width="320" height="320"></canvas>
+        </div>
+      </div>
+
+      <div class="match-list animate-in" id="matchList"></div>
+
+      <div class="retry-wrap">
+        <button class="btn btn-primary" id="btnExport" onclick="exportResult()" style="margin-right:12px;display:none;">📸 导出长图</button>
+        <button class="btn btn-outline" onclick="retryQuiz()">🔄 重新测试</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== DATA ====================
+
+// Trait dimension names (display)
+const DIM_NAMES = ['抽象力', '温柔度', '热水器', '忠贞度', '元气值', '才艺值'];
+const DIM_ICONS = ['🎭', '🌸', '✨', '💍', '⚡', '🎤'];
+const DIM_COLORS = ['#FF6B6B', '#FF9EBD', '#C084FC', '#60A5FA', '#FBBF24', '#FFD700'];
+
+// 30 VTubers with trait values [抽象, 温柔, 热水器, 忠贞, 元气, 才艺]
+const VTUBERS = [
+  { id:'dongxuelian',  name:'东雪莲',     traits:[9, 2, 4, 1, 9, 5], uid:'1437582453',  desc:'抽象女王，越疯越爱' },
+  { id:'jiaran',       name:'嘉然',       traits:[3, 10, 3, 7, 9, 7], uid:'672328094', desc:'治愈天使，可爱即正义' },
+  { id:'yongchutafei', name:'永雏塔菲',   traits:[10, 5, 10, 6, 9, 5], uid:'1265680561',desc:'热水器女皇，让人上头' },
+  { id:'xingtong',     name:'星瞳',       traits:[4, 8, 4, 7, 8, 10], uid:'401315430', desc:'优雅星之公主' },
+  { id:'azi',          name:'阿梓',       traits:[5, 7, 6, 9, 3, 6], uid:'7706705',   desc:'元气歌姬，活力无限' },
+  { id:'qihai',        name:'七海Nana7mi',traits:[7, 4, 6, 2, 6, 5], uid:'434334701', desc:'混沌脆鲨，又菜又爱玩' },
+  { id:'bingtang',     name:'冰糖IO',     traits:[4, 6, 10, 1, 7, 7], uid:'198297', desc:'甜蜜歌姬，魅力四射' },
+  { id:'lanyin',       name:'兰音Reine',  traits:[2, 10, 2, 8, 6, 10], uid:'698029620', desc:'月兔歌者，温柔知性' },
+  { id:'lingyuan',     name:'泠鸢yousa',  traits:[3, 8, 4, 10, 7, 10], uid:'282994',    desc:'古风冷鸟，B站活化石' },
+  { id:'zuya',         name:'祖娅纳惜',   traits:[4, 7, 5, 7, 6, 9], uid:'3046429',   desc:'温柔唱将，知心大姐姐' },
+  { id:'nailin',       name:'乃琳Queen',  traits:[3, 7, 8, 8, 5, 6], uid:'672342685', desc:'成熟御姐，A-SOUL门面' },
+  { id:'beila',        name:'贝拉Bella',  traits:[4, 6, 6, 7, 9, 7], uid:'672353429', desc:'元气舞担，活力队长' },
+  { id:'jiale',        name:'珈乐Carol',  traits:[4, 8, 6, 1, 4, 7], uid:'351609538', desc:'酷飒歌者，温柔内核' },
+  { id:'xiangwan',     name:'向晚Ava',    traits:[5, 7, 5, 7, 9, 6], uid:'672346917', desc:'开朗水母，阳光少女' },
+  { id:'tiandou',      name:'恬豆发芽了', traits:[9, 2, 6, 3, 7, 4], uid:'1660392980',desc:'混沌新星，整活不断' },
+  { id:'shanbao',      name:'扇宝',       traits:[8, 3, 5, 4, 8, 5], uid:'698438232', desc:'国风相声，整活一绝' },
+  { id:'xiaoke',       name:'小可学妹',   traits:[5, 5, 7, 5, 8, 6], uid:'14387072',  desc:'活泼学妹，元气满满' },
+  { id:'bana',         name:'绊爱',       traits:[2, 7, 4, 9, 8, 8], uid:'1473830',   desc:'虚拟主播始祖，元气AI' },
+  { id:'gouma',        name:'狗妈',       traits:[3, 9, 2, 8, 9, 7], uid:'386900246', desc:'混沌妈妈，宠粉狂魔' },
+  { id:'zhenbai',      name:'真白花音',   traits:[4, 9, 4, 4, 5, 6], uid:'401480763', desc:'温柔花音，治愈人心' },
+  { id:'liai',         name:'莉爱',       traits:[4, 6, 6, 7, 8, 3], uid:'1485277312',desc:'甜蜜小恶魔，活力四射' },
+  { id:'mieju',        name:'咩栗',       traits:[4, 10, 5, 3, 5, 4], uid:'745493',    desc:'软萌羊娘，温柔可爱' },
+  { id:'lunai',        name:'鹿乃',       traits:[3, 9, 7, 8, 4, 9], uid:'316381099', desc:'天使歌姬，极致温柔' },
+  { id:'akua',         name:'阿夸',       traits:[5, 7, 4, 8, 6, 8], uid:'375504219', desc:'海之女仆，游戏痴女' },
+  { id:'chuixue',      name:'白上吹雪',   traits:[4, 7, 5, 7, 9, 6], uid:'332704117', desc:'狐狸贤妻，元气满满' },
+  { id:'hiiro',        name:'Hiiro',      traits:[8, 6, 8, 8, 6, 7], uid:'508963009', desc:'六边形猫猫，均衡全能' },
+  { id:'mana',         name:'Mana',       traits:[3, 10, 8, 1, 6, 8], uid:'3546711154756547', desc:'优雅千金，温柔忠贞' },
+  { id:'lige',         name:'黎歌Neeko',  traits:[5, 8, 9, 8, 10, 7], uid:'671538942',  desc:'平板鸽子，元气满满' },
+  { id:'hanser',       name:'hanser',     traits:[4, 6, 2, 9, 7, 10], uid:'11073',      desc:'百大唱见，憨色天使' },
+  { id:'zaodaoji',     name:'早稻叽',     traits:[5, 3, 8, 4, 7, 9], uid:'1950658',    desc:'纯白恶魔，歌力无双' },
+];
+
+// 30 Questions with 4 options each
+const QUESTIONS = [
+  {
+    id:1,
+    text:'周末晚上打开B站，你更想看主播做什么？',
+    options:[
+      {text:'整活、玩梗、放飞自我，节目效果拉满', vec:[3, 0, 0, 0, 1, 1]},
+      {text:'轻声聊天、分享日常、读粉丝来信',   vec:[0, 3, 1, 1, 0, 0]},
+      {text:'COS换装、跳宅舞、展示新形象',      vec:[0, 0, 3, 0, 1, 3]},
+      {text:'认真打游戏、和粉丝连麦交流',        vec:[0, 0, 0, 3, 1, 0]}
+    ]
+  },
+  {
+    id:2,
+    text:'主播的哪种说话风格最吸引你？',
+    options:[
+      {text:'口无遮拦、段子频出、充满意外惊喜',  vec:[3, 0, 0, 0, 1, 1]},
+      {text:'声音轻柔、句句暖心、像在哄小朋友',  vec:[0, 3, 1, 1, 0, 2]},
+      {text:'撒娇卖萌、声音撩人、带点小暧昧',    vec:[0, 0, 3, 0, 1, 1]},
+      {text:'真诚坦率、言出必行、不画大饼',      vec:[0, 0, 0, 3, 1, 0]}
+    ]
+  },
+  {
+    id:3,
+    text:'面对黑粉和带节奏的人，你希望主播怎么做？',
+    options:[
+      {text:'直接对线、硬刚回去、甚至做视频回击', vec:[3, 0, 0, 0, 1, 1]},
+      {text:'温柔化解、用真诚和爱意感化对方',     vec:[0, 3, 0, 1, 0, 0]},
+      {text:'无视节奏、不回应、继续做好自己',     vec:[0, 0, 0, 3, 0, 0]},
+      {text:'自黑整活、把节奏变成新的笑料和梗',   vec:[2, 0, 1, 0, 2, 2]}
+    ]
+  },
+  {
+    id:4,
+    text:'主播遇到挫折情绪低落时，你更欣赏哪种反应？',
+    options:[
+      {text:'"发疯文学"、用癫狂掩盖悲伤',         vec:[3, 0, 0, 0, 1, 1]},
+      {text:'坦诚分享脆弱、寻求粉丝的安慰和鼓励', vec:[0, 3, 0, 1, 0, 0]},
+      {text:'默默消化、调整后以更好的状态回归',   vec:[0, 0, 0, 3, 1, 1]},
+      {text:'用元气满满的状态自我激励重新出发',   vec:[0, 0, 0, 1, 3, 1]}
+    ]
+  },
+  {
+    id:5,
+    text:'你更喜欢主播专注哪种直播内容？',
+    options:[
+      {text:'锐评时事热点、整活玩梗、抽象艺术',   vec:[3, 0, 1, 0, 0, 1]},
+      {text:'歌回、轻声弹唱、治愈人心',          vec:[0, 3, 0, 1, 1, 3]},
+      {text:'杂谈回、和粉丝亲密互动聊天',         vec:[0, 1, 3, 0, 1, 0]},
+      {text:'耐久回、为了一个目标坚持不懈',       vec:[0, 0, 0, 3, 2, 2]}
+    ]
+  },
+  {
+    id:6,
+    text:'你希望主播和粉丝之间是什么关系？',
+    options:[
+      {text:'损友互怼、互相整活、乐子不断',       vec:[3, 0, 0, 0, 1, 1]},
+      {text:'知心朋友、可以倾诉心事的港湾',       vec:[0, 3, 0, 1, 0, 0]},
+      {text:'带点小暧昧、若即若离让人心跳加速',   vec:[0, 0, 3, 0, 1, 1]},
+      {text:'坚定的陪伴、无论发生什么都不离不弃', vec:[0, 0, 0, 3, 1, 0]}
+    ]
+  },
+  {
+    id:7,
+    text:'主播读到了你发的醒目留言(SC)，你希望她？',
+    options:[
+      {text:'整活念法、当众处刑、节目效果爆炸',   vec:[3, 0, 0, 0, 1, 2]},
+      {text:'温柔地念、认真回应你的心意',         vec:[0, 3, 0, 1, 0, 0]},
+      {text:'用撒娇的语气念、顺便挑逗一下粉丝',   vec:[0, 0, 3, 0, 1, 1]},
+      {text:'记住你的ID、以后直播时经常Cue到你',  vec:[0, 1, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:8,
+    text:'你觉得虚拟主播最核心的魅力是什么？',
+    options:[
+      {text:'有趣的灵魂、每天都有新鲜乐子',       vec:[3, 0, 0, 0, 1, 1]},
+      {text:'治愈人心的温暖力量',                 vec:[0, 3, 0, 1, 0, 0]},
+      {text:'让人心动不已的个人魅力',             vec:[0, 0, 3, 0, 1, 2]},
+      {text:'日复一日从不缺席的坚定陪伴',         vec:[0, 0, 0, 3, 1, 0]}
+    ]
+  },
+  {
+    id:9,
+    text:'主播和其他主播联动时，你最看重什么？',
+    options:[
+      {text:'节目效果拉满、互相整活互相伤害',     vec:[3, 0, 0, 0, 2, 2]},
+      {text:'默契十足、氛围温馨治愈',             vec:[0, 2, 0, 1, 1, 1]},
+      {text:'CP感爆棚、有些暧昧的小互动',        vec:[0, 0, 3, 0, 1, 0]},
+      {text:'固定搭档、只和熟悉的人联动',         vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:10,
+    text:'如果主播说"我要去洗澡了"准备下播，你希望？',
+    options:[
+      {text:'洗澡也开着麦、整活到最后一秒钟',     vec:[3, 0, 0, 0, 1, 1]},
+      {text:'温柔道别、嘱咐你早点休息别熬夜',     vec:[0, 3, 0, 1, 0, 0]},
+      {text:'留一些让人浮想联翩的话再走',         vec:[0, 0, 3, 0, 0, 0]},
+      {text:'说到做到、洗完澡真的回来续播',       vec:[0, 0, 0, 3, 1, 1]}
+    ]
+  },
+  {
+    id:11,
+    text:'主播发布新衣装（新造型），你最期待？',
+    options:[
+      {text:'越怪越好、抽象风格拉满让人记住',     vec:[3, 0, 0, 0, 1, 1]},
+      {text:'可爱治愈、像春天的樱花一样温柔',     vec:[0, 3, 1, 0, 1, 1]},
+      {text:'性感迷人、身材曲线尽显魅力',         vec:[0, 0, 3, 0, 1, 2]},
+      {text:'保持原有风格、经典永不过时',         vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:12,
+    text:'你对主播最基本的底线要求是什么？',
+    options:[
+      {text:'有趣好玩就行、道德感可以灵活变通',   vec:[3, 0, 0, -1, 0, 1]},
+      {text:'善良温柔、不故意伤害他人',           vec:[0, 3, 0, 1, 0, 0]},
+      {text:'足够有魅力、看着开心就够了',         vec:[0, 0, 2, 0, 1, 2]},
+      {text:'诚实守信、对粉丝负责说到做到',       vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:13,
+    text:'你希望主播的直播频率和节奏是？',
+    options:[
+      {text:'随时突击没有规律、每次都是意外惊喜', vec:[2, 0, 0, 0, 2, 1]},
+      {text:'固定时间段、像约定好的每周约会',     vec:[0, 2, 0, 2, 0, 0]},
+      {text:'播得越多越好、想多看看她',           vec:[0, 0, 2, 1, 1, 0]},
+      {text:'质量优先不过度消耗、每次都是精品',   vec:[0, 1, 0, 2, 0, 3]}
+    ]
+  },
+  {
+    id:14,
+    text:'主播生日回（生日特别直播），你希望？',
+    options:[
+      {text:'整烂活、把生日过成搞笑综艺节目',     vec:[3, 0, 0, 0, 1, 2]},
+      {text:'温馨感动、念粉丝来信一起哭一起笑',   vec:[0, 3, 0, 1, 0, 1]},
+      {text:'粉丝福利大放送、发一些平时不发的',   vec:[0, 0, 3, 0, 1, 2]},
+      {text:'认真回顾一年成长、感恩每位粉丝',     vec:[0, 1, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:15,
+    text:'以下哪种类型的虚拟主播更接近你的理想型？',
+    options:[
+      {text:'疯批美人、越疯越爱、不可预测',       vec:[3, 0, 1, 0, 1, 2]},
+      {text:'温柔大姐姐、治愈系避风港',           vec:[0, 3, 0, 1, 0, 1]},
+      {text:'钓系女友、让人欲罢不能',             vec:[0, 0, 3, 0, 1, 1]},
+      {text:'元气少女、永远充满干劲和笑容',       vec:[0, 0, 0, 1, 3, 2]}
+    ]
+  },
+  {
+    id:16,
+    text:'你怎么看待主播的"gachi"（深度入脑）粉丝？',
+    options:[
+      {text:'能整出更好玩的活就行、乐子更多',     vec:[2, 0, 1, 0, 0, 1]},
+      {text:'说明主播确实很温暖、让人有归属感',   vec:[0, 3, 0, 0, 0, 0]},
+      {text:'说明主播个人魅力太强了、挡不住',     vec:[0, 0, 3, 0, 0, 2]},
+      {text:'主播应该正确引导、对粉丝负责',       vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:17,
+    text:'如果主播因为失误引发了争议，你的态度是？',
+    options:[
+      {text:'看怎么整活收场、处理得好反而更爱了', vec:[3, 0, 0, 0, 0, 2]},
+      {text:'愿意给机会、相信她的温柔本性不会坏', vec:[0, 2, 0, 1, 0, 0]},
+      {text:'不触碰原则性底线就继续看',           vec:[0, 0, 1, 0, 1, 0]},
+      {text:'看道歉够不够真诚、态度决定一切',     vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:18,
+    text:'如果只能选一个主播"单推"，你的选择依据是？',
+    options:[
+      {text:'整活天才、每天都能让我笑出声',       vec:[3, 0, 0, 0, 1, 2]},
+      {text:'温柔天使、累了就能来这里充电',       vec:[0, 3, 0, 1, 0, 1]},
+      {text:'人间蛊王、让人上头停不下来',         vec:[0, 0, 3, 0, 1, 3]},
+      {text:'坚定守护者、让我感觉被在乎被重视',   vec:[0, 1, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:19,
+    text:'你最能接受主播的哪种"缺点"？',
+    options:[
+      {text:'说话太飘没谱、但笑果十足',           vec:[3, 0, 0, 0, 1, 1]},
+      {text:'有时候太感性太容易哭、但很真诚',     vec:[0, 3, 0, 1, 0, 0]},
+      {text:'偶尔打擦边球、但知道分寸在哪',       vec:[0, 0, 3, 0, 1, 1]},
+      {text:'直播时间不固定、但每次都会提前通知', vec:[0, 0, 0, 3, 1, 0]}
+    ]
+  },
+  {
+    id:20,
+    text:'虚拟主播对你来说，最重要的是什么？',
+    options:[
+      {text:'乐子来源、让生活多点笑声',           vec:[2, 0, 0, 0, 0, 1]},
+      {text:'精神寄托、治愈日常疲惫的良药',       vec:[0, 2, 0, 1, 1, 1]},
+      {text:'情感投射、接近理想中的伴侣形象',     vec:[0, 0, 2, 0, 1, 1]},
+      {text:'成长见证、一起变得更好的伙伴',       vec:[0, 0, 0, 2, 2, 2]}
+    ]
+  },
+  {
+    id:21,
+    text:'你希望主播的粉丝群体氛围是什么样的？',
+    options:[
+      {text:'整活不断、互相开玩笑、天天有乐子',   vec:[3, 0, 1, 0, 1, 1]},
+      {text:'温暖互助、像大家庭一样互相支持',     vec:[0, 3, 0, 1, 0, 0]},
+      {text:'对主播有强烈的喜爱和情感投入',       vec:[0, 0, 3, 0, 1, 1]},
+      {text:'理性有秩序、以主播成长为导向',       vec:[0, 0, 0, 3, 1, 2]}
+    ]
+  },
+  {
+    id:22,
+    text:'主播突然停播一周，你更希望是什么原因？',
+    options:[
+      {text:'在憋大招、回来整个惊天大活',         vec:[3, 0, 0, 0, 1, 3]},
+      {text:'身体不舒服在休息、希望你等她回来',   vec:[0, 3, 0, 1, 0, 0]},
+      {text:'去拍特别的照片视频了、回来给大家看', vec:[0, 0, 3, 0, 1, 2]},
+      {text:'提前发了动态说明原因、让人安心',     vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:23,
+    text:'你更倾向于给主播打赏/上舰的理由是什么？',
+    options:[
+      {text:'节目效果太好了、忍不住打钱',         vec:[3, 0, 1, 0, 0, 2]},
+      {text:'想支持她继续做喜欢的事',             vec:[0, 3, 0, 1, 0, 1]},
+      {text:'想被她念到名字、得到特别关注',       vec:[0, 0, 3, 0, 1, 0]},
+      {text:'长期陪伴、用行动一步步证明支持',     vec:[0, 0, 0, 3, 1, 1]}
+    ]
+  },
+  {
+    id:24,
+    text:'主播在直播中突然哭了，你的第一反应是？',
+    options:[
+      {text:'截图做表情包、回头一起乐',           vec:[3, 0, 0, 0, 1, 0]},
+      {text:'心疼、赶紧发弹幕安慰她',             vec:[0, 3, 0, 1, 0, 0]},
+      {text:'觉得她哭的样子也很动人',             vec:[0, 0, 2, 0, 0, 0]},
+      {text:'想知道发生了什么事、能不能帮上她',   vec:[0, 1, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:25,
+    text:'你希望主播每次直播的时长是？',
+    options:[
+      {text:'越久越好、看她发癫到天亮',           vec:[3, 0, 0, 0, 1, 1]},
+      {text:'恰到好处、留一点余韵让人回味',       vec:[0, 2, 0, 1, 0, 2]},
+      {text:'多播一会儿、想多看看她',             vec:[0, 0, 2, 0, 1, 0]},
+      {text:'按时间表来、准时开播准时下播',       vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:26,
+    text:'你怎么看待主播接商业推广/广告？',
+    options:[
+      {text:'看她怎么整活带货、娱乐性最重要',     vec:[3, 0, 0, 0, 1, 1]},
+      {text:'支持、希望她能多赚点过得更好',       vec:[0, 3, 0, 1, 0, 0]},
+      {text:'推广的产品和她形象契合就完美',       vec:[0, 0, 2, 0, 1, 1]},
+      {text:'只要透明公开、不欺瞒粉丝就行',       vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:27,
+    text:'你更喜欢主播在哪个平台上活跃？',
+    options:[
+      {text:'哪里能整活就去哪里、多平台开花',     vec:[3, 0, 0, 0, 1, 1]},
+      {text:'固定一个平台深耕、像家一样安定',     vec:[0, 2, 0, 2, 0, 0]},
+      {text:'多发美图和视频的平台、养眼最重要',   vec:[0, 0, 3, 0, 1, 2]},
+      {text:'始终如一在B站、不轻易换平台',        vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:28,
+    text:'你更喜欢主播什么样的作息？',
+    options:[
+      {text:'夜猫子、深夜发癫直播最带感',         vec:[3, 0, 0, 0, 1, 1]},
+      {text:'早睡早起、照顾好自己的规律生活',     vec:[0, 3, 0, 1, 0, 1]},
+      {text:'深夜杂谈更有氛围、适合说说心里话',   vec:[0, 0, 3, 0, 1, 0]},
+      {text:'按约定时间直播、说几点就几点',       vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:29,
+    text:'你对主播的私生活/真实身份怎么看？',
+    options:[
+      {text:'不太关心、虚拟和现实分得很开',       vec:[1, 0, 0, 0, 0, 0]},
+      {text:'尊重隐私、她愿意分享的才去了解',     vec:[0, 3, 0, 1, 0, 0]},
+      {text:'有点好奇、但不会刻意去打探',         vec:[0, 0, 1, 0, 1, 0]},
+      {text:'相信她能把握好虚拟与真实的界限',     vec:[0, 0, 0, 3, 0, 0]}
+    ]
+  },
+  {
+    id:30,
+    text:'做完这套题，你最大的感受是？',
+    options:[
+      {text:'有些选项越选越好玩、想重来一遍',     vec:[3, 0, 0, 0, 1, 1]},
+      {text:'更清楚了自己想要什么样的陪伴',       vec:[0, 3, 0, 1, 0, 1]},
+      {text:'发现自己对有魅力的人毫无抵抗力',     vec:[0, 0, 3, 0, 1, 1]},
+      {text:'坚定找到了心目中最好的那个主播',     vec:[0, 0, 0, 3, 1, 1]}
+    ]
+  }
+];
+
+// ==================== STATE ====================
+let currentQuestion = 0;
+let userVector = [0, 0, 0, 0, 0, 0];
+let maxPossible = [0, 0, 0, 0, 0, 0];
+let answers = [];
+let shuffledQuestions = [];
+const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ==================== HELPERS ====================
+function normalize(vec) {
+  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+  if (norm === 0) return vec.map(() => 0);
+  return vec.map(v => v / norm);
+}
+
+function cosineSimilarity(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  if (na === 0 || nb === 0) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+// Property difference scoring per dimension
+// diff 0-1=5分, 2=4分, 3=2分, 4-5=0分, 6=-1分, 7=-2分, 8=-3分, 9=-4分, 10=-5分
+function propertyScore(userDisplay, vtuberTraits) {
+  let total = 0;
+  for (let i = 0; i < 6; i++) {
+    const diff = Math.abs(Math.round(userDisplay[i]) - vtuberTraits[i]);
+    if (diff <= 1) total += 5;
+    else if (diff === 2) total += 4;
+    else if (diff === 3) total += 2;
+    else if (diff <= 5) total += 0;
+    else if (diff === 6) total += -1;
+    else if (diff === 7) total += -2;
+    else if (diff === 8) total += -3;
+    else if (diff === 9) total += -4;
+    else total += -5; // diff === 10
+  }
+  return total;
+}
+
+function getAvatarUrl(vtuber) {
+  return 'images/' + vtuber.id + '.jpg';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toPercent(val) {
+  return Math.round(val * 100);
+}
+
+// ==================== START QUIZ ====================
+function startQuiz(questionCount) {
+  currentQuestion = 0;
+  userVector = [0, 0, 0, 0, 0, 0];
+  // Randomly pick N from 30, shuffle order and options, reassign IDs 1-N
+  var picked = shuffle(QUESTIONS).slice(0, questionCount);
+  shuffledQuestions = picked.map(function(q, idx) {
+    var src = q.options.map(function(o) { return { opt: o }; });
+    var shf = shuffle(src);
+    return {
+      id: idx + 1,  // sequential 1-N
+      text: q.text,
+      options: shf.map(function(s) { return s.opt; })
+    };
+  });
+  answers = new Array(shuffledQuestions.length).fill(-1);
+
+  // Calculate max possible score per dimension for these questions
+  maxPossible = [0, 0, 0, 0, 0, 0];
+  shuffledQuestions.forEach(function(q) {
+    var dimMax = [0, 0, 0, 0, 0, 0];
+    q.options.forEach(function(opt) {
+      for (var i = 0; i < 6; i++) {
+        if (opt.vec[i] > dimMax[i]) dimMax[i] = opt.vec[i];
+      }
+    });
+    for (var i = 0; i < 6; i++) {
+      maxPossible[i] += dimMax[i];
+    }
+  });
+
+  showScreen('questionScreen');
+  renderQuestion();
+}
+
+// ==================== RENDER QUESTION ====================
+function renderQuestion() {
+  const q = shuffledQuestions[currentQuestion];
+  document.getElementById('questionNumber').textContent = `QUESTION ${q.id}`;
+  document.getElementById('questionTitle').textContent = q.text;
+  document.getElementById('progressText').textContent = `${currentQuestion + 1} / ${shuffledQuestions.length}`;
+  document.getElementById('progressBar').style.width = ((currentQuestion / shuffledQuestions.length) * 100) + '%';
+
+  // Show/hide nav buttons
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const btnSubmit = document.getElementById('btnSubmit');
+  btnPrev.style.display = currentQuestion > 0 ? 'inline-block' : 'none';
+  // Show next button if going back to an already-answered question that isn't the last
+  btnNext.style.display = (answers[currentQuestion] >= 0 && currentQuestion < shuffledQuestions.length - 1) ? 'inline-block' : 'none';
+  // Show submit button only on last question when answered (and not yet submitted)
+  if (currentQuestion === shuffledQuestions.length - 1 && answers[currentQuestion] >= 0) {
+    btnSubmit.style.display = 'block';
+  } else {
+    btnSubmit.style.display = 'none';
+  }
+
+  const prevAnswer = answers[currentQuestion];
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    if (i === prevAnswer) btn.classList.add('option-selected');
+    btn.innerHTML = `<span class="option-letter">${OPTION_LABELS[i]}</span>${opt.text}`;
+    btn.addEventListener('click', () => selectOption(i));
+    list.appendChild(btn);
+  });
+
+  // Re-trigger animation
+  const title = document.getElementById('questionTitle');
+  title.classList.remove('animate-in');
+  void title.offsetWidth;
+  title.classList.add('animate-in');
+}
+
+function selectOption(index) {
+  const prevAnswer = answers[currentQuestion];
+  // If re-selecting, subtract old answer's vector first
+  if (prevAnswer >= 0) {
+    const oldVec = shuffledQuestions[currentQuestion].options[prevAnswer].vec;
+    for (let i = 0; i < 6; i++) {
+      userVector[i] -= oldVec[i];
+    }
+  }
+
+  // Add new answer
+  const vec = shuffledQuestions[currentQuestion].options[index].vec;
+  for (let i = 0; i < 6; i++) {
+    userVector[i] += vec[i];
+  }
+  answers[currentQuestion] = index;
+
+  currentQuestion++;
+  if (currentQuestion >= shuffledQuestions.length) {
+    // On last question, stay put and show submit button
+    currentQuestion = shuffledQuestions.length - 1;
+    renderQuestion();
+    document.getElementById('btnSubmit').style.display = 'block';
+  } else {
+    renderQuestion();
+  }
+}
+
+function goBack() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+function goNext() {
+  if (currentQuestion < shuffledQuestions.length - 1) {
+    currentQuestion++;
+    renderQuestion();
+  }
+}
+
+function confirmSubmit() {
+  const unanswered = answers.map((a, i) => a < 0 ? (i + 1) : null).filter(Boolean);
+  if (unanswered.length > 0) {
+    alert('以下题目尚未作答：第 ' + unanswered.join('、') + ' 题\n请完成所有题目后再提交。');
+    // Navigate to first unanswered question
+    currentQuestion = unanswered[0] - 1;
+    renderQuestion();
+    return;
+  }
+  showResults();
+}
+
+// ==================== SHOW RESULTS ====================
+function showResults() {
+  showScreen('resultScreen');
+
+  // Non-negative raw scores, compute per-dimension ratios
+  const userDisplay = userVector.map(v => Math.max(0, v));
+  const ratios = userDisplay.map((v, i) => {
+    const maxV = maxPossible[i] || 1;
+    return Math.min(v / maxV, 1);
+  });
+
+  // Find the highest ratio, apply power curve to it, then scale ALL dimensions uniformly
+  const maxRatio = Math.max(...ratios, 0.01);
+  const linearMax = 1 + maxRatio * 9;
+  const boostedMax = 1 + Math.pow(maxRatio, 0.55) * 9;
+  const scaleFactor = boostedMax / linearMax;
+
+  // All dimensions use the same scale factor — preserves relative proportions
+  const userDisplayNorm = ratios.map(r => {
+    return (1 + r * 9) * scaleFactor;
+  });
+
+  // Normalize for cosine similarity (uses raw vector, not scaled)
+  const userNorm = normalize(userVector.map(v => Math.max(0, v)));
+
+  // Calculate combined score: 85% cosine similarity + 15% property difference
+  const results = VTUBERS.map(v => {
+    const cosSim = cosineSimilarity(userNorm, normalize(v.traits));
+    const propRaw = propertyScore(userDisplayNorm, v.traits);
+    const propNorm = (propRaw + 30) / 60; // normalize [-30,30] → [0,1]
+    return {
+      ...v,
+      similarity: cosSim * 0.85 + propNorm * 0.15
+    };
+  }).sort((a, b) => b.similarity - a.similarity);
+
+  const top5 = results.slice(0, 5);
+  const best = top5[0];
+
+  // Render best match
+  renderBestMatch(best);
+
+  // Render user vector bars
+  renderUserVector(userDisplayNorm);
+
+  // Render radar chart
+  renderRadarChart(userDisplayNorm, best);
+
+  // Render top 5 list
+  renderMatchList(top5, userDisplayNorm);
+
+  // Register this play to the global counter
+  registerPlay();
+}
+
+function renderBestMatch(best) {
+  const card = document.getElementById('bestMatchCard');
+  card.innerHTML = `
+    <img src="${getAvatarUrl(best)}" alt="${best.name}"
+         class="best-avatar" onerror="this.src=generateAvatar('${best.name}', '${best.id}')">
+    <div class="best-name">${best.name}</div>
+    <div style="font-size:13px;color:var(--text-light);margin-bottom:4px;">${best.desc}</div>
+    <div class="best-similarity">${toPercent(best.similarity)}<span>% 匹配度</span></div>
+    <a href="https://space.bilibili.com/${best.uid}" target="_blank" class="bili-link">👆 前往B站主页</a>
+  `;
+}
+
+function renderUserVector(userDisplay) {
+  const container = document.getElementById('userVectorBars');
+  container.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const val = userDisplay[i].toFixed(1);
+    const pct = (userDisplay[i] / 10 * 100);
+    container.innerHTML += `
+      <div class="vector-bar-row">
+        <span class="vector-bar-label">${DIM_ICONS[i]} ${DIM_NAMES[i]}</span>
+        <div class="vector-bar-track">
+          <div class="vector-bar-fill" style="width:${pct}%" data-val="${val}"></div>
+        </div>
+        <span class="vector-bar-val">${val}</span>
+      </div>
+    `;
+  }
+}
+
+function renderRadarChart(userDisplay, best) {
+  const canvas = document.getElementById('radarChart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = Math.min(cx, cy) - 50;
+  const n = 6;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Draw grid
+  for (let level = 1; level <= 4; level++) {
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+      const rr = r * (level / 4);
+      const x = cx + rr * Math.cos(angle);
+      const y = cy + rr * Math.sin(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#FFD0E0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw axes
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+    ctx.strokeStyle = '#FFB8D0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw labels
+  ctx.fillStyle = '#7A5068';
+  ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+    const lr = r + 24;
+    const x = cx + lr * Math.cos(angle);
+    const y = cy + lr * Math.sin(angle);
+    ctx.fillText(DIM_NAMES[i], x, y);
+  }
+
+  // Draw Best Match polygon (traits are 0-10, scale to 0-1)
+  const bestScaled = best.traits.map(v => v / 10);
+  drawPolygon(ctx, cx, cy, r, n, bestScaled, 'rgba(255,92,142,0.35)', '#FF3D76', 2.5);
+
+  // Draw User polygon (values are 1-10, scale to 0-1)
+  const userScaled = userDisplay.map(v => v / 10);
+  drawPolygon(ctx, cx, cy, r, n, userScaled, 'rgba(255,156,189,0.3)', '#FF9EBD', 2);
+
+  // Legend
+  ctx.fillStyle = '#FF3D76';
+  ctx.fillRect(cx - 50, h - 18, 12, 12);
+  ctx.fillStyle = '#7A5068';
+  ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('最佳匹配 ' + best.name, cx - 34, h - 10);
+
+  ctx.fillStyle = '#FF9EBD';
+  ctx.fillRect(cx + 80, h - 18, 12, 12);
+  ctx.fillStyle = '#7A5068';
+  ctx.fillText('你', cx + 96, h - 10);
+}
+
+function drawPolygon(ctx, cx, cy, r, n, values, fill, stroke, lw) {
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const idx = i % n;
+    const angle = (Math.PI * 2 / n) * idx - Math.PI / 2;
+    const v = Math.min(1, Math.max(0, values[idx]));
+    const x = cx + r * v * Math.cos(angle);
+    const y = cy + r * v * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = lw;
+  ctx.stroke();
+}
+
+function renderMatchList(top5, userVector) {
+  const list = document.getElementById('matchList');
+  list.innerHTML = top5.map((v, i) => {
+    const rankClass = `rank-${i + 1}`;
+    const pct = toPercent(v.similarity);
+    return `
+      <div class="match-card animate-in" style="animation-delay:${i * 0.1}s">
+        <div class="match-card-header">
+          <div class="match-rank ${rankClass}">${i + 1}</div>
+          <img src="${getAvatarUrl(v)}" alt="${v.name}" class="match-avatar"
+               onerror="this.src=generateAvatar('${v.name}', '${v.id}')">
+          <div class="match-info">
+            <div class="match-name">${v.name}</div>
+            <div class="match-desc">${v.desc}</div>
+          </div>
+          <div class="match-score-col">
+            <span class="match-score">${pct}%</span>
+            <span class="match-score-label">匹配度</span>
+          </div>
+        </div>
+        <div class="match-traits-bars">
+          ${v.traits.map((tv, j) => `
+            <div class="match-trait-row">
+              <span class="match-trait-icon">${DIM_ICONS[j]}</span>
+              <span class="match-trait-name">${DIM_NAMES[j]}</span>
+              <div class="match-trait-track">
+                <div class="match-trait-fill" style="width:${tv * 10}%;background:${DIM_COLORS[j]}"></div>
+              </div>
+              <span class="match-trait-val">${tv}</span>
+            </div>
+          `).join('')}
+        </div>
+        <a href="https://space.bilibili.com/${v.uid}" target="_blank" class="bili-link-sm">前往B站空间 →</a>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==================== EXPORT ====================
+let html2canvasReady = false;
+
+(function loadHtml2canvas() {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  s.onload = function() {
+    html2canvasReady = true;
+    const btn = document.getElementById('btnExport');
+    if (btn) btn.style.display = 'inline-block';
+  };
+  s.onerror = function() { /* silently fail, button stays hidden */ };
+  document.head.appendChild(s);
+})();
+
+let sdkLoading = null;
+function ensureSdk() {
+  if (window.toy) return Promise.resolve();
+  if (!sdkLoading) {
+    sdkLoading = new Promise(function(resolve) {
+      var s = document.createElement('script');
+      s.src = '//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js';
+      s.onload = resolve;
+      s.onerror = resolve;
+      document.head.appendChild(s);
+    });
+  }
+  return sdkLoading;
+}
+
+async function exportResult() {
+  if (!html2canvasReady || typeof html2canvas === 'undefined') return;
+  // Lazy-load SDK in background (non-blocking)
+  ensureSdk();
+  const el = document.getElementById('resultScreen');
+  try {
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#FFF0F5',
+      scale: 2,
+      useCORS: false,
+      allowTaint: false,
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // B站 App 内使用 SDK 保存到相册
+    if (window.toy) {
+      const ok = await toy.isSupport('saveImageToAlbum').catch(() => false);
+      if (ok) {
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+        await toy.saveImageToAlbum({ base64Data, hintMsg: '需要相册权限保存匹配结果' });
+        return;
+      }
+    }
+    // Web 端浏览器下载
+    const link = document.createElement('a');
+    link.download = '虚拟主播伴侣匹配结果.png';
+    link.href = dataUrl;
+    link.click();
+  } catch (e) {
+    alert('导出失败：' + e.message);
+  }
+}
+
+function retryQuiz() {
+  showScreen('welcomeScreen');
+}
+
+// ==================== GENERATE AVATAR FALLBACK ====================
+function generateAvatar(name, id) {
+  const colors = [
+    ['#FF6B9D','#C44569'], ['#FF9FF3','#F368E0'], ['#FFB347','#CC8A34'],
+    ['#7B68EE','#5A4FCF'], ['#FF6B6B','#EE5A24'], ['#4ECDC4','#3AAFA9'],
+    ['#FFD93D','#E6B800'], ['#C9B1FF','#A086E8'], ['#FF8C94','#FF6B75'],
+    ['#B8A9C9','#9B8DB5'], ['#9B59B6','#7D3C98'], ['#E74C3C','#C0392B'],
+    ['#3498DB','#2980B9'], ['#1ABC9C','#16A085'], ['#E67E22','#D35400'],
+    ['#F39C12','#E67E22'], ['#2ECC71','#27AE60'], ['#E91E63','#C2185B'],
+    ['#00BCD4','#0097A7'], ['#FF5722','#E64A19'], ['#8E44AD','#6C3483'],
+    ['#26C6DA','#00ACC1'], ['#66BB6A','#43A047'], ['#FFA726','#F57C00'],
+    ['#AB47BC','#8E24AA'], ['#5C6BC0','#3F51B5'], ['#EF5350','#D32F2F'],
+    ['#FF7043','#E64A19'], ['#26A69A','#00897B'], ['#EC407A','#C2185B']
+  ];
+  const idx = VTUBERS.findIndex(v => v.id === id);
+  const [c1, c2] = colors[idx >= 0 ? idx : 0];
+  const ch = name.charAt(0);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+    <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${c1}"/><stop offset="100%" style="stop-color:${c2}"/>
+    </linearGradient></defs>
+    <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+    <text x="50" y="50" dy=".1em" text-anchor="middle" dominant-baseline="central"
+          fill="white" font-size="36" font-weight="bold" font-family="sans-serif">${ch}</text>
+  </svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+// ==================== FLOATING HEARTS ====================
+function createHearts() {
+  const container = document.getElementById('heartsContainer');
+  const heartChars = ['💕', '🌸', '💗', '✨', '🎀', '💖', '🩷', '💝'];
+  for (let i = 0; i < 12; i++) {
+    const heart = document.createElement('span');
+    heart.className = 'heart-float';
+    heart.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
+    heart.style.left = Math.random() * 100 + '%';
+    heart.style.fontSize = (16 + Math.random() * 20) + 'px';
+    heart.style.animationDuration = (8 + Math.random() * 12) + 's';
+    heart.style.animationDelay = (Math.random() * 10) + 's';
+    container.appendChild(heart);
+  }
+}
+
+// ==================== BGM ====================
+let bgmPlaying = false;
+const bgmAudio = document.getElementById('bgmAudio');
+const bgmToggle = document.getElementById('bgmToggle');
+
+function toggleBgm() {
+  if (bgmAudio.paused) {
+    bgmAudio.play().catch(function(){});
+    bgmToggle.textContent = '🎵';
+    bgmToggle.classList.remove('bgm-off');
+    bgmToggle.classList.add('bgm-on');
+    bgmPlaying = true;
+  } else {
+    bgmAudio.pause();
+    bgmToggle.textContent = '🔇';
+    bgmToggle.classList.remove('bgm-on');
+    bgmToggle.classList.add('bgm-off');
+    bgmPlaying = false;
+  }
+}
+
+// Try autoplay (may be blocked by browser)
+bgmAudio.play().then(() => {
+  bgmPlaying = true;
+}).catch(() => {
+  bgmToggle.textContent = '🔇';
+  bgmToggle.classList.remove('bgm-on');
+  bgmToggle.classList.add('bgm-off');
+});
+
+// ==================== GLOBAL PLAY COUNT ====================
+// Uses leaderboard board 2 as a shared counter: highest score = total plays
+function loadGlobalPlayCount() {
+  var el = document.getElementById('globalStats');
+  if (!el) return;
+
+  // Show fallback immediately, no blocking
+  el.textContent = '🎮 开始你的第一次匹配吧';
+  el.style.display = 'block';
+
+  // Async: try to load SDK and fetch real count in background
+  setTimeout(function() {
+    var sdkReady = typeof ensureSdk === 'function' ? ensureSdk() : Promise.resolve();
+    (sdkReady || Promise.resolve()).then(function() {
+      if (!window.toy) return;
+      toy.getRankList({ board: 2, period: 'all', limit: 1 }).then(function(list) {
+        var count = list.length > 0 ? list[0].score : 0;
+        if (count > 0) {
+          el.textContent = '🎮 已为 ' + count + ' 人找到ta的爱播';
+        }
+      }).catch(function() {});
+    });
+  }, 100);
+}
+
+function registerPlay() {
+  try {
+    if (window.toy) {
+      toy.getRankList({ board: 2, period: 'all', limit: 1 }).then(function(list) {
+        var highest = list.length > 0 ? list[0].score : 0;
+        return toy.submitScore({ board: 2, score: highest + 1 });
+      }).catch(function() {});
+    } else {
+      var c = parseInt(localStorage.getItem('toy_play_count') || '0', 10) + 1;
+      localStorage.setItem('toy_play_count', String(c));
+    }
+  } catch(e) {}
+}
+
+// ==================== INIT ====================
+createHearts();
+loadGlobalPlayCount();
+</script>
+
+</body>
+</html>

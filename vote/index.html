@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1220">
+  <title>原神 vs 鸣潮 · 投票</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 顶部横幅 -->
+    <div class="banner">
+      <img src="backgroud.jpg" alt="" id="banner-img">
+    </div>
+
+    <!-- 票数进度 -->
+    <section class="card count-sec">
+      <div class="count-row">
+        <div class="side blue">
+          <span class="side-dot blue"></span>
+          <span class="side-name">鸣潮</span>
+          <span class="side-count" id="blue-count">0 票</span>
+        </div>
+        <div class="side red">
+          <span class="side-count" id="red-count">0 票</span>
+          <span class="side-name">原神</span>
+          <span class="side-dot red"></span>
+        </div>
+      </div>
+      <div class="bar">
+        <div class="bar-fill blue" id="bar-blue"></div>
+        <div class="bar-fill red" id="bar-red"></div>
+      </div>
+      <div class="pct-row">
+        <span class="blue" id="blue-pct">0%</span>
+        <span class="red" id="red-pct">0%</span>
+      </div>
+    </section>
+
+    <!-- 投票 -->
+    <section class="card vote-sec">
+      <h2 class="sec-title">投出你的一票</h2>
+      <div class="pick-row">
+        <button class="pick blue" id="pick-blue">
+          <span class="pick-emoji">🌊</span>
+          <span class="pick-name">支持鸣潮</span>
+        </button>
+        <button class="pick red" id="pick-red">
+          <span class="pick-emoji">🔥</span>
+          <span class="pick-name">支持原神</span>
+        </button>
+      </div>
+      <button class="vote-btn" id="btn-vote">投 票</button>
+      <div class="bal" id="bal-text">剩余票数：--</div>
+      <button class="rank-btn" id="btn-rank">📊 查看投票列表</button>
+    </section>
+
+    <!-- 投票资格 -->
+    <section class="card grants-sec">
+      <h2 class="sec-title">获取投票资格</h2>
+      <div class="grant" id="grant-1">
+        <span class="grant-icon">🎁</span>
+        <div class="grant-info">
+          <div class="grant-name">首次进入</div>
+          <div class="grant-desc">来到投票页即可获得 1 票</div>
+        </div>
+        <span class="grant-badge done" id="g1-status">待领取</span>
+      </div>
+      <div class="grant" id="grant-2">
+        <span class="grant-icon">❤️</span>
+        <div class="grant-info">
+          <div class="grant-name">关注UP主</div>
+          <div class="grant-desc">关注后回来自动获得 1 票</div>
+        </div>
+        <button class="grant-badge btn" id="btn-follow">去关注</button>
+        <span class="grant-badge done" id="g2-status" hidden>已获得</span>
+      </div>
+      <div class="grant" id="grant-3">
+        <span class="grant-icon">📤</span>
+        <div class="grant-info">
+          <div class="grant-name">分享给好友</div>
+          <div class="grant-desc">分享本页面给好友，截图上传即可获得 1 票</div>
+        </div>
+        <button class="grant-badge btn" id="btn-share">去分享</button>
+        <span class="grant-badge done" id="g3-status" hidden>已获得</span>
+      </div>
+    </section>
+
+    <footer class="foot">原神 vs 鸣潮 · 你支持谁？</footer>
+  </div>
+
+  <!-- 投票列表弹窗 -->
+  <div class="modal" id="rank-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">投票列表</h2>
+        <button class="icon-close" id="btn-close-rank" aria-label="关闭">×</button>
+      </div>
+      <div class="rank-tabs" id="rank-tabs">
+        <button class="rtab active" data-b="1">🌊 鸣潮 TOP100</button>
+        <button class="rtab" data-b="2">🔥 原神 TOP100</button>
+      </div>
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- 分享弹窗 -->
+  <div class="modal" id="share-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">分享给好友</h2>
+        <button class="icon-close" id="btn-close-share" aria-label="关闭">×</button>
+      </div>
+      <div class="share-tip">复制下方链接到<b>任意群聊</b>并<b>截图</b>，上传截图即可获得 1 票</div>
+      <div class="share-link">
+        <input id="share-url" readonly>
+        <button class="copy-btn" id="btn-copy">复制</button>
+      </div>
+      <div class="copy-tip" id="copy-tip"></div>
+      <div class="upload-row">
+        <label class="upload-btn" for="file-input">📷 上传截图
+          <input type="file" id="file-input" accept="image/*" hidden>
+        </label>
+      </div>
+      <div class="share-preview" id="share-preview" hidden>
+        <img id="share-img" alt="">
+        <div class="share-ok">上传成功，分享票已到账</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关注引导弹窗 -->
+  <div class="modal" id="follow-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-title">关注UP主领票</div>
+      <div class="follow-tip">前往UP主主页点击「关注」，关注后回到本页即可获得 1 票</div>
+      <div class="follow-btns">
+        <button class="btn primary" id="btn-follow-open">打开UP主页</button>
+      </div>
+      <div class="follow-btns">
+        <button class="btn ghost" id="btn-follow-ok">已关注，重新检测</button>
+        <button class="btn ghost" id="btn-follow-cancel">稍后再说</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

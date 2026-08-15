@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2c4a6b">
+  <title>菲比啾比 · Flappy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ 首页 ============ -->
+    <section id="view-home" class="view home-view">
+      <canvas id="home-bird" width="72" height="72" class="home-icon"></canvas>
+      <h1 class="home-title">菲比啾比</h1>
+      <div class="home-sub">点按飞翔 · 躲避管道 · 收集金币</div>
+      <div class="home-stats">
+        <div class="hstat"><span class="hstat-label">最高分</span><span class="hstat-val" id="home-hi">0</span></div>
+        <div class="hstat"><span class="hstat-label">已玩</span><span class="hstat-val" id="home-games">0 局</span></div>
+        <div class="hstat"><span class="hstat-label">当前金币</span><span class="hstat-val" id="home-coins">0</span></div>
+      </div>
+      <div class="home-btns">
+        <button class="btn btn-primary btn-big" id="btn-continue" hidden>▶ 继续游戏</button>
+        <button class="btn btn-primary btn-big" id="btn-start">🐦 开始游戏</button>
+        <button class="btn" id="btn-rank">🏆 排行榜</button>
+        <button class="btn" id="btn-shop">🛒 商城</button>
+        <button class="btn" id="btn-settings">⚙️ 设置</button>
+        <button class="btn" id="btn-help">❓ 玩法说明</button>
+      </div>
+      <div class="home-foot"><span>手机：点按屏幕任意处 上冲（建议横屏）· 电脑：空格 / 点击 / ↑</span></div>
+    </section>
+
+    <!-- ============ 游戏 ============ -->
+    <section id="view-game" class="view game-view" hidden>
+      <div class="hud">
+        <div class="hud-cell"><span class="hud-label">分数</span><span class="hud-num" id="hud-score">0</span></div>
+        <div class="hud-cell hud-cell-s"><span class="hud-label">金币</span><span class="hud-num" id="hud-coins">0</span></div>
+        <div class="hud-cell hud-cell-s"><span class="hud-label">生命</span><span class="hud-num" id="hud-lives">❤️</span></div>
+        <div class="hud-cell hud-cell-s"><span class="hud-label">最高</span><span class="hud-num" id="hud-hi">0</span></div>
+        <button class="btn-mini" id="btn-mute">🔊</button>
+        <button class="btn-mini" id="btn-pause">⏸</button>
+      </div>
+      <div class="game-mid">
+        <div id="game-wrap">
+          <canvas id="game" width="858" height="504"></canvas>
+        </div>
+      </div>
+      <div class="game-foot"><span>点按屏幕飞翔 · M 静音 · P 暂停</span></div>
+
+      <!-- 碰撞扣血红屏特效 -->
+      <div id="flash" class="flash" hidden></div>
+
+      <!-- 暂停 -->
+      <div id="pause-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">⏸ 已暂停</div>
+          <div class="ov-score">当前分数 <b id="pause-score">0</b></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-resume">继续飞行</button>
+            <button class="btn" id="btn-restart">重新开始</button>
+            <button class="btn" id="btn-pause-settings">⚙️ 设置</button>
+            <button class="btn" id="btn-settle">🧾 结算</button>
+            <button class="btn ghost" id="btn-exit">返回首页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 结束 -->
+      <div id="over-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">💀 生命耗尽</div>
+          <div class="ov-big">得分 <b id="over-score">0</b></div>
+          <div class="ov-new" id="over-new" hidden>🏆 新纪录！</div>
+          <div class="ov-row"><span>穿过管道</span><span id="over-pipes">0 根</span></div>
+          <div class="ov-row"><span>本局金币</span><span id="over-coins">0 枚</span></div>
+          <div class="ov-row"><span>最高分</span><span id="over-hi">0</span></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-again">再来一局</button>
+            <button class="btn" id="btn-ranko">🏆 排行榜</button>
+            <button class="btn ghost" id="btn-home">返回首页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 排行榜 ============ -->
+    <section id="view-rank" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-rank">← 返回</button>
+        <h2 class="page-title">🏆 排行榜</h2>
+      </header>
+      <div class="tabs" id="rank-src">
+        <button class="tab active" data-src="local">本地榜</button>
+        <button class="tab" data-src="bili">B站榜</button>
+      </div>
+      <div class="tabs" id="rank-period" hidden>
+        <button class="ptab" data-p="day">日榜</button>
+        <button class="ptab" data-p="week">周榜</button>
+        <button class="ptab" data-p="month">月榜</button>
+        <button class="ptab active" data-p="all">总榜</button>
+      </div>
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </section>
+
+    <!-- ============ 商城 ============ -->
+    <section id="view-shop" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-shop">← 返回</button>
+        <h2 class="page-title">🛒 商城</h2>
+      </header>
+      <div class="shop-balance"><span class="coin"></span>当前金币 <b id="shop-balance">0</b></div>
+      <div class="shop-list" id="shop-list"></div>
+    </section>
+
+    <!-- 商城购买确认 -->
+    <div id="shop-confirm" class="overlay" hidden>
+      <div class="overlay-card">
+        <div class="ov-title">🛒 确认购买？</div>
+        <div class="ov-score" id="shop-confirm-desc"></div>
+        <div class="ov-btns">
+          <button class="btn btn-primary" id="btn-shop-buy">确认购买</button>
+          <button class="btn ghost" id="btn-shop-cancel">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-settings" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-settings">← 返回</button>
+        <h2 class="page-title">⚙️ 设置</h2>
+      </header>
+      <div class="set-body">
+        <div class="set-sec">
+          <h3>🔊 声音</h3>
+          <label class="set-row">
+            <span class="set-label">游戏音效</span>
+            <span class="set-switch">
+              <input type="checkbox" id="set-muted" checked>
+              <span class="track"></span>
+            </span>
+          </label>
+          <label class="set-row set-vol">
+            <span class="set-label">音量大小</span>
+            <span class="set-range">
+              <input type="range" id="set-volume" min="0" max="100" value="80">
+              <span class="set-range-val" id="set-volume-val">80%</span>
+            </span>
+          </label>
+        </div>
+        <div class="set-sec">
+          <h3>ℹ️ 游戏</h3>
+          <label class="set-row">
+            <span class="set-label">断点续玩</span>
+            <span class="set-label-sub">游戏中退出后，首页可「继续游戏」</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 说明 ============ -->
+    <section id="view-help" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-help">← 返回</button>
+        <h2 class="page-title">❓ 玩法说明</h2>
+      </header>
+      <div class="help-body">
+        <div class="help-sec help-brief">
+          <p>点按屏幕（或 <b>空格 / ↑ / 鼠标点击</b>），让<b>菲比啾比</b>振翅上冲；松手即下落。</p>
+          <p><b>🟢 计分：</b>飞得越远，<b>每秒加分越多</b>；穿过一根管道 <b>+5 分</b>，拾取金币 <b>+10 分</b>。</p>
+          <p><b>💖 生命：</b>共 <b>3 条命</b>，撞到管道、天花板或地面各扣 1 条（短暂无敌），扣完才结束。</p>
+          <p><b>📈 难度：</b>飞得越远、分数越高，管道会<b>越来越密集、缺口越来越小</b>。</p>
+          <p><b>⌨️ 快捷键：</b>M 直接静音，P / ESC 暂停；暂停后可<b>继续 / 重开 / 结算 / 返回</b>。</p>
+          <p>游戏中切走或返回首页，进度会自动存档，下次可从「<b>继续游戏</b>」接着飞。</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

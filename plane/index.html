@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#081426">
+  <title>飞机大战</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===================== 首页 ===================== -->
+    <section id="view-home" class="view active">
+      <button class="sound-fab" id="btn-sound-home" aria-label="背景音乐开关">🔊</button>
+      <div class="home-bg" id="home-bg"></div>
+      <div class="home-inner">
+        <h1 class="title">飞机大战</h1>
+
+        <div class="home-menu">
+          <button class="btn primary" id="btn-start">开始游戏</button>
+          <button class="btn ghost" id="btn-start-jump">开始游戏（跳至第 1 关）</button>
+          <button class="btn ghost" id="btn-continue">继续游戏</button>
+          <div class="home-grid">
+            <button class="btn chip" id="btn-help">说明</button>
+            <button class="btn chip" id="btn-settings">设置</button>
+            <button class="btn chip" id="btn-shop">商店</button>
+            <button class="btn chip" id="btn-rank">排行榜</button>
+          </div>
+        </div>
+
+        <div class="home-stats">
+          <div class="stat-card">
+            <div class="stat-label">最佳战绩</div>
+            <div class="stat-val" id="home-best">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">可用积分</div>
+            <div class="stat-val" id="home-balance">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 跳关选择弹窗 -->
+      <div class="overlay" id="jump-overlay" hidden>
+        <div class="panel">
+          <h2>选择开始关卡</h2>
+          <div class="jump-list" id="jump-list"></div>
+          <button class="btn ghost" id="btn-jump-cancel">取消</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 游戏说明 ===================== -->
+    <section id="view-help" class="view">
+      <div class="page-head">
+        <button class="btn back" id="btn-help-back">‹ 返回</button>
+        <h2 class="page-title">游戏说明</h2>
+      </div>
+      <div class="card-list help-list">
+        <div class="help-block">
+          <h3>操作</h3>
+          <p>手机：拖动飞机跟随手指，<b>双击屏幕</b>释放炸弹。电脑：鼠标移动飞机，WASD / 方向键移动，<b>空格</b>释放炸弹。</p>
+        </div>
+        <div class="help-block">
+          <h3>自动射击</h3>
+          <p>飞机自动发射三种子弹：<span class="dot-armor"></span> 机关枪、<span class="dot-b2"></span> 激光、<span class="dot-b3"></span> 高爆弹（爆炸范围内有敌人即爆）。拾取运输机掉落的对应道具可提升单种子弹威力。</p>
+        </div>
+        <div class="help-block">
+          <h3>炸弹</h3>
+          <p>秒杀场上所有普通敌机、清空敌方子弹，并对 BOSS 造成大量伤害。</p>
+        </div>
+        <div class="help-block">
+          <h3>敌机</h3>
+          <p>普通 / 运输机（掉道具）/ 攻击机（发射子弹）/ 快速机。碰撞会损失生命，敌机越残撞伤越轻。</p>
+        </div>
+        <div class="help-block">
+          <h3>波次与 BOSS</h3>
+          <p>每波敌机数量从 200 起、每轮 +20；刷满后若开启 BOSS 战则出现 BOSS，击破后进入下一波。</p>
+        </div>
+        <div class="help-block">
+          <h3>商店与积分</h3>
+          <p>每局结束按 <b>分数 ÷ 100</b> 获得积分，可升级机体（+生命）与三种子弹（威力随等级提升）。子弹等级不得高于机体等级 +10。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 设置 ===================== -->
+    <section id="view-settings" class="view">
+      <div class="page-head">
+        <button class="btn back" id="btn-settings-back">‹ 返回</button>
+        <h2 class="page-title">设置</h2>
+      </div>
+      <div class="card-list">
+        <div class="set-row">
+          <div class="set-info">
+            <div class="set-name">背景音乐（BGM）</div>
+            <div class="set-desc">游戏与首页音乐、音效开关</div>
+          </div>
+          <button class="set-toggle" id="set-bgm">开</button>
+        </div>
+
+        <div class="set-row">
+          <div class="set-info">
+            <div class="set-name">游戏难度</div>
+            <div class="set-desc">敌机刷新速度；噩梦/地狱击杀额外 +10%/+20% 分数</div>
+          </div>
+          <div class="diff-seg" id="diff-seg">
+            <button class="seg" data-diff="easy">简单</button>
+            <button class="seg" data-diff="normal">普通</button>
+            <button class="seg" data-diff="hard">困难</button>
+            <button class="seg" data-diff="nightmare">噩梦</button>
+            <button class="seg" data-diff="hell">地狱</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-info">
+            <div class="set-name">敌机上限</div>
+            <div class="set-desc">同时在场敌机数量，范围 10 ~ 50</div>
+          </div>
+          <div class="set-range-wrap">
+            <input type="range" id="set-cap" min="10" max="50" step="5" value="20">
+            <span class="set-range-val" id="set-cap-val">20</span>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-info">
+            <div class="set-name">BOSS 战</div>
+            <div class="set-desc">每波结束后出现 BOSS，击破后进入下一波</div>
+          </div>
+          <button class="set-toggle" id="set-boss">开</button>
+        </div>
+
+        <div class="set-row">
+          <div class="set-info">
+            <div class="set-name">敌机血量提示</div>
+            <div class="set-desc">敌机 / BOSS 头顶显示剩余血量条</div>
+          </div>
+          <button class="set-toggle" id="set-hp">开</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 商店 ===================== -->
+    <section id="view-shop" class="view">
+      <div class="page-head">
+        <button class="btn back" id="btn-shop-back">‹ 返回</button>
+        <h2 class="page-title">商店</h2>
+        <div class="balance-chip">积分 <b id="shop-balance">0</b></div>
+      </div>
+      <p class="shop-note">飞机总等级 <b id="shop-level">Lv.0</b>（机体 + 三子弹等级之和）。每局结束按 <b>分数 ÷ 100</b> 获得积分，升级后永久保留。</p>
+
+      <div class="card-list shop-list">
+        <div class="upgrade-card" data-key="armor">
+          <div class="up-head">
+            <span class="up-dot dot-armor"></span>
+            <span class="up-name">机体升级</span>
+            <span class="up-lv" id="up-armor-lv">Lv.0</span>
+          </div>
+          <div class="up-stat" id="up-armor-stat">基础生命 1000</div>
+          <div class="up-next" id="up-armor-next">下一级：+10 生命</div>
+          <button class="btn buy" data-key="armor">升级（0 积分）</button>
+        </div>
+
+        <div class="upgrade-card" data-key="b1">
+          <div class="up-head">
+            <span class="up-dot dot-b1"></span>
+            <span class="up-name">机关枪</span>
+            <span class="up-lv" id="up-b1-lv">Lv.0</span>
+          </div>
+          <div class="up-stat" id="up-b1-stat">单束威力 20</div>
+          <div class="up-next" id="up-b1-next">下一级：威力 20</div>
+          <button class="btn buy" data-key="b1">升级（0 积分）</button>
+        </div>
+
+        <div class="upgrade-card" data-key="b2">
+          <div class="up-head">
+            <span class="up-dot dot-b2"></span>
+            <span class="up-name">激光</span>
+            <span class="up-lv" id="up-b2-lv">Lv.0</span>
+          </div>
+          <div class="up-stat" id="up-b2-stat">威力 100</div>
+          <div class="up-next" id="up-b2-next">下一级：威力 100</div>
+          <button class="btn buy" data-key="b2">升级（0 积分）</button>
+        </div>
+
+        <div class="upgrade-card" data-key="b3">
+          <div class="up-head">
+            <span class="up-dot dot-b3"></span>
+            <span class="up-name">高爆弹</span>
+            <span class="up-lv" id="up-b3-lv">Lv.0</span>
+          </div>
+          <div class="up-stat" id="up-b3-stat">爆炸威力 50</div>
+          <div class="up-next" id="up-b3-next">下一级：威力 50</div>
+          <button class="btn buy" data-key="b3">升级（0 积分）</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 排行榜 ===================== -->
+    <section id="view-rank" class="view">
+      <div class="page-head">
+        <button class="btn back" id="btn-rank-back">‹ 返回</button>
+        <h2 class="page-title">排行榜</h2>
+      </div>
+
+      <div class="tabs" id="rank-source-tabs">
+        <button class="tab active" data-source="local">本地榜</button>
+        <button class="tab" data-source="global">B站榜</button>
+      </div>
+
+      <div class="tabs" id="rank-type-tabs">
+        <button class="tab active" data-type="score">高分</button>
+        <button class="tab" data-type="level">等级</button>
+      </div>
+
+      <div class="tabs" id="rank-period-tabs">
+        <button class="tab active" data-period="all">总榜</button>
+        <button class="tab" data-period="month">月榜</button>
+        <button class="tab" data-period="week">周榜</button>
+        <button class="tab" data-period="day">日榜</button>
+      </div>
+
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </section>
+
+    <!-- ===================== 游戏 ===================== -->
+    <section id="view-game" class="view">
+      <div class="game-wrap" id="game-wrap">
+        <canvas id="game"></canvas>
+
+        <!-- 顶部 HUD：分数 + 波内进度 -->
+        <div class="hud hud-top">
+          <div class="hud-top-left">
+            <div class="hud-score" id="hud-score">分数：0</div>
+            <div class="hud-time" id="hud-time">00:00</div>
+            <div class="hud-progress" id="hud-progress">进度：0/200</div>
+          </div>
+          <div class="hud-btns">
+            <button class="hud-btn" id="btn-sound-game" aria-label="背景音乐开关">🔊</button>
+            <button class="hud-btn" id="btn-pause" aria-label="暂停">⏸</button>
+          </div>
+        </div>
+
+        <!-- 底部 HUD：波次 / 血量 / 炸弹 / 三子弹威力 -->
+        <div class="hud hud-bottom">
+          <div class="hud-cell"><span class="hud-label">波次</span><span class="hud-val" id="hud-wave">第 1 波</span></div>
+          <div class="hud-cell"><span class="hud-label">血量</span><span class="hud-val" id="hud-hp">1000</span></div>
+          <div class="hud-cell"><span class="hud-label">炸弹</span><span class="hud-val" id="hud-bombs">3</span></div>
+          <div class="hud-cell bullets">
+            <div class="b-title">威力</div>
+            <div class="b-row">
+              <span class="b-item"><span class="b-dot dot-b1" title="机关枪威力"></span><span class="hud-val sm" id="hud-p1">10</span></span>
+              <span class="b-item"><span class="b-dot dot-b2" title="激光威力"></span><span class="hud-val sm" id="hud-p2">100</span></span>
+              <span class="b-item"><span class="b-dot dot-b3" title="高爆弹威力"></span><span class="hud-val sm" id="hud-p3">50</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作提示 -->
+        <div class="game-hint" id="game-hint" hidden></div>
+
+        <!-- 暂停遮罩 -->
+        <div class="overlay" id="pause-overlay" hidden>
+          <div class="panel">
+            <h2>已暂停</h2>
+            <button class="btn primary" id="btn-resume">继续游戏</button>
+            <button class="btn ghost" id="btn-pause-settings">设置</button>
+            <button class="btn ghost" id="btn-pause-home">返回首页</button>
+            <button class="btn danger" id="btn-end-run">结束本局并结算</button>
+          </div>
+        </div>
+
+        <!-- 结算遮罩 -->
+        <div class="overlay" id="over-overlay" hidden>
+          <div class="panel">
+            <h2 class="over-title">游戏结束</h2>
+            <div class="over-score" id="over-score">0</div>
+            <div class="over-sub" id="over-sub"></div>
+            <div class="over-points" id="over-points"></div>
+            <button class="btn primary" id="btn-again">再来一局</button>
+            <button class="btn ghost" id="btn-over-shop">商店</button>
+            <button class="btn ghost" id="btn-over-rank">排行榜</button>
+            <button class="btn ghost" id="btn-over-home">返回首页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

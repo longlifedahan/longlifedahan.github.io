@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>生命游戏 - Game of Life</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9}
+input{font-family:inherit}
+/* Layout: canvas fills the whole screen, all controls are fixed at the bottom */
+.icon-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #30363d;border-radius:8px;background:rgba(48,54,61,0.4);color:#c9d1d9;font-size:16px;cursor:pointer;transition:all .15s;touch-action:manipulation}
+.icon-btn:active{background:#30363d;transform:scale(0.92)}
+.icon-btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+/* Canvas */
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;height:100dvh;display:block;touch-action:none;cursor:grab}
+#canvas.editing{cursor:crosshair}
+/* Edit mode indicator */
+#edit-indicator{position:fixed;top:8px;left:50%;transform:translateX(-50%);padding:4px 14px;background:rgba(31,111,235,0.9);border-radius:12px;font-size:12px;color:#fff;pointer-events:none;opacity:0;transition:opacity .2s;z-index:25;white-space:nowrap}
+#edit-indicator.show{opacity:1}
+/* Bottom controls (fixed, overlay the canvas bottom) */
+#controls{position:fixed;bottom:0;left:0;right:0;padding:4px 6px env(safe-area-inset-bottom,4px);background:rgba(13,17,23,0.95);border-top:1px solid #21262d;z-index:30;display:flex;flex-direction:column;gap:3px}
+#controls .info-line{font-size:11px;color:#8b949e;text-align:center;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.ctrl-row{display:flex;align-items:center;justify-content:center;gap:4px}
+.ctrl-btn{display:flex;align-items:center;justify-content:center;height:32px;padding:0 8px;border:1px solid #30363d;border-radius:6px;background:rgba(48,54,61,0.3);color:#c9d1d9;font-size:12px;cursor:pointer;transition:all .1s;touch-action:manipulation;white-space:nowrap;font-family:inherit}
+.ctrl-btn:active{background:#30363d;transform:scale(0.94)}
+.ctrl-btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff;font-weight:500}
+.ctrl-btn.primary:active{background:#388bfd}
+.ctrl-btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.ctrl-btn.danger{color:#f85149}
+.ctrl-btn.danger.active{background:#f85149;border-color:#f85149;color:#fff}
+.ctrl-btn .icon{font-size:15px;line-height:1}
+.ctrl-btn .label{margin-left:3px}
+.ctrl-row .sep{width:1px;height:20px;background:#30363d;flex-shrink:0}
+/* N slider */
+.n-group{display:flex;align-items:center;gap:4px;flex:1;max-width:200px}
+.n-group label{font-size:11px;color:#8b949e;white-space:nowrap}
+.n-group input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#30363d;border-radius:2px;outline:none;min-width:0}
+.n-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#58a6ff;border:2px solid #0d1117;cursor:pointer}
+.n-group input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#58a6ff;border:2px solid #0d1117;cursor:pointer}
+.n-group .n-val{font-size:13px;font-weight:600;color:#58a6ff;min-width:28px;text-align:center}
+/* Overlay */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none}
+.overlay.show{opacity:1;pointer-events:auto}
+/* Settings panel */
+#settings{position:fixed;top:0;right:0;width:85%;max-width:380px;height:100%;background:#161b22;z-index:60;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:0 0 env(safe-area-inset-bottom,16px)}
+#settings.show{transform:translateX(0)}
+#settings .header{display:flex;align-items:center;justify-content:space-between;padding:16px;position:sticky;top:0;background:#161b22;z-index:1;border-bottom:1px solid #21262d}
+#settings .header h2{font-size:17px;font-weight:600}
+#settings .section{padding:16px;border-bottom:1px solid #21262d}
+#settings .section h3{font-size:13px;color:#8b949e;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px}
+.setting-row:last-child{margin-bottom:0}
+.setting-row label{font-size:14px;color:#c9d1d9;flex-shrink:0}
+.setting-row .val{font-size:12px;color:#58a6ff;min-width:32px;text-align:right}
+.setting-row input[type=number]{width:72px;height:34px;padding:0 8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:14px;text-align:center;outline:none}
+.setting-row input[type=number]:focus{border-color:#58a6ff}
+.setting-row input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#30363d;border-radius:2px;outline:none;max-width:180px}
+.setting-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#58a6ff;border:2px solid #0d1117;cursor:pointer}
+.setting-row input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#58a6ff;border:2px solid #0d1117;cursor:pointer}
+.btn{height:34px;padding:0 14px;border:1px solid #30363d;border-radius:6px;background:#21262d;color:#c9d1d9;font-size:13px;cursor:pointer;touch-action:manipulation;font-family:inherit;transition:all .1s}
+.btn:active{background:#30363d}
+.btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.btn.primary:active{background:#388bfd}
+.btn.danger{color:#f85149}
+.btn.small{height:28px;padding:0 10px;font-size:11px}
+/* Saved maps */
+.map-list{display:flex;flex-direction:column;gap:6px}
+.map-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #21262d}
+.map-item .map-name{font-size:13px;color:#c9d1d9;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-item .map-info{font-size:11px;color:#8b949e;margin-left:8px}
+.map-item .map-actions{display:flex;gap:4px;margin-left:8px}
+.empty-msg{font-size:13px;color:#8b949e;text-align:center;padding:16px}
+/* Help modal */
+#help-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);width:88%;max-width:400px;max-height:80vh;overflow-y:auto;background:#161b22;border:1px solid #30363d;border-radius:16px;z-index:70;padding:24px;opacity:0;pointer-events:none;transition:all .25s}
+#help-modal.show{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+#help-modal h2{font-size:20px;margin-bottom:4px}
+#help-modal .sub{font-size:13px;color:#8b949e;margin-bottom:16px}
+#help-modal h3{font-size:14px;color:#58a6ff;margin:14px 0 6px}
+#help-modal p,#help-modal li{font-size:13px;line-height:1.6;color:#c9d1d9}
+#help-modal ul{padding-left:18px;margin:4px 0}
+#help-modal .rule-box{padding:10px 14px;background:#0d1117;border-radius:8px;margin:8px 0;border-left:3px solid #58a6ff}
+#help-modal .close-btn{display:block;width:100%;margin-top:16px}
+/* Scrollbar */
+#settings::-webkit-scrollbar,#help-modal::-webkit-scrollbar{width:4px}
+#settings::-webkit-scrollbar-thumb,#help-modal::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+/* Toast */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:8px 20px;background:#1f6feb;color:#fff;border-radius:20px;font-size:13px;z-index:80;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.show{opacity:1}
+/* Disable controls when needed */
+.ctrl-btn:disabled{opacity:0.4;pointer-events:none}
+</style>
+</head>
+<body>
+<!-- Canvas (full screen) -->
+<canvas id="canvas"></canvas>
+<div id="edit-indicator">&#x270E; 编辑模式</div>
+
+<!-- Bottom controls (fixed) -->
+<div id="controls">
+  <div class="ctrl-row">
+    <button class="ctrl-btn" id="edit-btn"><span class="icon">&#x270E;</span><span class="label">编辑</span></button>
+    <button class="ctrl-btn" id="reset-btn"><span class="icon">&#x21BB;</span><span class="label">重置</span></button>
+    <button class="ctrl-btn" id="random-btn"><span class="icon">&#x2660;</span><span class="label">随机</span></button>
+    <div class="sep"></div>
+    <button class="ctrl-btn" id="step-btn" title="下一代"><span class="icon">&#x23ED;</span></button>
+    <button class="ctrl-btn primary" id="play-btn" title="开始/暂停"><span class="icon" id="play-icon">&#x25B6;</span></button>
+    <button class="ctrl-btn" id="step-n-btn" title="进N代"><span class="icon">&#x23E9;</span><span class="label" id="step-n-label">进10代</span></button>
+  </div>
+  <div class="ctrl-row">
+    <div class="n-group">
+      <label>N</label>
+      <input type="range" id="n-slider" min="1" max="100" value="10">
+      <span class="n-val" id="n-val">10</span>
+    </div>
+    <div class="sep"></div>
+    <button class="icon-btn" id="help-btn" title="帮助" aria-label="帮助">?</button>
+    <button class="icon-btn" id="settings-btn" title="设置" aria-label="设置">&#x2699;</button>
+  </div>
+  <div class="info-line" id="info-text">第 0 代 · 0 个细胞</div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Settings panel -->
+<div id="settings">
+  <div class="header">
+    <h2>&#x2699; 设置</h2>
+    <button class="icon-btn" id="settings-close">&#x2715;</button>
+  </div>
+
+  <div class="section">
+    <h3>网格</h3>
+    <div class="setting-row">
+      <label>宽度</label>
+      <input type="number" id="grid-w" min="5" max="1000" value="30">
+      <label>高度</label>
+      <input type="number" id="grid-h" min="5" max="1000" value="30">
+      <button class="btn primary" id="apply-size">应用</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>繁衍</h3>
+    <div class="setting-row">
+      <label>繁衍速度</label>
+      <input type="range" id="speed-slider" min="20" max="2000" value="200">
+      <span class="val" id="speed-val">200ms</span>
+    </div>
+    <div class="setting-row">
+      <label>随机概率</label>
+      <input type="range" id="prob-slider" min="1" max="100" value="30">
+      <span class="val" id="prob-val">0.30</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>保存地图</h3>
+    <div class="setting-row" style="flex-wrap:wrap;gap:6px">
+      <input type="text" id="map-name-input" placeholder="地图名称" style="flex:1;min-width:100px;height:34px;padding:0 8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:13px;outline:none">
+      <button class="btn primary" id="save-map-btn">保存</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>读取地图</h3>
+    <div id="map-list" class="map-list">
+      <div class="empty-msg">暂无保存的地图</div>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div id="help-modal">
+  <h2>生命游戏</h2>
+  <div class="sub">Conway's Game of Life</div>
+
+  <p>生命游戏（Conway's Game of Life）是英国数学家 John Conway 在 1970 年提出的零玩家游戏。每一个细胞的状态由其周围 8 个细胞的状态决定。</p>
+
+  <h3>&#x1F3AF; 规则</h3>
+  <div class="rule-box">
+    <p><b>存活：</b>活细胞周围有 <b>2 或 3</b> 个活细胞则继续存活，否则因孤独或拥挤而死亡。</p>
+    <p style="margin-top:6px"><b>诞生：</b>死细胞周围恰好有 <b>3</b> 个活细胞则变为活细胞。</p>
+  </div>
+
+  <h3>&#x1F4F1; 操作说明</h3>
+  <ul>
+    <li><b>拖动：</b>单指拖动平移视野</li>
+    <li><b>缩放：</b>双指捏合 / 鼠标滚轮缩放</li>
+    <li><b>编辑：</b>点击「编辑」进入编辑模式，触碰方块改变状态</li>
+    <li><b>繁衍：</b>点击 &#x25B6; 自动繁衍，&#x23ED; 下一代，&#x23E9; 进 N 代</li>
+    <li><b>随机：</b>按概率随机生成细胞</li>
+  </ul>
+
+  <h3>&#x2328;&#xFE0F; 快捷键（桌面端）</h3>
+  <ul>
+    <li><b>Space</b> 播放/暂停</li>
+    <li><b>E</b> 切换编辑模式</li>
+    <li><b>R</b> 重置</li>
+    <li><b>G</b> 随机生成</li>
+    <li><b>S</b> 下一代</li>
+  </ul>
+
+  <button class="btn primary close-btn" id="help-close">知道了</button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ==================== State ====================
+const CELL_BASE = 20;
+const state = {
+  grid: [],
+  width: 30,
+  height: 30,
+  generation: 0,
+  running: false,
+  speed: 200,
+  randomProb: 0.3,
+  editing: false,
+  zoom: 1,
+  offsetX: 0,
+  offsetY: 0,
+  timerId: null,
+  nValue: 10,
+  _alive: 0,
+  _stepNMode: false
+};
+
+// ==================== DOM ====================
+const $ = (id) => document.getElementById(id);
+const canvas = $('canvas');
+const ctx = canvas.getContext('2d');
+
+// ==================== Grid Operations ====================
+function createGrid(w, h) {
+  const g = [];
+  for (let r = 0; r < h; r++) {
+    g[r] = new Array(w).fill(false);
+  }
+  return g;
+}
+
+function initGrid() {
+  state.grid = createGrid(state.width, state.height);
+  state.generation = 0;
+  state._alive = 0;
+}
+
+function countAlive() {
+  let n = 0;
+  for (let r = 0; r < state.height; r++) {
+    for (let c = 0; c < state.width; c++) {
+      if (state.grid[r][c]) n++;
+    }
+  }
+  return n;
+}
+
+function resizeGrid(newW, newH) {
+  const oldW = state.width, oldH = state.height;
+  const oldG = state.grid;
+  const g = createGrid(newW, newH);
+  for (let r = 0; r < Math.min(oldH, newH); r++) {
+    for (let c = 0; c < Math.min(oldW, newW); c++) {
+      g[r][c] = oldG[r] && oldG[r][c];
+    }
+  }
+  state.grid = g;
+  state.width = newW;
+  state.height = newH;
+  state._alive = countAlive();
+  fitView();
+}
+
+function randomFill() {
+  for (let r = 0; r < state.height; r++) {
+    for (let c = 0; c < state.width; c++) {
+      state.grid[r][c] = Math.random() < state.randomProb;
+    }
+  }
+  state.generation = 0;
+  state._alive = countAlive();
+}
+
+function clearGrid() {
+  for (let r = 0; r < state.height; r++) {
+    state.grid[r].fill(false);
+  }
+  state.generation = 0;
+  state._alive = 0;
+}
+
+function toggleCell(col, row) {
+  if (col >= 0 && col < state.width && row >= 0 && row < state.height) {
+    state.grid[row][col] = !state.grid[row][col];
+    state._alive += state.grid[row][col] ? 1 : -1;
+  }
+}
+
+function setCell(col, row, val) {
+  if (col >= 0 && col < state.width && row >= 0 && row < state.height) {
+    if (state.grid[row][col] !== val) {
+      state.grid[row][col] = val;
+      state._alive += val ? 1 : -1;
+    }
+  }
+}
+
+function nextGeneration() {
+  const {grid, width, height} = state;
+  const next = createGrid(width, height);
+  let alive = 0;
+
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      let neighbors = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        const nr = r + dr;
+        if (nr < 0 || nr >= height) continue;
+        const row = grid[nr];
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nc = c + dc;
+          if (nc < 0 || nc >= width) continue;
+          if (row[nc]) neighbors++;
+        }
+      }
+      const cell = grid[r][c];
+      const live = cell ? (neighbors === 2 || neighbors === 3) : (neighbors === 3);
+      next[r][c] = live;
+      if (live) alive++;
+    }
+  }
+
+  state.grid = next;
+  state.generation++;
+  state._alive = alive;
+  return alive;
+}
+
+let _stepNTarget = 0;
+
+function startStepN(n) {
+  if (state._alive === 0) {
+    showToast('网格为空');
+    return;
+  }
+  if (state.running) stopAuto();
+
+  _stepNTarget = state.generation + n;
+  state._stepNMode = true;
+  state.running = true;
+
+  $('play-icon').innerHTML = '&#x23F8;';
+  $('play-btn').classList.add('active');
+  const snLabel = $('step-n-btn').querySelector('.label');
+  if (snLabel) snLabel.textContent = '停止';
+  $('step-n-btn').classList.add('danger');
+
+  state.timerId = setInterval(() => {
+    if (state._alive === 0) {
+      stopAuto();
+      showToast('所有细胞已消亡');
+      return;
+    }
+    nextGeneration();
+    updateInfo();
+    render();
+    if (state.generation >= _stepNTarget) {
+      stopAuto();
+    }
+  }, state.speed);
+}
+
+// ==================== View ====================
+function fitView() {
+  // Canvas is full-screen; reserve the fixed bottom controls area for centering
+  const w = canvas.clientWidth || window.innerWidth || 320;
+  const h = canvas.clientHeight || window.innerHeight || 480;
+  const ctrlEl = $('controls');
+  const ctrlH = ctrlEl ? ctrlEl.offsetHeight : 0;
+  const availH = Math.max(100, h - ctrlH);
+  const pad = 40;
+  const availW = w - pad * 2;
+  const availH2 = availH - pad * 2;
+  const zw = availW / (state.width * CELL_BASE);
+  const zh = availH2 / (state.height * CELL_BASE);
+  state.zoom = Math.min(zw, zh, 1.5);
+  state.offsetX = (w - state.width * CELL_BASE * state.zoom) / 2;
+  state.offsetY = (availH - state.height * CELL_BASE * state.zoom) / 2;
+}
+
+function screenToGrid(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const cs = CELL_BASE * state.zoom;
+  return {
+    col: Math.floor((clientX - rect.left - state.offsetX) / cs),
+    row: Math.floor((clientY - rect.top - state.offsetY) / cs)
+  };
+}
+
+// ==================== Rendering ====================
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+
+  if (!w || !h) return; // Not laid out yet
+
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, w, h);
+
+  const {grid, width, height, zoom, offsetX, offsetY} = state;
+  const cs = CELL_BASE * zoom;
+
+  // When cells are smaller than ~4px, render via ImageData sampling to stay fast
+  if (cs < 4) {
+    renderZoomedOut();
+    return;
+  }
+
+  // Visible range
+  const startCol = Math.max(0, Math.floor((-offsetX) / cs));
+  const endCol = Math.min(width, Math.ceil((w - offsetX) / cs));
+  const startRow = Math.max(0, Math.floor((-offsetY) / cs));
+  const endRow = Math.min(height, Math.ceil((h - offsetY) / cs));
+
+  // Pre-calculate pixel coords for start
+  const baseX = offsetX + startCol * cs;
+  const baseY = offsetY + startRow * cs;
+
+  // Draw grid background and lines
+  ctx.fillStyle = '#161b22';
+  ctx.fillRect(offsetX, offsetY, width * cs, height * cs);
+
+  // Grid lines
+  const lineW = Math.max(0.5, zoom * 0.8);
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = lineW;
+
+  // Vertical lines (only visible range)
+  ctx.beginPath();
+  for (let c = startCol; c <= endCol; c++) {
+    const x = offsetX + c * cs;
+    ctx.moveTo(Math.round(x) + 0.5, Math.max(offsetY, 0));
+    ctx.lineTo(Math.round(x) + 0.5, Math.min(offsetY + height * cs, h));
+  }
+  // Horizontal lines
+  for (let r = startRow; r <= endRow; r++) {
+    const y = offsetY + r * cs;
+    ctx.moveTo(Math.max(offsetX, 0), Math.round(y) + 0.5);
+    ctx.lineTo(Math.min(offsetX + width * cs, w), Math.round(y) + 0.5);
+  }
+  ctx.stroke();
+
+  // Grid border
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(offsetX, offsetY, width * cs, height * cs);
+
+  // Draw live cells
+  const cellPad = Math.max(1, zoom * 1.5);
+  ctx.fillStyle = '#39ff14';
+
+  for (let r = startRow; r < endRow; r++) {
+    const row = grid[r];
+    if (!row) continue;
+    const y = offsetY + r * cs + cellPad / 2;
+    for (let c = startCol; c < endCol; c++) {
+      if (row[c]) {
+        const x = offsetX + c * cs + cellPad / 2;
+        const size = cs - cellPad;
+        if (size > 0) {
+          ctx.fillRect(Math.round(x), Math.round(y), Math.round(size), Math.round(size));
+        }
+      }
+    }
+  }
+}
+
+// ImageData cache for zoomed-out rendering
+let _imgData = null;
+
+function getImgData(pw, ph) {
+  if (!_imgData || _imgData.width !== pw || _imgData.height !== ph) {
+    _imgData = ctx.createImageData(pw, ph);
+  }
+  return _imgData;
+}
+
+// Render when cells are smaller than ~4px: sample grid into a pixel buffer
+function renderZoomedOut() {
+  const dpr = window.devicePixelRatio || 1;
+  const pw = canvas.width;
+  const ph = canvas.height;
+  const img = getImgData(pw, ph);
+  const data = img.data;
+  const {grid, width, height, zoom, offsetX, offsetY} = state;
+  const cs = CELL_BASE * zoom;
+  const invCs = 1 / cs;
+  const invDpr = 1 / dpr;
+
+  const pageBg = [13, 17, 23];   // #0d1117
+  const gridBg = [22, 27, 34];   // #161b22
+  const cellCol = [57, 255, 20]; // #39ff14
+
+  const gridW = width * cs;
+  const gridH = height * cs;
+  const maxX = offsetX + gridW;
+  const maxY = offsetY + gridH;
+
+  // Pre-fill with page background
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = pageBg[0];
+    data[i + 1] = pageBg[1];
+    data[i + 2] = pageBg[2];
+    data[i + 3] = 255;
+  }
+
+  for (let py = 0; py < ph; py++) {
+    const sy = (py + 0.5) * invDpr;
+    if (sy < offsetY || sy >= maxY) continue;
+    const row = Math.floor((sy - offsetY) * invCs);
+    if (row < 0 || row >= height) continue;
+    const gridRow = grid[row];
+    const rowBase = py * pw * 4;
+    for (let px = 0; px < pw; px++) {
+      const sx = (px + 0.5) * invDpr;
+      if (sx < offsetX || sx >= maxX) continue;
+      const col = Math.floor((sx - offsetX) * invCs);
+      if (col < 0 || col >= width) continue;
+      const idx = rowBase + px * 4;
+      if (gridRow[col]) {
+        data[idx] = cellCol[0];
+        data[idx + 1] = cellCol[1];
+        data[idx + 2] = cellCol[2];
+      } else {
+        data[idx] = gridBg[0];
+        data[idx + 1] = gridBg[1];
+        data[idx + 2] = gridBg[2];
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// ==================== Touch Handling ====================
+let touchData = null;
+
+function resetTouch() {
+  touchData = null;
+}
+
+function handleTouchStart(e) {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    touchData = {
+      type: 'pending',
+      startX: t.clientX, startY: t.clientY,
+      startTime: Date.now(),
+      dragOffsetX: state.offsetX,
+      dragOffsetY: state.offsetY,
+      painting: false,
+      paintValue: false,
+      lastCol: -1, lastRow: -1
+    };
+  } else if (e.touches.length === 2) {
+    const t1 = e.touches[0], t2 = e.touches[1];
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    touchData = {
+      type: 'pinch',
+      startDist: Math.sqrt(dx * dx + dy * dy),
+      startZoom: state.zoom,
+      centerX: (t1.clientX + t2.clientX) / 2,
+      centerY: (t1.clientY + t2.clientY) / 2,
+      dragOffsetX: state.offsetX,
+      dragOffsetY: state.offsetY
+    };
+  }
+}
+
+function handleTouchMove(e) {
+  if (!touchData) return;
+
+  if (touchData.type === 'pinch' && e.touches.length === 2) {
+    const t1 = e.touches[0], t2 = e.touches[1];
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const ratio = dist / touchData.startDist;
+    const newZoom = Math.max(0.01, Math.min(10, touchData.startZoom * ratio));
+
+    const cx = (t1.clientX + t2.clientX) / 2;
+    const cy = (t1.clientY + t2.clientY) / 2;
+
+    state.offsetX = cx - (cx - touchData.dragOffsetX) * (newZoom / touchData.startZoom);
+    state.offsetY = cy - (cy - touchData.dragOffsetY) * (newZoom / touchData.startZoom);
+    state.zoom = newZoom;
+    render();
+    return;
+  }
+
+  if (touchData.type === 'pending' && e.touches.length === 1) {
+    const t = e.touches[0];
+    const dx = t.clientX - touchData.startX;
+    const dy = t.clientY - touchData.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 8) {
+      // Started dragging
+      if (state.editing) {
+        touchData.type = 'paint';
+        // Toggle the starting cell
+        const cell = screenToGrid(touchData.startX, touchData.startY);
+        if (cell.col >= 0 && cell.col < state.width && cell.row >= 0 && cell.row < state.height) {
+          toggleCell(cell.col, cell.row);
+          touchData.paintValue = state.grid[cell.row][cell.col];
+          touchData.painting = true;
+          touchData.lastCol = cell.col;
+          touchData.lastRow = cell.row;
+        }
+        render();
+        updateInfo();
+      } else {
+        touchData.type = 'pan';
+        state.offsetX = touchData.dragOffsetX + dx;
+        state.offsetY = touchData.dragOffsetY + dy;
+        render();
+      }
+    }
+    return;
+  }
+
+  if (touchData.type === 'paint' && e.touches.length === 1) {
+    const t = e.touches[0];
+    const cell = screenToGrid(t.clientX, t.clientY);
+    if (cell.col >= 0 && cell.col < state.width && cell.row >= 0 && cell.row < state.height) {
+      if (cell.col !== touchData.lastCol || cell.row !== touchData.lastRow) {
+        setCell(cell.col, cell.row, touchData.paintValue);
+        touchData.lastCol = cell.col;
+        touchData.lastRow = cell.row;
+        render();
+        updateInfo();
+      }
+    }
+    return;
+  }
+
+  if (touchData.type === 'pan' && e.touches.length === 1) {
+    const t = e.touches[0];
+    const dx = t.clientX - touchData.startX;
+    const dy = t.clientY - touchData.startY;
+    state.offsetX = touchData.dragOffsetX + dx;
+    state.offsetY = touchData.dragOffsetY + dy;
+    render();
+  }
+}
+
+function handleTouchEnd(e) {
+  if (!touchData) return;
+
+  // Tap detection (touch ended with no/little movement)
+  if (touchData.type === 'pending' && e.changedTouches.length === 1) {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchData.startX;
+    const dy = t.clientY - touchData.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dt = Date.now() - touchData.startTime;
+
+    if (dist < 12 && dt < 500) {
+      if (state.editing) {
+        const cell = screenToGrid(t.clientX, t.clientY);
+        toggleCell(cell.col, cell.row);
+        updateInfo();
+        render();
+      }
+    }
+  }
+
+  if (e.touches.length === 0) {
+    resetTouch();
+  } else if (e.touches.length === 1 && touchData.type === 'pinch') {
+    // Transition from pinch to single touch
+    const t = e.touches[0];
+    touchData = {
+      type: 'pending',
+      startX: t.clientX, startY: t.clientY,
+      startTime: Date.now(),
+      dragOffsetX: state.offsetX,
+      dragOffsetY: state.offsetY,
+      painting: false,
+      paintValue: false,
+      lastCol: -1, lastRow: -1
+    };
+  }
+}
+
+// ==================== Mouse Handling ====================
+let mouseData = null;
+
+function handleMouseDown(e) {
+  mouseData = {
+    startX: e.clientX, startY: e.clientY,
+    dragOffsetX: state.offsetX,
+    dragOffsetY: state.offsetY,
+    moved: false,
+    painting: false,
+    paintValue: false,
+    lastCol: -1, lastRow: -1
+  };
+}
+
+function handleMouseMove(e) {
+  if (!mouseData) return;
+  const dx = e.clientX - mouseData.startX;
+  const dy = e.clientY - mouseData.startY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > 3) mouseData.moved = true;
+
+  if (state.editing && mouseData.moved) {
+    if (!mouseData.painting) {
+      // Toggle starting cell
+      const cell = screenToGrid(mouseData.startX, mouseData.startY);
+      if (cell.col >= 0 && cell.col < state.width && cell.row >= 0 && cell.row < state.height) {
+        toggleCell(cell.col, cell.row);
+        mouseData.paintValue = state.grid[cell.row][cell.col];
+        mouseData.painting = true;
+        mouseData.lastCol = cell.col;
+        mouseData.lastRow = cell.row;
+      }
+    }
+    if (mouseData.painting) {
+      const cell = screenToGrid(e.clientX, e.clientY);
+      if (cell.col >= 0 && cell.col < state.width && cell.row >= 0 && cell.row < state.height) {
+        if (cell.col !== mouseData.lastCol || cell.row !== mouseData.lastRow) {
+          setCell(cell.col, cell.row, mouseData.paintValue);
+          mouseData.lastCol = cell.col;
+          mouseData.lastRow = cell.row;
+        }
+      }
+    }
+    render();
+    updateInfo();
+    return;
+  }
+
+  if (!state.editing) {
+    state.offsetX = mouseData.dragOffsetX + dx;
+    state.offsetY = mouseData.dragOffsetY + dy;
+    render();
+  }
+}
+
+function handleMouseUp(e) {
+  if (!mouseData) return;
+  if (!mouseData.moved && state.editing) {
+    const cell = screenToGrid(e.clientX, e.clientY);
+    toggleCell(cell.col, cell.row);
+    updateInfo();
+    render();
+  }
+  mouseData = null;
+}
+
+function handleWheel(e) {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.88 : 1 / 0.88;
+  const newZoom = Math.max(0.01, Math.min(10, state.zoom * delta));
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  state.offsetX = mx - (mx - state.offsetX) * (newZoom / state.zoom);
+  state.offsetY = my - (my - state.offsetY) * (newZoom / state.zoom);
+  state.zoom = newZoom;
+  render();
+}
+
+// ==================== Canvas Event Binding ====================
+function initCanvasEvents() {
+  // Touch
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchStart(e); }, {passive: false});
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouchMove(e); }, {passive: false});
+  canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd(e); }, {passive: false});
+  canvas.addEventListener('touchcancel', (e) => { resetTouch(); }, {passive: false});
+
+  // Mouse
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseup', handleMouseUp);
+  canvas.addEventListener('mouseleave', () => { mouseData = null; });
+  canvas.addEventListener('wheel', handleWheel, {passive: false});
+}
+
+// ==================== UI Controls ====================
+function updateInfo() {
+  $('info-text').textContent = `第 ${state.generation} 代 · ${state._alive} 个细胞`;
+}
+
+function togglePlay() {
+  if (state.running) {
+    stopAuto();
+  } else {
+    startAuto();
+  }
+}
+
+function startAuto() {
+  if (state.running) return;
+  state._stepNMode = false;
+  if (state._alive === 0) {
+    showToast('网格为空，请先随机生成或编辑');
+    return;
+  }
+  state.running = true;
+  $('play-icon').innerHTML = '&#x23F8;';
+  $('play-btn').classList.add('active');
+  state.timerId = setInterval(() => {
+    if (state._alive === 0) {
+      stopAuto();
+      showToast('所有细胞已消亡');
+      return;
+    }
+    nextGeneration();
+    updateInfo();
+    render();
+  }, state.speed);
+}
+
+function stopAuto() {
+  state.running = false;
+  const wasStepN = state._stepNMode;
+  state._stepNMode = false;
+  if (state.timerId) {
+    clearInterval(state.timerId);
+    state.timerId = null;
+  }
+  $('play-icon').innerHTML = '&#x25B6;';
+  $('play-btn').classList.remove('active');
+  if (wasStepN) {
+    $('step-n-btn').innerHTML = '<span class="icon">&#x23E9;</span><span class="label" id="step-n-label">进' + state.nValue + '代</span>';
+    $('step-n-btn').classList.remove('danger');
+  }
+}
+
+function toggleEdit() {
+  state.editing = !state.editing;
+  if (state.editing && state.running) stopAuto();
+  $('edit-btn').classList.toggle('active', state.editing);
+  $('edit-indicator').classList.toggle('show', state.editing);
+  canvas.classList.toggle('editing', state.editing);
+}
+
+function showToast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ==================== Save / Load ====================
+const STORAGE_KEY = 'gol_maps';
+
+function getSavedMaps() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch { return []; }
+}
+
+function saveMaps(maps) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(maps));
+    return true;
+  } catch (e) {
+    showToast('保存失败：存储空间不足');
+    return false;
+  }
+}
+
+function saveCurrentMap() {
+  const name = $('map-name-input').value.trim();
+  if (!name) { showToast('请输入地图名称'); return; }
+  const maps = getSavedMaps();
+  if (maps.find(m => m.name === name)) {
+    if (!confirm(`地图「${name}」已存在，覆盖吗？`)) return;
+    const idx = maps.findIndex(m => m.name === name);
+    maps.splice(idx, 1);
+  }
+  // Serialize grid
+  const data = [];
+  for (let r = 0; r < state.height; r++) {
+    data.push(state.grid[r].map(v => v ? 1 : 0).join(''));
+  }
+  maps.push({
+    name,
+    width: state.width,
+    height: state.height,
+    generation: state.generation,
+    data
+  });
+  if (saveMaps(maps)) {
+    $('map-name-input').value = '';
+    renderMapList();
+    showToast('地图已保存');
+  }
+}
+
+function loadMap(map) {
+  if (state.running) stopAuto();
+  state.width = map.width;
+  state.height = map.height;
+  state.grid = createGrid(state.width, state.height);
+  for (let r = 0; r < map.height && r < map.data.length; r++) {
+    const row = map.data[r];
+    for (let c = 0; c < map.width && c < row.length; c++) {
+      state.grid[r][c] = row[c] === '1';
+    }
+  }
+  state.generation = map.generation || 0;
+  state._alive = countAlive();
+  fitView();
+  updateInfo();
+  render();
+  // Sync settings
+  $('grid-w').value = state.width;
+  $('grid-h').value = state.height;
+  showToast(`已加载「${map.name}」`);
+}
+
+function deleteMap(name) {
+  let maps = getSavedMaps();
+  maps = maps.filter(m => m.name !== name);
+  saveMaps(maps);
+  renderMapList();
+}
+
+function renderMapList() {
+  const container = $('map-list');
+  const maps = getSavedMaps();
+  if (maps.length === 0) {
+    container.innerHTML = '<div class="empty-msg">暂无保存的地图</div>';
+    return;
+  }
+  container.innerHTML = maps.map(m => `
+    <div class="map-item">
+      <span class="map-name">${escHtml(m.name)}</span>
+      <span class="map-info">${m.width}&times;${m.height}</span>
+      <div class="map-actions">
+        <button class="btn small primary" data-load="${escHtml(m.name)}">读取</button>
+        <button class="btn small danger" data-del="${escHtml(m.name)}">删除</button>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('[data-load]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.load;
+      const maps = getSavedMaps();
+      const m = maps.find(x => x.name === name);
+      if (m) { loadMap(m); closeSettings(); }
+    });
+  });
+  container.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.del;
+      if (confirm(`确定删除「${name}」吗？`)) deleteMap(name);
+    });
+  });
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ==================== Settings ====================
+function openSettings() {
+  $('settings').classList.add('show');
+  $('overlay').classList.add('show');
+  renderMapList();
+  // Sync current values
+  $('grid-w').value = state.width;
+  $('grid-h').value = state.height;
+  $('speed-slider').value = state.speed;
+  $('speed-val').textContent = state.speed + 'ms';
+  $('prob-slider').value = Math.round(state.randomProb * 100);
+  $('prob-val').textContent = state.randomProb.toFixed(2);
+}
+
+function closeSettings() {
+  $('settings').classList.remove('show');
+  $('overlay').classList.remove('show');
+}
+
+function openHelp() {
+  $('help-modal').classList.add('show');
+  $('overlay').classList.add('show');
+}
+
+function closeHelp() {
+  $('help-modal').classList.remove('show');
+  $('overlay').classList.remove('show');
+}
+
+// ==================== Init ====================
+function init() {
+  initGrid();
+  fitView();
+  updateInfo();
+
+  // Canvas
+  initCanvasEvents();
+
+  // Controls
+  $('play-btn').addEventListener('click', togglePlay);
+  $('step-btn').addEventListener('click', () => {
+    if (state.running) stopAuto();
+    if (state._alive > 0) {
+      nextGeneration();
+      updateInfo();
+      render();
+    } else {
+      showToast('网格为空');
+    }
+  });
+  $('step-n-btn').addEventListener('click', () => {
+    if (state._stepNMode) {
+      stopAuto();
+      showToast('已停止');
+      return;
+    }
+    startStepN(state.nValue);
+  });
+  $('edit-btn').addEventListener('click', toggleEdit);
+  $('reset-btn').addEventListener('click', () => {
+    if (state.running) stopAuto();
+    clearGrid();
+    updateInfo();
+    render();
+  });
+  $('random-btn').addEventListener('click', () => {
+    if (state.running) stopAuto();
+    randomFill();
+    updateInfo();
+    render();
+  });
+
+  // N slider
+  $('n-slider').addEventListener('input', (e) => {
+    state.nValue = parseInt(e.target.value);
+    $('n-val').textContent = state.nValue;
+    $('step-n-label').textContent = `进${state.nValue}代`;
+  });
+
+  // Settings buttons
+  $('settings-btn').addEventListener('click', openSettings);
+  $('settings-close').addEventListener('click', closeSettings);
+  $('overlay').addEventListener('click', () => {
+    closeSettings();
+    closeHelp();
+  });
+
+  // Apply size
+  $('apply-size').addEventListener('click', () => {
+    const w = Math.max(5, Math.min(1000, parseInt($('grid-w').value) || 30));
+    const h = Math.max(5, Math.min(1000, parseInt($('grid-h').value) || 30));
+    $('grid-w').value = w;
+    $('grid-h').value = h;
+    if (w !== state.width || h !== state.height) {
+      if (state.running) stopAuto();
+      resizeGrid(w, h);
+      updateInfo();
+      render();
+    }
+  });
+
+  // Speed slider
+  $('speed-slider').addEventListener('input', (e) => {
+    state.speed = parseInt(e.target.value);
+    $('speed-val').textContent = state.speed + 'ms';
+    if (state.running) {
+      stopAuto();
+      startAuto();
+    }
+  });
+
+  // Probability slider
+  $('prob-slider').addEventListener('input', (e) => {
+    state.randomProb = parseInt(e.target.value) / 100;
+    $('prob-val').textContent = state.randomProb.toFixed(2);
+  });
+
+  // Save map
+  $('save-map-btn').addEventListener('click', saveCurrentMap);
+  $('map-name-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveCurrentMap();
+  });
+
+  // Help
+  $('help-btn').addEventListener('click', openHelp);
+  $('help-close').addEventListener('click', closeHelp);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    switch (e.key) {
+      case ' ': e.preventDefault(); togglePlay(); break;
+      case 'e': case 'E': toggleEdit(); break;
+      case 'r': case 'R':
+        if (state.running) stopAuto();
+        clearGrid(); updateInfo(); render();
+        break;
+      case 'g': case 'G':
+        if (state.running) stopAuto();
+        randomFill(); updateInfo(); render();
+        break;
+      case 's': case 'S':
+        if (state.running) stopAuto();
+        if (state._alive > 0) { nextGeneration(); updateInfo(); render(); }
+        break;
+    }
+  });
+
+  // Resize: keep app at visible viewport height and re-fit when the canvas
+  // size actually changes (e.g. mobile address bar show/hide)
+  let lastCW = 0, lastCH = 0, resizeTimer;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const cw = canvas.clientWidth, ch = canvas.clientHeight;
+      if (cw && ch && (cw !== lastCW || ch !== lastCH)) {
+        lastCW = cw; lastCH = ch;
+        fitView();
+      }
+      render();
+    }, 150);
+  }
+  window.addEventListener('resize', onResize);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onResize);
+  }
+
+  // Initial render
+  lastCW = canvas.clientWidth; lastCH = canvas.clientHeight;
+  render();
+
+  // Re-fit once layout settles: the first layout can report a wrong canvas
+  // size (flex sizing / mobile browser chrome), which pushes the grid
+  // off-screen. Re-center after the browser has settled.
+  function refitAfterLayout() {
+    if (!canvas.clientWidth || !canvas.clientHeight) {
+      requestAnimationFrame(refitAfterLayout);
+      return;
+    }
+    lastCW = canvas.clientWidth; lastCH = canvas.clientHeight;
+    fitView();
+    render();
+  }
+  requestAnimationFrame(refitAfterLayout);
+  setTimeout(refitAfterLayout, 300);
+
+  // Show help on first visit
+  if (!localStorage.getItem('gol_visited')) {
+    localStorage.setItem('gol_visited', '1');
+    setTimeout(openHelp, 600);
+  }
+
+  // Auto-save warning on page unload for running state
+  window.addEventListener('beforeunload', () => {
+    if (state.running) stopAuto();
+  });
+}
+
+// Start when ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>

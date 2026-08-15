@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>优质网文书单</title>
+<link rel="stylesheet" href="style.css?v=20260808c">
+</head>
+<body>
+<header class="topbar">
+  <h1>优质网文书单<button id="helpBtn" class="help-btn" type="button" aria-label="说明">?</button></h1>
+  <span class="total-hint" id="totalHint"></span>
+</header>
+<div class="toast" id="toast">数据截止7月3日，非官方数据，均订根据销量指数推算，如有不准请见谅（数据来源：龙的天空，鸣谢）</div>
+
+<!-- 筛选栏 -->
+<section class="filter-panel">
+  <div class="filter-grid">
+    <div class="field">
+      <span class="field-label">分类</span>
+      <div class="msel" id="mselCategory"></div>
+    </div>
+    <div class="field">
+      <span class="field-label">作者等级</span>
+      <div class="msel" id="mselLevel"></div>
+    </div>
+    <div class="field">
+      <span class="field-label">成绩</span>
+      <div class="msel" id="mselTier"></div>
+    </div>
+    <div class="row2">
+      <label class="field">
+        <span class="field-label">书名</span>
+        <input id="fName" type="search" placeholder="包含的关键字">
+      </label>
+      <label class="field">
+        <span class="field-label">作者</span>
+        <input id="fAuthor" type="search" placeholder="包含的关键字">
+      </label>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button id="btnFilter" class="btn btn-primary">查询</button>
+    <button id="btnReset" class="btn btn-ghost">重置</button>
+  </div>
+</section>
+
+<!-- 工具栏 -->
+<section class="toolbar">
+  <label class="page-size">
+    每页
+    <select id="pageSize">
+      <option value="20" selected>20</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+  </label>
+  <div class="sort-field">
+    <span>排序</span>
+    <select id="sortSelect">
+      <option value="">默认</option>
+      <option value="c">分类</option>
+      <option value="n">书名</option>
+      <option value="a">作者</option>
+      <option value="l">作者等级</option>
+      <option value="avg">均订</option>
+    </select>
+    <button id="sortDirBtn" class="sort-dir-btn" aria-label="切换排序方向" title="切换正序/倒序">↓</button>
+  </div>
+  <label class="show-rec">
+    <input type="checkbox" id="showRec" checked>
+    <span>友情推荐</span>
+  </label>
+  <span class="result-info" id="resultInfo"></span>
+</section>
+
+<!-- 桌面表格 -->
+<section class="table-wrap">
+  <table class="book-table">
+    <thead>
+      <tr>
+        <th data-key="idx">序号</th>
+        <th data-key="c">分类</th>
+        <th data-key="n">书名</th>
+        <th data-key="a">作者</th>
+        <th data-key="l">作者等级</th>
+        <th data-key="avg">均订</th>
+        <th data-key="link">链接</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</section>
+
+<!-- 手机卡片 -->
+<section class="card-list" id="cardList"></section>
+
+<!-- 分页 -->
+<footer class="pager">
+  <button id="btnPrev" class="btn btn-ghost">上一页</button>
+  <div class="pager-center">
+    <input id="pageInput" type="number" min="1" value="1">
+    <span id="pageTotal">/ 1</span>
+  </div>
+  <button id="btnNext" class="btn btn-ghost">下一页</button>
+</footer>
+
+<script src="books.js?v=20260808c"></script>
+<script src="app.js?v=20260808c"></script>
+</body>
+</html>

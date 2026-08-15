@@ -1,0 +1,89 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #87ceeb;
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
+#game { position: fixed; inset: 0; margin: auto; display: block; touch-action: none; }
+/* 手机 / B站 环境强制横屏：画面按 16:9 横版居中，上下留黑边（尺寸由 JS 写 style 宽高） */
+body.landscape { background: #16213e; }
+
+/* ---------- 顶层 HUD ---------- */
+#hud {
+  position: fixed; z-index: 5;
+  top: calc(10px + env(safe-area-inset-top)); left: 12px;
+  padding: 10px 14px; border-radius: 14px;
+  background: rgba(0, 0, 0, .4); color: #fff; font-size: 14px;
+  pointer-events: none; min-width: 108px;
+}
+#hudTop { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; margin-bottom: 8px; }
+.hudRow { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; line-height: 1.9; }
+.hudRow span { color: #cfd8e6; }
+.hudRow b { color: #ffd93d; font-size: 15px; }
+
+#hint {
+  position: fixed; z-index: 5; left: 50%; transform: translateX(-50%);
+  top: calc(18px + env(safe-area-inset-top));
+  padding: 6px 14px; border-radius: 12px;
+  background: rgba(0,0,0,.4); color: #fff; font-size: 12px; white-space: nowrap;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+}
+#hint.show { opacity: 1; }
+
+#topRight {
+  position: fixed; z-index: 6;
+  top: calc(10px + env(safe-area-inset-top)); right: 12px;
+  display: flex; gap: 8px;
+}
+.rank-btn {
+  width: auto; margin: 0; padding: 8px 14px;
+  background: rgba(0,0,0,.45); color: #ffd93d;
+  border: 1px solid rgba(255,255,255,.25); border-radius: 14px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.rank-btn.muted { color: #aab; opacity: .65; }
+
+/* ---------- 弹窗 ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,20,40,.45);
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+.panel {
+  background: #fff; border-radius: 20px; padding: 26px 24px;
+  width: min(88vw, 360px); text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.panel.wide { width: min(92vw, 430px); max-height: 80vh; display: flex; flex-direction: column; }
+h1 { font-size: 34px; color: #ff6b6b; letter-spacing: 2px; margin-bottom: 8px; }
+h2 { font-size: 24px; color: #333; margin-bottom: 12px; }
+.panel p { color: #666; font-size: 14px; line-height: 1.8; margin: 4px 0; }
+#startProgress { margin-top: 10px; font-weight: 700; color: #ff6b6b; font-size: 15px; }
+
+button {
+  display: block; width: 100%; padding: 13px 0; margin-top: 14px;
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer;
+}
+.btn-primary { background: #ff6b6b; color: #fff; }
+.btn-secondary { background: #eef1f5; color: #555; }
+
+#resTitle { color: #333; }
+#resDetail { color: #666; }
+#resLevel { font-size: 20px; font-weight: 700; margin-top: 6px; }
+.lvl-up { color: #2e9e44; }
+.lvl-down { color: #e0483e; }
+
+#rankList { flex: 1; overflow-y: auto; text-align: left; }
+.rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #eee; }
+.rank-row .rk { width: 26px; text-align: center; font-weight: 700; color: #999; }
+.rank-row.first .rk { color: #ffd93d; }
+.rank-row .av { width: 30px; height: 30px; border-radius: 50%; background: #eee; object-fit: cover; }
+.rank-row .nm { flex: 1; color: #333; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row .sc { color: #ff6b6b; font-weight: 700; font-size: 14px; }
+#myRank { margin-top: 12px; padding: 10px; background: #f6f8fa; border-radius: 12px; font-size: 14px; color: #444; }
+.tip { color: #999; font-size: 14px; padding: 20px 0; text-align: center; }
+
+.hide { display: none !important; }

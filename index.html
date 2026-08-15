@@ -1,121 +1,1155 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <title>大汉万岁（longlifedahan）的主页</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    var time = 0;
-    function hello() {
-      time += 1;
-      if (time >= 3)
-        window.location.href = "test.html";
-      else
-        alert('你好！再点点试试？');
-    }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>炫光超佛帝的个人主页</title>
+    <!-- Bootstrap 5 CSS (移动优先) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Toy SDK（仅 B 站环境有效，端外加载失败不影响页面） -->
+    <script src="https://s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js"></script>
+    <style>
+        body {
+            background: #0d0f1a;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            color: #e0e4f0;
+            padding-bottom: 40px;
+            min-height: 100vh;
+        }
+        a {
+            color: #9bb9ff;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        a:hover {
+            color: #c8d8ff;
+            text-decoration: underline;
+        }
+
+        .main-container {
+            max-width: 540px;
+            margin: 0 auto;
+            padding: 16px 18px 30px;
+        }
+
+        .page-header {
+            text-align: center;
+            padding: 28px 0 20px;
+            border-bottom: 2px solid rgba(155, 185, 255, 0.20);
+            margin-bottom: 26px;
+            position: relative;
+        }
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 72px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #9bb9ff, transparent);
+        }
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #f0e6b0, #ffd78a, #f0e6b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(255, 215, 138, 0.15);
+            margin: 0;
+            line-height: 1.3;
+        }
+        .page-header .visit-count {
+            font-size: 0.7rem;
+            color: rgba(155, 185, 255, 0.45);
+            letter-spacing: 3px;
+            margin-top: 6px;
+        }
+        .page-header .sub-glow {
+            font-size: 0.75rem;
+            color: rgba(155, 185, 255, 0.5);
+            letter-spacing: 6px;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #c8d4f0;
+            padding: 16px 0 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(155, 185, 255, 0.10);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title i {
+            font-size: 1.3rem;
+            color: #9bb9ff;
+        }
+        .section-title.more-toggle {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s;
+        }
+        .section-title.more-toggle:hover {
+            color: #e6eeff;
+        }
+        .section-title .more-chevron {
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+        .section-title.more-toggle.open .more-chevron {
+            transform: rotate(180deg);
+        }
+        .section-title .badge-extend {
+            font-size: 0.6rem;
+            background: rgba(155, 185, 255, 0.12);
+            color: #9bb9ff;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .card-item {
+            background: rgba(22, 28, 50, 0.60);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(155, 185, 255, 0.08);
+            border-radius: 14px;
+            padding: 12px 14px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .card-item:hover {
+            background: rgba(30, 38, 68, 0.75);
+            border-color: rgba(155, 185, 255, 0.20);
+        }
+
+        /* ===== 账号链接区域 ===== */
+        .link-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(155, 185, 255, 0.05);
+        }
+        .link-row:last-child {
+            border-bottom: none;
+        }
+        .link-label {
+            font-weight: 500;
+            color: #b8c8ee;
+            min-width: 88px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .link-label i {
+            font-size: 1.1rem;
+            width: 22px;
+            color: #7b9fe0;
+        }
+        .link-value {
+            flex: 1;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .link-value a {
+            color: #9bb9ff;
+            font-weight: 500;
+            word-break: break-all;
+            border: 1px solid rgba(155, 185, 255, 0.20);
+            border-radius: 30px;
+            padding: 4px 18px;
+            display: inline-block;
+            transition: all 0.25s;
+            background: rgba(155, 185, 255, 0.06);
+        }
+        .link-value a:hover {
+            border-color: rgba(155, 185, 255, 0.50);
+            background: rgba(155, 185, 255, 0.12);
+            color: #c8d8ff;
+            text-decoration: none;
+        }
+
+        /* ===== 作品与游戏卡片 ===== */
+        .work-item, .game-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(155, 185, 255, 0.05);
+        }
+        .work-item:last-child, .game-item:last-child {
+            border-bottom: none;
+        }
+        .work-cover, .game-img {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #1a2040;
+            flex-shrink: 0;
+            border: 1px solid rgba(155, 185, 255, 0.10);
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(155, 185, 255, 0.15);
+            font-size: 1.8rem;
+        }
+        .work-cover:hover, .game-img:hover {
+            transform: scale(1.02);
+            border-color: rgba(155, 185, 255, 0.30);
+        }
+        .work-cover img, .game-img img {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            display: block;
+        }
+        .work-info, .game-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .work-name, .game-name {
+            font-weight: 600;
+            font-size: 1.0rem;
+            display: block;
+            line-height: 1.3;
+        }
+        .work-name a, .game-name a {
+            color: #d0dcf8;
+        }
+        .work-name a:hover, .game-name a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        .work-desc, .game-path-hint {
+            font-size: 0.75rem;
+            color: rgba(155, 185, 255, 0.4);
+            margin-top: 2px;
+            display: block;
+        }
+        .game-path-hint {
+            font-size: 0.65rem;
+            font-family: monospace;
+            color: rgba(155, 185, 255, 0.25);
+        }
+        /* ===== TOYS 分段 TAB ===== */
+        .toys-tabs {
+            display: flex;
+            align-items: stretch;
+            border: 1px solid rgba(155, 185, 255, 0.18);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .toys-tab {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            color: rgba(155, 185, 255, 0.55);
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 9px 0;
+            cursor: pointer;
+            transition: all 0.25s;
+            white-space: nowrap;
+        }
+        .toys-tab:hover {
+            color: #c8d8ff;
+        }
+        .toys-tab.active {
+            background: rgba(155, 185, 255, 0.15);
+            color: #ffffff;
+        }
+        .toys-tab i {
+            font-size: 1.05rem;
+        }
+        .toys-divider {
+            width: 1px;
+            background: rgba(155, 185, 255, 0.18);
+        }
+
+        /* ===== 抽卡 ===== */
+        .gacha-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 2px 2px 4px;
+        }
+        .gacha-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            font-size: 0.82rem;
+            color: rgba(155, 185, 255, 0.7);
+        }
+        .gacha-pool label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .gacha-pool input {
+            accent-color: #9bb9ff;
+            margin: 0;
+        }
+        .gacha-btn {
+            background: linear-gradient(135deg, rgba(255, 215, 138, 0.20), rgba(255, 180, 90, 0.18));
+            border: 1px solid rgba(255, 200, 120, 0.45);
+            color: #ffd78a;
+            border-radius: 30px;
+            padding: 5px 18px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .gacha-btn:hover {
+            background: rgba(255, 215, 138, 0.30);
+            box-shadow: 0 0 12px rgba(255, 200, 120, 0.30);
+        }
+        .gacha-result {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 14px;
+            min-height: 120px;
+        }
+        .gacha-card {
+            width: 80px;
+            text-align: center;
+            text-decoration: none;
+            opacity: 0;
+            animation: gachaIn 0.5s ease forwards;
+        }
+        /* 十连抽：缩小图标，一行展示 4 个 */
+        .gacha-card--sm {
+            width: 0;
+            flex: 0 0 22%;
+            min-width: 52px;
+            max-width: 92px;
+        }
+        .gacha-card--sm .gacha-cover {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+        }
+        .gacha-cover {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid rgba(255, 215, 138, 0.35);
+            box-shadow: 0 0 10px rgba(255, 215, 138, 0.20);
+            background: #1a2040;
+            display: block;
+        }
+        .gacha-cover-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(155, 185, 255, 0.20);
+            font-size: 2rem;
+        }
+        .gacha-name {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-top: 5px;
+            font-size: 0.7rem;
+            color: #c8d4f0;
+            line-height: 1.2;
+            word-break: break-all;
+        }
+        @keyframes gachaIn {
+            0% { opacity: 0; transform: translateY(30px) rotateY(90deg) scale(0.8); }
+            60% { opacity: 1; }
+            100% { opacity: 1; transform: translateY(0) rotateY(0) scale(1); }
+        }
+
+        .game-rec {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #ffd78a;
+            background: rgba(255, 215, 138, 0.10);
+            border: 1px solid rgba(255, 215, 138, 0.35);
+            border-radius: 30px;
+            padding: 1px 10px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .game-placeholder {
+            opacity: 0.4;
+        }
+        .game-placeholder .game-img {
+            border: 1px dashed rgba(155, 185, 255, 0.25);
+            background: rgba(155, 185, 255, 0.03);
+        }
+        .game-placeholder .game-name {
+            color: rgba(155, 185, 255, 0.25);
+        }
+
+        /* ===== 粉丝数与关注徽章 ===== */
+        .fans-count {
+            font-weight: 700;
+            color: #ffd78a;
+            margin-right: 10px;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .follow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 30px;
+            padding: 3px 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .follow-badge.gray {
+            background: rgba(120, 130, 150, 0.12);
+            border: 1px solid rgba(150, 160, 180, 0.30);
+            color: #9aa5bd;
+        }
+        .follow-badge.gold {
+            background: linear-gradient(135deg, rgba(255, 215, 138, 0.22), rgba(255, 180, 90, 0.20));
+            border: 1px solid rgba(255, 200, 120, 0.65);
+            color: #ffd78a;
+            text-shadow: 0 0 8px rgba(255, 215, 138, 0.6);
+            box-shadow: 0 0 14px rgba(255, 200, 120, 0.30), inset 0 0 8px rgba(255, 215, 138, 0.12);
+            animation: goldPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes goldPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 200, 120, 0.25), inset 0 0 6px rgba(255, 215, 138, 0.10); }
+            50% { box-shadow: 0 0 22px rgba(255, 210, 130, 0.50), inset 0 0 12px rgba(255, 215, 138, 0.22); }
+        }
+
+        .empty-hint {
+            color: rgba(155, 185, 255, 0.25);
+            font-style: italic;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .footer-extend {
+            margin-top: 30px;
+            padding: 14px 18px;
+            background: rgba(155, 185, 255, 0.04);
+            border-radius: 14px;
+            border: 1px solid rgba(155, 185, 255, 0.06);
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(155, 185, 255, 0.3);
+        }
+        .footer-extend code {
+            color: rgba(155, 185, 255, 0.6);
+            background: rgba(155, 185, 255, 0.06);
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+        }
+
+        /* ===== 彩蛋弹窗（非 alert） ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background: linear-gradient(145deg, #1a2040, #0d0f1a);
+            border: 1px solid rgba(255, 200, 120, 0.40);
+            border-radius: 18px;
+            padding: 34px 44px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 200, 120, 0.25), 0 12px 40px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+        .modal-box .gold-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #f0e6b0, #ffd78a, #ffc04a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 16px rgba(255, 215, 138, 0.5);
+            margin-bottom: 8px;
+        }
+        .modal-box .gold-text {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f0e6b0, #ffd78a, #ffc04a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(255, 215, 138, 0.5);
+            animation: goldPulse 2s ease-in-out infinite;
+        }
+        .modal-close {
+            margin-top: 18px;
+            background: rgba(155, 185, 255, 0.10);
+            border: 1px solid rgba(155, 185, 255, 0.25);
+            color: #9bb9ff;
+            border-radius: 30px;
+            padding: 6px 24px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .modal-close:hover {
+            background: rgba(155, 185, 255, 0.20);
+            border-color: rgba(155, 185, 255, 0.45);
+            color: #fff;
+        }
+
+        @media (max-width: 400px) {
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            .link-label {
+                min-width: 70px;
+                font-size: 0.85rem;
+            }
+            .link-value a {
+                padding: 2px 14px;
+                font-size: 0.85rem;
+            }
+            .work-cover, .game-img {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        @media (min-width: 768px) {
+            .main-container {
+                max-width: 640px;
+                padding: 20px 30px 40px;
+            }
+            .work-cover, .game-img {
+                width: 84px;
+                height: 84px;
+            }
+        }
+    </style>
 </head>
+<body>
 
-<body class="bg-light">
+    <div class="main-container">
 
-<div class="container py-4">
-<div class="row">
-	<!-- 左侧竖排语言栏 -->
-	<div class="col-lg-1 d-flex flex-column align-items-center">
-		<div class="bg-white border rounded shadow-sm p-2 text-center" style="writing-mode: vertical-rl; text-orientation: upright; white-space: nowrap;">
-			请选择语言（Please select language）
-			<a href="index.html" class="btn btn-outline-secondary btn-sm my-1">中 文</a>
-			<a href="index_english.html" class="btn btn-outline-secondary btn-sm my-1">English</a>
-		</div>
-	</div>
-	
-	<!-- 中间主要内容 -->
-	<div class="col-lg-8">
-      <table class="table table-bordered text-center bg-white">
-        <tr>
-          <th colspan="2" class="fs-4">欢迎来到我的主页！</th>
-        </tr>
-        <tr>
-          <td class="w-50">
-            <p>我是一名软件工程方向的硕士研究生！</p>
-            <p>本科阶段，我主要学习基于 C#/asp.net 的 Web 开发，硕士阶段，主要从事深度学习、空间音频检测和音视频联合检测</p>
-            <p><a href="https://ieeexplore.ieee.org/abstract/document/10889173" target="_blank">我唯一发表的刊物</a></p>
-            <p>现在，从事金融科技开发</p>
-            <p>左侧是我的 GitHub / NovelAI 模型分享页 / 编解码软件页</p>
-          </td>
-          <td>
-            <p><a href="https://github.com/longlifedahan" target="_blank">GitHub 首页</a></p>
-            <p><a href="https://github.com/longlifedahan/NovelAI-Embeddings/" target="_blank">NovelAI 人物模型仓库</a></p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>我也是一名网文作者（炫光超佛帝），主要创作同人小说，起点有一本精品小说</p>
-            <p>
-              作者主页：
-              <a href="https://my.qidian.com/author/8108065/" target="_blank">起点</a>&nbsp;
-              <a href="https://book.qq.com/book-writer/3651576203168501" target="_blank">QQ阅读</a>&nbsp;
-              <a href="https://user.17k.com/see/www/84363421.html" target="_blank">17k</a>
-            </p>
-            <p>百科页：<a href="https://baike.baidu.com/item/炫光超佛帝" target="_blank">百度百科</a></p>
-          </td>
-          <td>
-            <p>我的作品</p>
-            <p>
-              <a href="https://book.qidian.com/info/1024104863/" target="_blank">《斗罗之我的老婆是银龙王》</a>
-              <img src="https://bookcover.yuewen.com/qdbimg/349573/1024104863/180" height="100px">
-            </p>
-            <p>
-              <a href="https://book.qq.com/book-detail/28095408" target="_blank">《斗罗大陆之我能抽取无限武魂》</a>
-              <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/408/28095408/t5_28095408.jpg" height="100px">
-            </p>
-            <p>
-              <a href="https://book.qq.com/book-detail/37110886" target="_blank">《斗罗之签到女神就变强》</a>
-              <img src="https://wfqqreader-1252317822.image.myqcloud.com/cover/886/37110886/t5_37110886.jpg" height="100px">
-            </p>
-            <p>
-              <a href="https://book.qq.com/book-detail/53805778" target="_blank">《斗罗：武魂祖龙，开局截胡银龙王》</a>
-              <img src="https://bookcover.yuewen.com/qdbimg/349573/1043805796/180" height="100px">
-            </p>
-			<p>
-              <a href="https://www.qidian.com/book/1044952382/" target="_blank">《斗罗龙王：武魂春秋蝉，大爱仙尊》</a>
-              <img src="https://bookcover.yuewen.com/qdbimg/349573/1044952382/180" height="100px">
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>闲暇时我在 B 站剪辑视频，分享 AI 二次元壁纸，也会整活~</p>
-          </td>
-          <td>
-            <p><a href="https://space.bilibili.com/13450091" target="_blank">B站主页（炫光超佛帝）</a></p>
-          </td>
-        </tr>
-      </table>
+        <!-- ==================== 第一行：标题 ==================== -->
+        <header class="page-header">
+            <h1>炫光の「TOYS」宝藏小屋</h1>
+            <!-- 访问量（仅 B 站环境展示，借助排行榜存储） -->
+            <div id="visitCount" class="visit-count" style="display:none;">访问量 --</div>
+        </header>
+
+        <!-- ==================== 第二行：TOYS（优先展示，含 小游戏/测试工具 两个 TAB） ==================== -->
+        <section>
+            <div class="section-title">
+                <i class="bi bi-controller"></i>
+                TOYS
+            </div>
+            <div class="toys-tabs">
+                <button class="toys-tab active" data-type="games">
+                    <i class="bi bi-controller"></i> 小游戏
+                </button>
+                <span class="toys-divider"></span>
+                <button class="toys-tab" data-type="tools">
+                    <i class="bi bi-tools"></i> 测试/工具
+                </button>
+                <span class="toys-divider"></span>
+                <button class="toys-tab" data-type="gacha">
+                    <i class="bi bi-dice-5"></i> 抽卡
+                </button>
+            </div>
+            <div class="card-item px-3 py-2">
+                <div id="gamesContainer">
+                    <!-- 由 JS 动态渲染 -->
+                </div>
+                <!-- 抽卡界面（默认隐藏，切到抽卡 TAB 时展示） -->
+                <div id="gachaContainer" style="display:none;">
+                    <div class="gacha-controls">
+                        <div class="gacha-pool">
+                            <label><input type="radio" name="gachaPool" value="all" checked> 全部</label>
+                            <label><input type="radio" name="gachaPool" value="games"> 仅游戏</label>
+                            <label><input type="radio" name="gachaPool" value="tools"> 仅测试/工具</label>
+                        </div>
+                        <button class="gacha-btn" id="gachaSingle"><i class="bi bi-stars"></i> 单抽</button>
+                        <button class="gacha-btn" id="gachaTen"><i class="bi bi-fire"></i> 十连抽</button>
+                    </div>
+                    <div class="gacha-result" id="gachaResult">
+                        <div class="empty-hint">选择抽取池与方式，开始你的抽卡之旅吧</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 第三行：了解更多（默认折叠） ==================== -->
+        <section>
+            <div class="section-title more-toggle" id="moreToggle">
+                <i class="bi bi-plus-circle"></i>
+                了解UP的更多作品
+                <i class="bi bi-chevron-down more-chevron"></i>
+            </div>
+            <div id="moreContent" style="display:none;">
+
+                <!-- 3.1 个人百科 -->
+                <div class="card-item px-3 py-2" style="margin-bottom:14px;">
+                    <div class="link-row">
+                        <span class="link-label">
+                            <i class="bi bi-person-badge"></i> 个人百科
+                        </span>
+                        <span class="link-value">
+                            <!-- 请将 href 替换为你的作者主页链接 -->
+                            <a href="https://baike.baidu.com/item/%E7%82%AB%E5%85%89%E8%B6%85%E4%BD%9B%E5%B8%9D/65683456" target="_blank" rel="noopener">跳转</a>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 3.2 个人代表作 -->
+                <section style="margin-bottom:14px;">
+                    <div class="section-title">
+                        <i class="bi bi-collection"></i>
+                        代表作
+                    </div>
+                    <div class="card-item px-3 py-2">
+                        <div id="worksContainer">
+                            <!-- 由 JS 动态渲染 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3.3 其他账号 -->
+                <section>
+                    <div class="section-title">
+                        <i class="bi bi-link-45deg"></i>
+                        其他账号
+                    </div>
+                    <div class="card-item px-3 py-2">
+                        <!-- 行1: b站账号 -->
+                        <div class="link-row">
+                            <span class="link-label">
+                                <i class="bi bi-play-btn"></i> b站
+                            </span>
+                            <span class="link-value">
+                                <!-- 请将 href 替换为你的 B 站主页链接 -->
+                                <a href="https://space.bilibili.com/13450091" target="_blank" rel="noopener">跳转</a>
+                            </span>
+                        </div>
+                        <!-- 行1.5: 粉丝数 & 关注状态（仅 B 站环境展示，端外自动隐藏） -->
+                        <div class="link-row" id="biliStatusRow" style="display:none;">
+                            <span class="link-label">
+                                <i class="bi bi-people-fill"></i> 粉丝
+                            </span>
+                            <span class="link-value">
+                                <span id="fansCount" class="fans-count" style="display:none;">--</span>
+                                <span id="followBadge" class="follow-badge gray"><i class="bi bi-person-plus"></i> 求个关注ozr！</span>
+                            </span>
+                        </div>
+                        <!-- 行2: 知乎账号 -->
+                        <div class="link-row">
+                            <span class="link-label">
+                                <i class="bi bi-pencil-square"></i> 知乎
+                            </span>
+                            <span class="link-value">
+                                <!-- 请将 href 替换为你的知乎主页链接 -->
+                                <a href="https://www.zhihu.com/people/68-35-77-81" target="_blank" rel="noopener">跳转</a>
+                            </span>
+                        </div>
+                        <!-- 行3: 作者账号 -->
+                        <div class="link-row">
+                            <span class="link-label">
+                                <i class="bi bi-person-badge"></i> 作者
+                            </span>
+                            <span class="link-value">
+                                <!-- 请将 href 替换为你的作者主页链接 -->
+                                <a href="https://my.qidian.com/author/8108065/" target="_blank" rel="noopener">跳转</a>
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </section>
     </div>
 
-    <!-- 右侧功能按钮 -->
-    <div class="col-lg-3">
-      <div class="bg-white p-3 border rounded shadow-sm">
-        <h5 class="text-center">功能区</h5>
-        <div class="d-grid gap-2">
-          <button class="btn btn-outline-primary" onclick="hello()">你好（Hello）</button>
-          <button class="btn btn-outline-primary" onclick="alert('我的qq是1762116428！')">加QQ好友</button>
-		  <a class="btn btn-outline-dark" href="https://www.bilibili.com/toy/home/index.html">国内主页</a>
-          <a class="btn btn-outline-dark" href="reader.html">小说阅读器（我的作品阅读）</a>
-          <a class="btn btn-outline-dark" href="plane.html">飞机大战</a>
-          <a class="btn btn-outline-dark" href="study.html">学习Java八股</a>
-          <a class="btn btn-outline-dark" href="writer.html">写作软件</a>
-          <a class="btn btn-outline-dark" href="topic.html">文本转图片工具</a>
-          <a class="btn btn-outline-dark" href="en-de.html">九秘编码器</a>
-		  <a class="btn btn-outline-dark" href="nusery.html">开局托儿所</a>
-		  <a class="btn btn-outline-dark" href="box.html">俄罗斯方块</a>
+    <!-- ==================== 彩蛋弹窗：双击标题 5 次触发 ==================== -->
+    <div class="modal-overlay" id="secretModal">
+        <div class="modal-box">
+            <div class="gold-title">恭喜你进入了开发者模式！</div>
+            <div class="gold-text">祝你永远不死！</div>
+            <button class="modal-close" id="modalClose">知道了</button>
         </div>
-      </div>
     </div>
-  </div>
-</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <!-- 小游戏（TOYS）数据字典 -->
+    <script src="./data.js"></script>
+
+    <script>
+
+        // ================================================================
+        // 2. 作品数据字典 (封面图片可选，留空则显示占位)
+        // ================================================================
+        const worksDict = {
+            work1: {
+                name: '斗罗之我的老婆是银龙王',
+                cover: 'https://qidian.qpic.cn/qdbimg/349573/1024104863/150',   // 例如 './image/work1.jpg'，留空使用占位
+                url: 'https://www.qidian.com/book/1024104863/',       // ← 替换为作品主页
+                desc: '起点第一本精品龙王传说同人，20w+收藏，1w+高定，6k大精品神作'
+            },
+            work2: {
+                name: '斗罗大陆之我能抽取无限武魂',
+                cover: 'https://qidian.qpic.cn/qdbimg/349573/1018095408/150',
+                url: 'https://book.qq.com/book-detail/28095408',        // ← 替换为作品主页
+                desc: 'Q阅100w+读过、50w+收藏斗一同人'
+            },
+			work3: {
+                name: '斗罗：武魂春秋蝉，光阴之主',
+                cover: 'https://bookcover.yuewen.com/qdbimg/349573/1044952382/600.webp',
+                url: 'https://www.qidian.com/book/1044952382/',        // ← 替换为作品主页
+                desc: '起点新锐斗三同人佳作'
+            },
+            // 继续添加...
+        };
+
+        // ================================================================
+        // 3. 渲染函数
+        // ================================================================
+        function renderWorks(works) {
+            const container = document.getElementById('worksContainer');
+            if (!container) return;
+            const entries = Object.entries(works);
+            if (entries.length === 0) {
+                container.innerHTML = `<div class="empty-hint"><i class="bi bi-image"></i> 暂无作品，请在 worksDict 中添加</div>`;
+                return;
+            }
+            let html = '';
+            entries.forEach(([id, item]) => {
+                const coverHtml = item.cover ?
+                    `<img src="${item.cover}" alt="${item.name}" class="work-cover" loading="lazy">` :
+                    `<div class="work-cover"><i class="bi bi-image"></i></div>`;
+                html += `
+                    <div class="work-item">
+                        <a href="${item.url}" target="_blank" rel="noopener" title="访问作品主页">
+                            ${coverHtml}
+                        </a>
+                        <div class="work-info">
+                            <span class="work-name">
+                                <a href="${item.url}" target="_blank" rel="noopener">${item.name}</a>
+                            </span>
+                            ${item.desc ? `<span class="work-desc">${item.desc}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // ================================================================
+        // 3a. 分页工具
+        // ================================================================
+        function paginate(arr, page, size) {
+            const start = (page - 1) * size;
+            return arr.slice(start, start + size);
+        }
+
+        function renderPagination(container, total, page, size, onPage) {
+            const totalPages = Math.ceil(total / size) || 1;
+            let html = `<div style="display:flex; justify-content:center; align-items:center; gap:8px; padding:14px 0 4px; border-top:1px solid rgba(155,185,255,0.06); margin-top:6px;">`;
+            for (let i = 1; i <= totalPages; i++) {
+                const active = i === page;
+                html += `<button class="page-btn" data-page="${i}" style="min-width:30px; height:30px; border-radius:50%; border:1px solid ${active ? '#9bb9ff' : 'rgba(155,185,255,0.15)'}; background:${active ? 'rgba(155,185,255,0.15)' : 'none'}; color:${active ? '#fff' : 'rgba(155,185,255,0.6)'}; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">
+                    ${i}
+                </button>`;
+            }
+            html += `</div>`;
+            container.insertAdjacentHTML('beforeend', html);
+            // 绑定事件
+            container.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', () => onPage(parseInt(btn.dataset.page)));
+            });
+        }
+
+        // ================================================================
+        // 3b. 渲染函数（含分页）
+        // ================================================================
+        const PAGE_SIZE = 5;
+        let gamesPage = 1;
+        let currentToysType = 'games';   // 'games' 小游戏 / 'tools' 测试工具
+
+        function getCurrentToys() {
+            return currentToysType === 'tools' ? toysTools : toysGames;
+        }
+
+        function renderGames(items, page) {
+            const container = document.getElementById('gamesContainer');
+            if (!container) return;
+            if (items.length === 0) {
+                container.innerHTML = `<div class="empty-hint"><i class="bi bi-controller"></i> 暂无内容，请到 data.js 中添加</div>`;
+                return;
+            }
+            const pageEntries = paginate(items, page, PAGE_SIZE);
+            let html = '';
+            pageEntries.forEach((item) => {
+                const imgHtml = item.image ?
+                    `<img src="${item.image}" alt="${item.name}" class="game-img" loading="lazy" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-joystick\\' style=\\'font-size:2rem; color:rgba(155,185,255,0.2);\\'></i>'">` :
+                    `<i class="bi bi-joystick" style="font-size:2rem; color:rgba(155,185,255,0.2);"></i>`;
+                html += `
+                    <div class="game-item">
+                        <a href="${item.url}" target="_blank" rel="noopener" title="访问游戏地址" class="game-img">
+                            ${imgHtml}
+                        </a>
+                        <div class="game-info">
+                            <span class="game-name">
+                                <a href="${item.url}" target="_blank" rel="noopener">${item.name}</a>
+                                ${item.rec ? `<span class="game-rec">【${item.rec}】</span>` : ''}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            // 末页不足一页时，用占位补齐到整页，避免压缩显得难看
+            if (pageEntries.length < PAGE_SIZE) {
+                const placeholderCount = PAGE_SIZE - pageEntries.length;
+                for (let i = 0; i < placeholderCount; i++) {
+                    html += `
+                        <div class="game-item game-placeholder">
+                            <div class="game-img"></div>
+                            <div class="game-info">
+                                <span class="game-name">敬请期待</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            container.innerHTML = html;
+            renderPagination(container, items.length, page, PAGE_SIZE, (newPage) => {
+                gamesPage = newPage;
+                renderGames(getCurrentToys(), gamesPage);
+            });
+        }
+
+        // TOYS TAB 切换（games/tools 显示列表，gacha 显示抽卡界面）
+        function initToysTabs() {
+            document.querySelectorAll('.toys-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const type = tab.dataset.type;
+                    currentToysType = type;
+                    gamesPage = 1;
+                    document.querySelectorAll('.toys-tab').forEach(t => t.classList.toggle('active', t === tab));
+                    const gamesCtn = document.getElementById('gamesContainer');
+                    const gachaCtn = document.getElementById('gachaContainer');
+                    if (type === 'gacha') {
+                        if (gamesCtn) gamesCtn.style.display = 'none';
+                        if (gachaCtn) gachaCtn.style.display = '';
+                    } else {
+                        if (gachaCtn) gachaCtn.style.display = 'none';
+                        if (gamesCtn) gamesCtn.style.display = '';
+                        renderGames(getCurrentToys(), gamesPage);
+                    }
+                });
+            });
+        }
+
+        // ================================================================
+        // 3d. 抽卡
+        // ================================================================
+        // 构建抽取池：all=游戏+工具+两本推荐小说；games=仅游戏；tools=仅工具
+        function buildGachaPool(type) {
+            if (type === 'games') return toysGames.slice();
+            if (type === 'tools') return toysTools.slice();
+            const novels = Object.values(worksDict).map(w => ({
+                name: w.name,
+                image: w.cover,
+                url: w.url,
+                isNovel: true
+            }));
+            return [...toysGames, ...toysTools, ...novels];
+        }
+
+        // 从池中不重复抽取 n 个（洗牌取前 n）
+        function gachaDraw(pool, n) {
+            const copy = pool.slice();
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy.slice(0, Math.min(n, copy.length));
+        }
+
+        function initGacha() {
+            const singleBtn = document.getElementById('gachaSingle');
+            const tenBtn = document.getElementById('gachaTen');
+            const result = document.getElementById('gachaResult');
+            if (!singleBtn || !tenBtn || !result) return;
+            const currentPoolType = function() {
+                const checked = document.querySelector('input[name="gachaPool"]:checked');
+                return checked ? checked.value : 'all';
+            };
+            const doDraw = function(n) {
+                const pool = buildGachaPool(currentPoolType());
+                const drawn = gachaDraw(pool, n);
+                if (drawn.length === 0) {
+                    result.innerHTML = `<div class="empty-hint">当前池子为空，换个抽取池试试</div>`;
+                    return;
+                }
+                const sm = n > 1 ? ' gacha-card--sm' : '';
+                result.innerHTML = drawn.map((item, i) => {
+                    const cover = item.image || '';
+                    const imgHtml = cover ?
+                        `<img src="${cover}" alt="${item.name}" class="gacha-cover" loading="lazy" onerror="this.style.display='none';">` :
+                        `<div class="gacha-cover gacha-cover-empty"><i class="bi bi-controller"></i></div>`;
+                    return `
+                        <a class="gacha-card${sm}" href="${item.url}" target="_blank" rel="noopener" title="访问" style="animation-delay:${i * 0.10}s;">
+                            ${imgHtml}
+                            <span class="gacha-name">${item.name}</span>
+                        </a>
+                    `;
+                }).join('');
+            };
+            singleBtn.addEventListener('click', function() { doDraw(1); });
+            tenBtn.addEventListener('click', function() { doDraw(10); });
+        }
+
+        // ================================================================
+        // 3c. B 站环境：粉丝数 & 关注状态（仅 B 站内展示，参考 toy.d.ts）
+        // ================================================================
+        const BILI_UID = '13450091';   // 作者 uid，用于占位说明；实际取当前 Toy 作者
+
+        // 数字格式化：显示完整数字（千分位分隔）
+        function formatFans(n) {
+            return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // 金色花瓣雨特效（已关注时全屏飘落）
+        let petalRainStarted = false;
+        function startPetalRain() {
+            if (petalRainStarted) return;
+            petalRainStarted = true;
+            const canvas = document.createElement('canvas');
+            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            let W = 0, H = 0;
+            const resize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+            resize();
+            window.addEventListener('resize', resize);
+            const COLORS = ['#ffd78a', '#ffc04a', '#ffb347', '#ffe3a1', '#ffd9a0'];
+            const N = 28;
+            const make = () => ({
+                x: Math.random() * W,
+                y: -20 - Math.random() * H * 0.5,
+                r: 4 + Math.random() * 6,
+                speed: 0.8 + Math.random() * 1.4,
+                sway: 0.5 + Math.random() * 1.2,
+                phase: Math.random() * Math.PI * 2,
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.05,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                alpha: 0.55 + Math.random() * 0.35
+            });
+            const petals = Array.from({ length: N }, make);
+            function draw(p) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.ellipse(0, -p.r * 0.5, p.r * 0.45, p.r * 0.55, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, p.r * 0.5, p.r * 0.45, p.r * 0.55, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            (function tick() {
+                ctx.clearRect(0, 0, W, H);
+                for (const p of petals) {
+                    p.phase += 0.02;
+                    p.y += p.speed;
+                    p.x += Math.sin(p.phase) * p.sway;
+                    p.rot += p.rotSpeed;
+                    if (p.y > H + 20) { Object.assign(p, make()); p.y = -20; p.x = Math.random() * W; }
+                    draw(p);
+                }
+                requestAnimationFrame(tick);
+            })();
+        }
+
+        // 是否在 B 站 App 内（Toy SDK 数据能力仅在端内可用；端外调用会引导跳转/登录，必须先拦截）
+        function isBiliInApp() {
+            return /BiliApp|bilibili|BiliLite|bili_andr|bili_hd|bili_mgr/i.test(navigator.userAgent);
+        }
+
+        // 刷新粉丝数与关注状态（仅当 SDK 返回有效数据时展示，端外一律隐藏）
+        function refreshBiliStatus() {
+            if (!isBiliInApp()) return;   // 非 B 站 App 内绝不调用 SDK，避免弹出登录/跳转引导
+            if (typeof window.toy === 'undefined' || !window.toy.getAuthorProfile || !window.toy.getAuthorRelation) return;
+            return Promise.all([window.toy.getAuthorProfile(), window.toy.getAuthorRelation()])
+                .then(([profileResp, relationResp]) => {
+                    const profileOk = profileResp && profileResp.status === 'ok' && profileResp.data;
+                    const relationOk = relationResp && relationResp.status === 'ok' && relationResp.data;
+                    // 非真实 B 站环境（端外 SDK 返回 unsupported / reject）不展示
+                    if (!profileOk && !relationOk) return;
+                    const row = document.getElementById('biliStatusRow');
+                    if (row) row.style.display = '';
+                    // 粉丝数
+                    if (profileOk) {
+                        const fc = document.getElementById('fansCount');
+                        fc.style.display = '';
+                        fc.textContent = formatFans(profileResp.data.follower);
+                    }
+                    // 关注状态（已关注 或 本人访问 都视为“已关注”金色状态）
+                    if (relationOk) {
+                        const badge = document.getElementById('followBadge');
+                        if (relationResp.data.isFollowing || relationResp.data.isAuthor) {
+                            badge.className = 'follow-badge gold';
+                            badge.innerHTML = '<i class="bi bi-crown-fill"></i> 帅比·已关注';
+                            startPetalRain();
+                        } else {
+                            badge.className = 'follow-badge gray';
+                            badge.innerHTML = '<i class="bi bi-person-plus"></i> 求个关注ozr！';
+                        }
+                    }
+                })
+                .catch(() => { /* SDK 报错静默处理，保持隐藏 */ });
+        }
+
+        function initBiliStatus() {
+            if (!isBiliInApp()) return;   // 非 B 站 App 内直接跳过，不调用任何 SDK
+            if (typeof window.toy === 'undefined') return;
+            refreshBiliStatus();
+            setInterval(refreshBiliStatus, 30000);   // 每 30 秒刷新一次，保持“实时”
+        }
+
+        // 访问量统计：借助排行榜实现。每次进入读取榜首数字展示，再 +1 写回。
+        // 读取（getRankList）公开且无需登录，只要有 SDK 即可展示；写回需登录，仅 B 站 App 内尝试。
+        const VISIT_BOARD = 3;   // 使用榜位 3，避免与其它功能冲突
+        function refreshVisitCount() {
+            if (typeof window.toy === 'undefined' || !window.toy.getRankList) return;
+            window.toy.getRankList({ board: VISIT_BOARD, period: 'all', limit: 1 })
+                .then((rankList) => {
+                    let count = 0;
+                    if (Array.isArray(rankList) && rankList.length > 0 && rankList[0].score > 0) {
+                        count = rankList[0].score;
+                    }
+                    // 读取公开无门槛：只要读到数据就小字展示本次进入前的访问数
+                    const el = document.getElementById('visitCount');
+                    if (el) {
+                        el.style.display = '';
+                        el.textContent = '访问量 ' + count;
+                    }
+                    // 写回 +1 需登录/可能弹确认框，仅 B 站 App 内尝试，端外静默跳过
+                    if (window.toy.submitScore && isBiliInApp()) {
+                        window.toy.submitScore({ board: VISIT_BOARD, score: count + 1 })
+                            .catch(() => { /* 未登录或拒绝确认，静默跳过 */ });
+                    }
+                })
+                .catch(() => { /* 读榜失败（如端外无后端），保持隐藏 */ });
+        }
+
+        // ================================================================
+        // 4. 初始化
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            renderWorks(worksDict);
+            renderGames(getCurrentToys(), gamesPage);
+            initToysTabs();
+            initGacha();
+            initBiliStatus();
+            refreshVisitCount();
+            // 「了解更多」折叠展开
+            (function initMoreToggle() {
+                const toggle = document.getElementById('moreToggle');
+                const content = document.getElementById('moreContent');
+                if (!toggle || !content) return;
+                toggle.addEventListener('click', function() {
+                    const isOpen = content.style.display !== 'none';
+                    content.style.display = isOpen ? 'none' : '';
+                    toggle.classList.toggle('open', !isOpen);
+                });
+            })();
+            // 彩蛋：连击标题 5 次（1 秒内连续点击）弹出开发者模式弹窗
+            (function initSecret() {
+                const title = document.querySelector('.page-header h1');
+                const modal = document.getElementById('secretModal');
+                const closeBtn = document.getElementById('modalClose');
+                if (!title || !modal || !closeBtn) return;
+                let comboCount = 0;
+                let comboTimer = null;
+                const resetCombo = function() {
+                    comboCount = 0;
+                    comboTimer = null;
+                };
+                title.addEventListener('click', function() {
+                    if (comboTimer) clearTimeout(comboTimer);
+                    comboCount++;
+                    // 超过 1 秒未继续点击，连击中断重新计数
+                    comboTimer = setTimeout(resetCombo, 1000);
+                    if (comboCount >= 5) {
+                        clearTimeout(comboTimer);
+                        resetCombo();
+                        modal.classList.add('show');
+                    }
+                });
+                const closeModal = function() {
+                    modal.classList.remove('show');
+                    resetCombo();   // 关闭后重新记录
+                };
+                closeBtn.addEventListener('click', closeModal);
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) closeModal();
+                });
+            })();
+            console.log('✅ 个人主页加载完成');
+            console.log('🎮 小游戏:', toysGames);
+            console.log('🧰 测试工具:', toysTools);
+            console.log('📦 作品字典:', worksDict);
+            console.log('🔧 请替换 data.js 中的 url 和图片路径');
+        });
+    </script>
 
 </body>
 </html>

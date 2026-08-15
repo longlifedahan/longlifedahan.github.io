@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#87ceeb">
+<title>打鸟</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" class="hide">
+  <div id="hudTop">
+    <span id="hudStage"></span>
+    <span id="hudLevel"></span>
+  </div>
+  <div class="hudRow"><span>射击</span><b id="hudShots"></b></div>
+  <div class="hudRow"><span>小鸟</span><b id="hudBirds"></b></div>
+</div>
+
+<div id="topRight">
+  <button id="btnMute" class="rank-btn">音效</button>
+  <button id="btnRank" class="rank-btn hide">排行榜</button>
+</div>
+<div id="hint">拖动弹弓瞄准，松手发射；命中后石子继续飞行</div>
+
+<div id="startScreen" class="overlay show">
+  <div class="panel">
+    <h1>打鸟</h1>
+    <p>拖动弹弓瞄准，松手发射石子撞击小鸟</p>
+    <p>石子撞墙/障碍会镜面反弹，命中后继续飞行，可连击多只</p>
+    <p>每关 5 只鸟、4 次射击机会，子弹最多反弹 7 次（预览仅显示前 3 次）</p>
+    <p>通关后剩余子弹越多，等级加成越多：剩 0 发 +1 级，每多剩 1 发再多 +1 级</p>
+    <p id="startProgress"></p>
+    <button id="btnStart" class="btn-primary">开始游戏</button>
+    <button id="btnRankStart" class="btn-secondary hide">排行榜</button>
+  </div>
+</div>
+
+<div id="resScreen" class="overlay">
+  <div class="panel">
+    <h2 id="resTitle"></h2>
+    <p id="resDetail"></p>
+    <p id="resLevel"></p>
+    <button id="btnNext" class="btn-primary"></button>
+    <button id="btnHome" class="btn-secondary">返回主页</button>
+  </div>
+</div>
+
+<div id="rankScreen" class="overlay">
+  <div class="panel wide">
+    <h2>排行榜</h2>
+    <div id="rankList"></div>
+    <div id="myRank"></div>
+    <button id="btnCloseRank" class="btn-secondary">关闭</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

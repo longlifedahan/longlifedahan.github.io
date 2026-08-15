@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0c111b">
+  <title>工作性价比评估问卷</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 顶部 -->
+    <header class="hero">
+      <div class="hero-emoji">💼</div>
+      <h1>工作性价比评估问卷</h1>
+      <p>输入你的真实情况，算一算这份工作到底值不值</p>
+    </header>
+
+    <!-- 薪资与收入 -->
+    <section class="card">
+      <h2 class="sec-title">💰 薪资与收入</h2>
+      <div class="field">
+        <div class="field-head"><label for="in-salary">月薪</label><span class="unit">元/月</span></div>
+        <input type="text" inputmode="decimal" id="in-salary" value="10000" placeholder="例如 10000" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-fund">公司缴纳公积金</label><span class="unit">元/月</span></div>
+        <input type="text" inputmode="decimal" id="in-fund" value="1200" placeholder="例如 1200" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-bonus">年终奖</label><span class="unit">元/年</span></div>
+        <input type="text" inputmode="decimal" id="in-bonus" value="0" placeholder="例如 20000" autocomplete="off">
+      </div>
+      <div class="calc-row">
+        <div class="calc-info">
+          <div class="calc-name">年度总薪资</div>
+          <div class="calc-desc">月薪×12 + 公积金×12 + 年终奖</div>
+        </div>
+        <div class="calc-right">
+          <span class="calc-val" id="total-salary-val">--</span>
+          <button type="button" class="toggle-btn" id="toggle-total">直接填写</button>
+        </div>
+      </div>
+      <input type="text" inputmode="decimal" id="in-total-manual" class="manual-input" placeholder="直接填写年度总薪资（元）" autocomplete="off" hidden>
+    </section>
+
+    <!-- 工作制度 -->
+    <section class="card">
+      <h2 class="sec-title">📅 工作制度与时间</h2>
+      <div class="field">
+        <div class="field-head"><label>休息制度</label></div>
+        <div class="seg" id="seg-rest">
+          <button type="button" class="seg-btn" data-rest="0">单休</button>
+          <button type="button" class="seg-btn" data-rest="1">大小周</button>
+          <button type="button" class="seg-btn active" data-rest="2">双休</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-leave">年假 + 病假 + 公司假 + 寒暑假</label><span class="unit">天/年</span></div>
+        <input type="text" inputmode="decimal" id="in-leave" value="10" placeholder="例如 10" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-holiday">法定节假日放假</label><span class="unit">天/年</span></div>
+        <input type="text" inputmode="decimal" id="in-holiday" value="11" placeholder="例如 11" autocomplete="off">
+      </div>
+      <div class="calc-row">
+        <div class="calc-info">
+          <div class="calc-name">年度工作天数</div>
+          <div class="calc-desc" id="workdays-desc">365 - 休息天数 - 各类假期 - 法定节假日</div>
+        </div>
+        <div class="calc-right">
+          <span class="calc-val" id="workdays-val">--</span>
+          <button type="button" class="toggle-btn" id="toggle-workdays">直接填写</button>
+        </div>
+      </div>
+      <input type="text" inputmode="decimal" id="in-workdays-manual" class="manual-input" placeholder="直接填写年度工作天数（天）" autocomplete="off" hidden>
+    </section>
+
+    <!-- 平均日薪 -->
+    <section class="card result-mini">
+      <h2 class="sec-title">💵 平均日薪</h2>
+      <div class="big-val"><span id="daily-salary">--</span> <small>元/天</small></div>
+      <div class="calc-desc center">= 年度总薪资 ÷ 年度工作天数</div>
+    </section>
+
+    <!-- 综合系数 -->
+    <section class="card">
+      <h2 class="sec-title">🏢 综合系数</h2>
+      <div class="field">
+        <div class="field-head"><label for="sel-work">工作类型</label></div>
+        <select id="sel-work">
+          <option value="1.25">公务员 ×1.25</option>
+          <option value="1.2">事业单位 ×1.2</option>
+          <option value="1.15">央国企 ×1.15</option>
+          <option value="1.1">外企 ×1.1</option>
+          <option value="1.05">上市企业 ×1.05</option>
+          <option value="1" selected>普通民企 ×1.0</option>
+          <option value="0.9">户外 ×0.9</option>
+          <option value="0.8">工厂工地 ×0.8</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="sel-sec">社保保障</label></div>
+        <select id="sel-sec">
+          <option value="1.2">六险二金 ×1.2</option>
+          <option value="1.1" selected>五险一金 ×1.1</option>
+          <option value="1">五险 ×1.0</option>
+          <option value="0.9">三险 ×0.9</option>
+          <option value="0.8">无保险 ×0.8</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="sel-env">同事环境</label></div>
+        <select id="sel-env">
+          <option value="1.1">同事素质高、相处融洽、上下级和谐 ×1.1</option>
+          <option value="1" selected>普通同事 ×1.0</option>
+          <option value="0.9">同事素质差、勾心斗角、领导傻逼 ×0.9</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="sel-job">就业形式</label></div>
+        <select id="sel-job">
+          <option value="0.8">外包 ×0.8</option>
+          <option value="0.6">不固定就业 ×0.6</option>
+          <option value="1" selected>合同工 ×1.0</option>
+          <option value="1.2">有编制 ×1.2</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="check">
+          <input type="checkbox" id="chk-early">
+          <span class="check-box"></span>
+          <span class="check-text">八点前上班 <em>×0.95</em></span>
+        </label>
+      </div>
+      <div class="calc-row">
+        <div class="calc-info">
+          <div class="calc-name">综合系数</div>
+          <div class="calc-desc">工作系数 × 保障系数 × 环境系数 × 就业形式系数 × 八点前系数</div>
+        </div>
+        <span class="calc-val gold" id="env-coef">--</span>
+      </div>
+    </section>
+
+    <!-- 每日时间投入 -->
+    <section class="card">
+      <h2 class="sec-title">⏰ 每日时间投入</h2>
+      <div class="field">
+        <div class="field-head"><label for="in-workhours">工作时长</label><span class="unit">小时/天</span></div>
+        <input type="text" inputmode="decimal" id="in-workhours" value="8" placeholder="例如 8" autocomplete="off">
+        <div class="hint">上班时间 - 下班时间</div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-commute">通勤时长</label><span class="unit">小时/天</span></div>
+        <input type="text" inputmode="decimal" id="in-commute" value="2" placeholder="例如 2" autocomplete="off">
+        <div class="hint">上班通勤 + 下班通勤</div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="in-slack">摸鱼时长</label><span class="unit">小时/天</span></div>
+        <input type="text" inputmode="decimal" id="in-slack" value="1" placeholder="例如 1" autocomplete="off">
+        <div class="hint">不干活时长 + 吃饭时长 + 午休时长</div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="sel-edu">学历</label></div>
+        <select id="sel-edu">
+          <option value="0.8">专科及以下 ×0.8</option>
+          <option value="1" selected>普通本科 ×1.0</option>
+          <option value="1.2">211本科 / 普通硕士 ×1.2</option>
+          <option value="1.4">985本科 / 211硕士 ×1.4</option>
+          <option value="1.6">985硕士 / 普通博士 ×1.6</option>
+          <option value="1.8">211博士 ×1.8</option>
+          <option value="2.0">985博士 ×2.0</option>
+        </select>
+        <div class="hint">学历系数：<b id="edu-coef">1.0</b></div>
+      </div>
+    </section>
+
+    <!-- 评估结果 -->
+    <section class="card result">
+      <h2 class="sec-title">🎯 评估结果</h2>
+      <div class="score" id="score">--</div>
+      <div class="score-label" id="score-label">等待计算</div>
+      <div class="score-break">
+        <div>平均日薪 <b id="rb-daily">--</b> 元</div>
+        <div>综合系数 <b id="rb-env">--</b></div>
+        <div>每日有效 <b id="rb-hours">--</b> h</div>
+        <div>学历系数 <b id="rb-edu">--</b></div>
+      </div>
+      <div class="formula-block">
+        <div class="formula-head">综合公式</div>
+        <div class="frac">
+          <div class="frac-row num">
+            <span class="term"><b id="ft-daily">--</b><i>平均日薪</i></span>
+            <span class="op">×</span>
+            <span class="term"><b id="ft-env">--</b><i>综合系数</i></span>
+          </div>
+          <div class="frac-line"></div>
+          <div class="frac-row den">
+            <span class="term"><b>35</b><i>常数</i></span>
+            <span class="op">×</span>
+            <span class="term"><b id="ft-hours">--</b><i>每日有效时长</i></span>
+            <span class="op">×</span>
+            <span class="term"><b id="ft-edu">--</b><i>学历系数</i></span>
+          </div>
+        </div>
+        <div class="frac-result">= <b id="ft-score">--</b></div>
+      </div>
+      <div class="formula env" id="formula-env"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

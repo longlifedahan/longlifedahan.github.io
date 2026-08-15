@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b20">
+  <link rel="icon" href="data:,">
+  <title>🪞 万花筒</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- 注意：B站 SDK 一律由 game.js 动态异步加载，绝不能同步阻塞页面渲染 -->
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ 顶部 ============ -->
+    <header class="top">
+      <h1 class="top-title">🪞 万花筒</h1>
+      <div class="mode-switch" id="mode-switch">
+        <button class="mode-btn active" data-mode="rand">✨ 随机图案</button>
+        <button class="mode-btn" data-mode="img">🖼 我的图片</button>
+      </div>
+    </header>
+
+    <!-- ============ 画布区 ============ -->
+    <main class="stage" id="stage">
+      <canvas id="kaleid"></canvas>
+      <div class="hint" id="hint">💫打散晃动 · 🔀碎片绕中心转+抖动 · 拖动画面旋转</div>
+    </main>
+
+    <!-- ============ 底部工具栏 ============ -->
+    <footer class="toolbar">
+      <button class="tbtn tbtn-main" id="btn-random">🎲 换一换</button>
+      <button type="button" class="tbtn tbtn-main" id="btn-upload" hidden>📷 上传图片</button>
+      <button class="tbtn tbtn-main" id="btn-scatter">💫 打散</button>
+      <button class="tbtn tbtn-main" id="btn-restore" disabled>🔁 复原</button>
+      <button class="tbtn" id="btn-spin">🔀 转动</button>
+      <button class="tbtn" id="btn-export">📤 导出</button>
+      <label class="autospin">
+        <input type="checkbox" id="chk-auto">
+        <span class="as-label">自动旋转</span>
+      </label>
+    </footer>
+
+  </div>
+
+  <input type="file" id="file-img" accept="image/*" hidden>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

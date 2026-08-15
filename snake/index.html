@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>贪吃可莉</title>
+<script src="//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js" async></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:'PingFang SC','Microsoft YaHei',sans-serif;color:#fff;touch-action:none;-webkit-user-select:none;user-select:none}
+#app{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;max-width:500px;margin:0 auto}
+
+/* Canvas Container */
+#game-wrapper{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center}
+#gameCanvas{display:block;border-radius:8px;box-shadow:0 0 30px rgba(0,200,255,0.15);width:min(92vw,460px);height:min(92vw,460px)}
+
+/* Stats Bar */
+#stats-bar{width:min(92vw,460px);display:flex;flex-wrap:wrap;justify-content:space-between;padding:8px 4px;font-size:13px;gap:2px;background:rgba(0,0,0,0.3);border-radius:8px;margin-bottom:6px}
+.stat-item{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.stat-label{color:#8899aa;font-size:11px}
+.stat-value{color:#fff;font-weight:bold;font-size:13px}
+.stat-value.score{color:#ffd700}
+.stat-value.expected{color:#ff6b6b}
+
+/* D-Pad + Action Buttons Container */
+#controls{width:min(92vw,460px);display:flex;flex-direction:column;gap:6px;padding:6px 0 10px}
+#controls-row{display:flex;justify-content:center;align-items:center;gap:8px}
+#dpad{display:grid;grid-template-columns:60px 60px 60px;grid-template-rows:60px 60px 60px;gap:4px;flex-shrink:0}
+.dpad-btn{display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:22px;cursor:pointer;touch-action:manipulation;transition:background 0.1s;outline:none}
+.dpad-btn:active{background:rgba(255,255,255,0.3)}
+.dpad-up{grid-column:2;grid-row:1}
+.dpad-left{grid-column:1;grid-row:2}
+.dpad-down{grid-column:2;grid-row:2}
+.dpad-right{grid-column:3;grid-row:2}
+
+/* 5 Function Buttons */
+#func-buttons{display:flex;gap:5px;justify-content:center;width:100%}
+.func-btn{flex:1;padding:8px 4px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:12px;cursor:pointer;touch-action:manipulation;outline:none;font-family:inherit;text-align:center;white-space:nowrap;transition:background 0.15s;min-width:0}
+.func-btn:active{background:rgba(255,255,255,0.2)}
+.func-btn.speed{color:#ffd700;border-color:rgba(255,215,0,0.2)}
+.func-btn.toggle{color:#00c8ff;border-color:rgba(0,200,255,0.2)}
+.func-btn.toggle.paused{color:#ff6b6b;border-color:rgba(255,107,107,0.2)}
+.func-btn.io{color:#8f8;border-color:rgba(136,255,136,0.15)}
+
+/* Overlay Screens */
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:10;border-radius:8px;backdrop-filter:blur(4px);padding:20px}
+.overlay.active{display:flex}
+.overlay h2{font-size:24px;margin-bottom:16px;color:#ffd700}
+.overlay p{font-size:14px;color:#ccc;margin:4px 0;text-align:center;line-height:1.6}
+
+/* Close Button (×) */
+.close-btn{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;outline:none;font-family:inherit;transition:background 0.15s;z-index:11;line-height:1}
+.close-btn:active{background:rgba(255,255,255,0.2)}
+
+/* Menu */
+.menu-title{font-size:42px;font-weight:bold;background:linear-gradient(135deg,#ff4444,#ff8c00,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.menu-subtitle{font-size:14px;color:#8899aa;margin-bottom:30px}
+.menu-buttons{display:flex;flex-direction:column;gap:12px;width:200px}
+.menu-btn{padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;touch-action:manipulation;font-family:inherit;transition:transform 0.1s}
+.menu-btn:active{transform:scale(0.96)}
+.menu-btn-start{background:linear-gradient(135deg,#ffd700,#ffa500);color:#1a1a2e}
+.menu-btn-secondary{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15)}
+
+/* Game Over */
+.gameover-score{font-size:48px;font-weight:bold;color:#ffd700;margin:8px 0}
+.gameover-stats{font-size:14px;color:#aaa;margin:4px 0}
+#gameover-overlay .pause-buttons{margin-top:12px}
+.pause-buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* Help */
+.help-content{text-align:left;font-size:13px;color:#ccc;line-height:1.8;max-width:320px;overflow-y:auto;max-height:60vh;padding:0 8px;width:100%}
+.help-content h3{color:#ffd700;font-size:15px;margin:12px 0 4px}
+.help-content p{margin:4px 0;text-align:left}
+.help-content .formula{background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;margin:6px 0;font-size:13px;color:#ffd700;text-align:center}
+
+/* Leaderboard */
+.leaderboard-tabs{display:flex;gap:8px;margin-bottom:12px}
+.lb-tab{padding:6px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#aaa;font-size:13px;cursor:pointer;font-family:inherit}
+.lb-tab.active{background:rgba(0,200,255,0.2);border-color:rgba(0,200,255,0.3);color:#fff}
+.leaderboard-list{width:100%;max-width:320px;max-height:55vh;overflow-y:auto;padding:0 4px}
+.lb-item{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);gap:10px;font-size:14px}
+.lb-rank{width:28px;text-align:center;font-weight:bold}
+.lb-rank.gold{color:#ffd700}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;overflow:hidden}
+.lb-avatar img{width:100%;height:100%;object-fit:cover}
+.lb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ddd}
+.lb-score{font-weight:bold;color:#ffd700}
+.lb-empty{text-align:center;color:#666;padding:30px 0;font-size:14px}
+
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:12px 24px;background:rgba(0,0,0,0.9);border-radius:10px;font-size:14px;z-index:100;pointer-events:none;opacity:0;transition:opacity 0.3s;border:1px solid rgba(255,255,255,0.1)}
+.toast.show{opacity:1}
+
+/* Responsive */
+@media(max-height:640px){
+    #stats-bar{font-size:11px;padding:4px 4px}
+    .stat-value{font-size:11px}
+    .dpad-btn{width:50px;height:50px;font-size:18px}
+    #dpad{grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px}
+    .func-btn{font-size:11px;padding:6px 2px}
+    #gameCanvas{width:min(88vw,420px);height:min(88vw,420px)}
+}
+@media(max-height:480px){
+    #controls{padding:3px 0;gap:3px}
+    #stats-bar{font-size:10px;padding:2px 4px;margin-bottom:3px}
+    .dpad-btn{width:34px;height:34px;font-size:14px}
+    #dpad{grid-template-columns:34px 34px 34px;grid-template-rows:34px 34px 34px}
+    .func-btn{font-size:10px;padding:4px 2px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Stats Bar -->
+    <div id="stats-bar" style="display:none">
+        <div class="stat-item"><span class="stat-label">得分 </span><span class="stat-value score" id="stat-score">0</span></div>
+        <div class="stat-item"><span class="stat-label">时长 </span><span class="stat-value" id="stat-time">00:00</span></div>
+        <div class="stat-item"><span class="stat-label">长度 </span><span class="stat-value" id="stat-length">1</span></div>
+        <div class="stat-item"><span class="stat-label">速度 </span><span class="stat-value" id="stat-speed">5</span></div>
+        <div class="stat-item"><span class="stat-label">距上次 </span><span class="stat-value" id="stat-last-eat">0s</span></div>
+        <div class="stat-item"><span class="stat-label">预期 </span><span class="stat-value expected" id="stat-expected">+0</span></div>
+    </div>
+
+    <!-- Game -->
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Menu Overlay -->
+        <div class="overlay active" id="menu-overlay">
+            <div class="menu-title">贪吃可莉</div>
+            <div class="menu-subtitle">可莉的冒险 · 20x20</div>
+            <div class="menu-buttons">
+                <button class="menu-btn menu-btn-start" id="btn-start">开始游戏</button>
+                <button class="menu-btn menu-btn-secondary" id="btn-continue" style="display:none">继续游戏</button>
+                <button class="menu-btn menu-btn-secondary" id="btn-leaderboard-menu">排行榜</button>
+                <button class="menu-btn menu-btn-secondary" id="btn-help-menu">帮 助</button>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div class="overlay" id="gameover-overlay">
+            <h2>游戏结束</h2>
+            <div class="gameover-score" id="gameover-score">0</div>
+            <div class="gameover-stats">长度: <span id="gameover-length">1</span></div>
+            <div class="gameover-stats">用时: <span id="gameover-time">00:00</span></div>
+            <div class="gameover-stats">速度: <span id="gameover-speed">5</span></div>
+            <div class="pause-buttons">
+                <button class="menu-btn menu-btn-start" id="btn-restart" style="padding:12px 28px;font-size:15px">再来一局</button>
+                <button class="action-btn" id="btn-menu-gameover" style="padding:10px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:14px;cursor:pointer;font-family:inherit">主菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls" style="display:none">
+        <div id="controls-row">
+            <div id="dpad">
+                <button class="dpad-btn dpad-up" data-dir="UP">▲</button>
+                <button class="dpad-btn dpad-left" data-dir="LEFT">◀</button>
+                <button class="dpad-btn dpad-down" data-dir="DOWN">▼</button>
+                <button class="dpad-btn dpad-right" data-dir="RIGHT">▶</button>
+            </div>
+        </div>
+        <div id="func-buttons">
+            <button class="func-btn io" id="btn-load-game">读取|1</button>
+            <button class="func-btn io" id="btn-save-game">保存|2</button>
+            <button class="func-btn speed" id="btn-speed-up">加速|+</button>
+            <button class="func-btn speed" id="btn-speed-down">减速|-</button>
+            <button class="func-btn toggle" id="btn-toggle-pause">暂停|␣</button>
+            <button class="func-btn" id="btn-quit-game" style="color:#ff6b6b;border-color:rgba(255,107,107,0.2)">退出|Esc</button>
+        </div>
+    </div>
+</div>
+
+<!-- Help Screen -->
+<div class="overlay" id="help-screen" style="position:fixed;border-radius:0;z-index:50;display:none">
+    <button class="close-btn" id="btn-help-close">✕</button>
+    <h2>游戏说明</h2>
+    <div class="help-content">
+        <h3>🎯 目标</h3>
+        <p>控制贪吃蛇吃掉果子，避免撞到自己。蛇可以穿越屏幕边界。</p>
+        <h3>📊 分数规则</h3>
+        <p>吃掉果子后，分数增加：</p>
+        <div class="formula">蛇身长度 × max(1, 60 - 吃果用时(秒)) × 速度(1-10)</div>
+        <p>吃得越快，分数越高！果子出现超过60秒后，时间因子为1。</p>
+        <h3>🎮 操作方式</h3>
+        <p><b>电脑：</b>WASD/方向键=转向 · 鼠标拖拽=转向 · 双击=暂停 · Esc=退出</p>
+        <p><b>手机：</b>滑动屏幕=转向 · 虚拟方向键=转向 · 双击=暂停/继续</p>
+        <p><b>快捷键：</b>1=读取 · 2=保存 · +=加速 · -=减速 · Space=暂停 · Esc=退出</p>
+        <h3>⚡ 速度</h3>
+        <p>速度1-10，越快蛇移动越快。用底部 +/- 按钮调节。</p>
+        <h3>💡 小技巧</h3>
+        <p>蛇身越长，单次得分越高，但要小心别撞到自己！</p>
+    </div>
+</div>
+
+<!-- Leaderboard Screen -->
+<div class="overlay" id="leaderboard-screen" style="position:fixed;border-radius:0;z-index:50;display:none">
+    <button class="close-btn" id="btn-lb-close">✕</button>
+    <h2>排行榜</h2>
+    <div class="leaderboard-tabs">
+        <button class="lb-tab active" data-period="all">总榜</button>
+        <button class="lb-tab" data-period="month">月榜</button>
+        <button class="lb-tab" data-period="week">周榜</button>
+        <button class="lb-tab" data-period="day">日榜</button>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:8px">
+        <button class="lb-tab active" data-board="local" style="border-color:rgba(255,215,0,0.3)">本地</button>
+        <button class="lb-tab" data-board="global" style="border-color:rgba(0,200,255,0.3)">全局</button>
+    </div>
+    <div class="leaderboard-list" id="lb-list">
+        <div class="lb-empty">加载中...</div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== CONFIG ====================
+const GRID_SIZE = 20;
+const DIRS = { UP: { x:0, y:-1 }, DOWN: { x:0, y:1 }, LEFT: { x:-1, y:0 }, RIGHT: { x:1, y:0 } };
+const OPPOSITE = { UP:'DOWN', DOWN:'UP', LEFT:'RIGHT', RIGHT:'LEFT' };
+
+// RoundRect polyfill
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (r > w/2) r = w/2; if (r > h/2) r = h/2;
+        this.moveTo(x + r, y); this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r); this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h); this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r); this.quadraticCurveTo(x, y, x + r, y);
+        return this;
+    };
+}
+
+// ==================== IMAGES ====================
+const images = { head: null, body: null, food: null };
+const imageLoadPromises = [];
+['head','body','food'].forEach(name => {
+    const img = new Image();
+    img.src = 'datas/' + name + '.jpg';
+    images[name] = img;
+    imageLoadPromises.push(new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }));
+});
+
+// ==================== DOM REFS ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+const statScore = $('stat-score'), statTime = $('stat-time'), statLength = $('stat-length');
+const statSpeed = $('stat-speed'), statLastEat = $('stat-last-eat'), statExpected = $('stat-expected');
+const btnTogglePause = $('btn-toggle-pause');
+
+// ==================== GAME STATE ====================
+const game = {
+    state: 'MENU', // MENU, PLAYING, PAUSED, GAME_OVER
+    snake: [],
+    direction: 'RIGHT',
+    nextDirection: 'RIGHT',
+    fruit: null,
+    fruitSpawnTime: 0,
+    score: 0,
+    length: 1,
+    speed: 5,
+    startTime: 0,
+    pausedTime: 0,
+    elapsedPause: 0,
+    lastEatTimestamp: 0,
+    lastFruitEatDuration: 0,
+    tickInterval: null,
+    timerInterval: null,
+    gameOver: false
+};
+
+// ==================== CANVAS ====================
+function resizeCanvas() {
+    const size = Math.min(window.innerWidth * 0.92, 460);
+    canvas.width = size; canvas.height = size;
+    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+    draw();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ==================== SPEED ====================
+function getInterval(speed) { return Math.round(330 * Math.pow(0.86, speed - 1)); }
+function getTickInterval() { return getInterval(game.speed); }
+
+function speedUp() {
+    if (game.speed < 10) { game.speed++; applySpeed(); }
+}
+function speedDown() {
+    if (game.speed > 1) { game.speed--; applySpeed(); }
+}
+function applySpeed() {
+    statSpeed.textContent = game.speed;
+    if (game.state === 'PLAYING') { stopTick(); startTick(); }
+}
+
+// ==================== SCORE ====================
+function calcEatScore(eatDurationSec, snakeLen) {
+    const timeFactor = Math.max(1, 60 - Math.floor(eatDurationSec));
+    return (snakeLen || game.length) * timeFactor * game.speed;
+}
+function calcExpectedScore() {
+    if (!game.fruit) return 0;
+    return calcEatScore((Date.now() - game.fruitSpawnTime) / 1000);
+}
+
+// ==================== INIT ====================
+function initGame() {
+    stopTimer(); stopTick();
+    game.snake = [{ x: Math.floor(GRID_SIZE/2), y: Math.floor(GRID_SIZE/2) }];
+    game.direction = 'RIGHT'; game.nextDirection = 'RIGHT';
+    game.score = 0; game.length = 1; game.startTime = 0; game.elapsedPause = 0;
+    game.lastEatTimestamp = Date.now(); game.gameOver = false;
+    game.fruit = null; game.lastFruitEatDuration = 0;
+    btnTogglePause.textContent = '暂停';
+    btnTogglePause.className = 'func-btn toggle';
+    spawnFruit();
+}
+
+function spawnFruit() {
+    if (game.fruit) return;
+    const occupied = new Set(game.snake.map(s => s.x + ',' + s.y));
+    const empty = [];
+    for (let x = 0; x < GRID_SIZE; x++) for (let y = 0; y < GRID_SIZE; y++)
+        if (!occupied.has(x + ',' + y)) empty.push({ x, y });
+    if (empty.length === 0) return;
+    const pos = empty[Math.floor(Math.random() * empty.length)];
+    game.fruit = pos;
+    game.fruitSpawnTime = Date.now();
+}
+
+// ==================== MOVE ====================
+function moveSnake() {
+    if (game.state !== 'PLAYING') return;
+    game.direction = game.nextDirection;
+    const head = game.snake[0];
+    const dir = DIRS[game.direction];
+    let nx = head.x + dir.x, ny = head.y + dir.y;
+    if (nx < 0) nx = GRID_SIZE - 1; if (nx >= GRID_SIZE) nx = 0;
+    if (ny < 0) ny = GRID_SIZE - 1; if (ny >= GRID_SIZE) ny = 0;
+    for (let i = 0; i < game.snake.length; i++) {
+        if (game.snake[i].x === nx && game.snake[i].y === ny) { gameOver(); return; }
+    }
+    game.snake.unshift({ x: nx, y: ny });
+    if (game.fruit && nx === game.fruit.x && ny === game.fruit.y) {
+        const eatDuration = (Date.now() - game.fruitSpawnTime) / 1000;
+        game.lastFruitEatDuration = eatDuration;
+        game.length = game.snake.length;
+        game.score += calcEatScore(eatDuration, game.length);
+        game.lastEatTimestamp = Date.now(); game.fruit = null;
+        spawnFruit();
+    } else game.snake.pop();
+    updateStats();
+}
+
+// ==================== GAME OVER ====================
+function gameOver() {
+    if (game.gameOver) return;
+    game.gameOver = true; game.state = 'GAME_OVER';
+    stopTimer(); stopTick();
+    $('gameover-score').textContent = game.score;
+    $('gameover-length').textContent = game.length;
+    $('gameover-time').textContent = formatTime(getElapsedMs());
+    $('gameover-speed').textContent = game.speed;
+    $('gameover-overlay').classList.add('active');
+    saveLocalLeaderboard(game.score, game.length, game.speed);
+    submitGlobalScore(game.score);
+}
+
+// ==================== TIMER ====================
+function getElapsedMs() {
+    if (game.startTime === 0) return 0;
+    return Date.now() - game.startTime - game.elapsedPause;
+}
+function startTimer() {
+    if (game.timerInterval) return;
+    if (game.startTime === 0) game.startTime = Date.now();
+    game.timerInterval = setInterval(() => { if (game.state === 'PLAYING') updateStats(); }, 200);
+}
+function stopTimer() {
+    if (game.timerInterval) { clearInterval(game.timerInterval); game.timerInterval = null; }
+}
+// ==================== TICK ====================
+function startTick() { stopTick(); game.tickInterval = setInterval(moveSnake, getTickInterval()); }
+function stopTick() { if (game.tickInterval) { clearInterval(game.tickInterval); game.tickInterval = null; } }
+
+// ==================== FORMAT ====================
+function formatTime(ms) {
+    const t = Math.floor(ms / 1000);
+    return String(Math.floor(t / 60)).padStart(2,'0') + ':' + String(t % 60).padStart(2,'0');
+}
+
+// ==================== DRAW ====================
+function draw() {
+    const w = canvas.width, cell = w / GRID_SIZE;
+
+    // Background
+    ctx.fillStyle = '#2d5a27'; ctx.fillRect(0, 0, w, w);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+    for (let i = 0; i <= GRID_SIZE; i++) {
+        ctx.beginPath(); ctx.moveTo(i*cell,0); ctx.lineTo(i*cell,w); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,i*cell); ctx.lineTo(w,i*cell); ctx.stroke();
+    }
+
+    // Fruit
+    if (game.fruit) {
+        const fx = game.fruit.x*cell, fy = game.fruit.y*cell;
+        if (images.food && images.food.complete && images.food.naturalWidth > 0) {
+            ctx.drawImage(images.food, fx, fy, cell, cell);
+        } else {
+            ctx.fillStyle = '#ff4444';
+            ctx.beginPath(); ctx.arc(fx+cell/2, fy+cell/2, cell*0.4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath(); ctx.arc(fx+cell/2-2, fy+cell/2-2, cell*0.15, 0, Math.PI*2); ctx.fill();
+        }
+    }
+
+    // Snake body (drawn before head)
+    const len = game.snake.length;
+    for (let i = len - 1; i >= 0; i--) {
+        const seg = game.snake[i], sx = seg.x*cell, sy = seg.y*cell;
+        if (i === 0) continue; // skip head, draw after
+        if (images.body && images.body.complete && images.body.naturalWidth > 0) {
+            ctx.drawImage(images.body, sx, sy, cell, cell);
+        } else {
+            const alpha = 0.3 + 0.7 * (1 - i / len);
+            ctx.fillStyle = `rgba(0, 200, 100, ${alpha})`;
+            ctx.beginPath(); ctx.roundRect(sx+2, sy+2, cell-4, cell-4, 3); ctx.fill();
+        }
+    }
+
+    // Snake head with red glow + arrow
+    if (game.snake.length > 0) {
+        const head = game.snake[0], sx = head.x*cell, sy = head.y*cell;
+        const cx = sx + cell/2, cy = sy + cell/2;
+
+        // Red glow
+        const glow = ctx.createRadialGradient(cx, cy, cell*0.1, cx, cy, cell*0.9);
+        glow.addColorStop(0, 'rgba(255,30,30,0.35)');
+        glow.addColorStop(0.5, 'rgba(255,30,30,0.15)');
+        glow.addColorStop(1, 'rgba(255,30,30,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(sx - cell*0.5, sy - cell*0.5, cell*2, cell*2);
+
+        // Head image or fallback
+        if (images.head && images.head.complete && images.head.naturalWidth > 0) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            const angles = { RIGHT:0, DOWN:Math.PI/2, LEFT:Math.PI, UP:-Math.PI/2 };
+            ctx.rotate(angles[game.direction] || 0);
+            ctx.drawImage(images.head, -cell/2, -cell/2, cell, cell);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#00ff88';
+            ctx.beginPath(); ctx.roundRect(sx+1, sy+1, cell-2, cell-2, 4); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(sx+cell*0.35, sy+cell*0.35, cell*0.08, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(sx+cell*0.65, sy+cell*0.35, cell*0.08, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Direction arrow (in front of head)
+        const as = cell * 0.35; // arrow size
+        ctx.fillStyle = '#ff2020';
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = cell * 0.15;
+        ctx.beginPath();
+        switch (game.direction) {
+            case 'RIGHT':
+                ctx.moveTo(sx+cell+as, cy); ctx.lineTo(sx+cell-as, cy-as); ctx.lineTo(sx+cell-as, cy+as); break;
+            case 'LEFT':
+                ctx.moveTo(sx-as, cy); ctx.lineTo(sx+as, cy-as); ctx.lineTo(sx+as, cy+as); break;
+            case 'UP':
+                ctx.moveTo(cx, sy-as); ctx.lineTo(cx-as, sy+as); ctx.lineTo(cx+as, sy+as); break;
+            case 'DOWN':
+                ctx.moveTo(cx, sy+cell+as); ctx.lineTo(cx-as, sy+cell-as); ctx.lineTo(cx+as, sy+cell-as); break;
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // Paused overlay on canvas
+    if (game.state === 'PAUSED') {
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, w, w);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('已暂停', w/2, w/2 - 10);
+        ctx.font = '16px sans-serif';
+        ctx.fillStyle = '#aaa';
+        ctx.fillText('点击下方"继续"', w/2, w/2 + 30);
+    }
+}
+
+// ==================== RENDER ====================
+let renderRequested = false;
+function requestRender() {
+    if (!renderRequested) { renderRequested = true; requestAnimationFrame(() => { renderRequested = false; draw(); }); }
+}
+
+// ==================== STATS ====================
+function updateStats() {
+    if (game.state === 'MENU') return;
+    statScore.textContent = game.score;
+    statLength.textContent = game.length;
+    statSpeed.textContent = game.speed;
+    statTime.textContent = formatTime(getElapsedMs());
+    if (game.fruit) {
+        const sl = Math.floor((Date.now() - game.lastEatTimestamp) / 1000);
+        statLastEat.textContent = sl + 's';
+        statExpected.textContent = '+' + calcExpectedScore();
+    } else { statLastEat.textContent = '--'; statExpected.textContent = '--'; }
+    requestRender();
+}
+
+// ==================== UI ====================
+function showMenu() {
+    game.state = 'MENU'; stopTick(); stopTimer();
+    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+    $('stats-bar').style.display = 'none'; $('controls').style.display = 'none';
+    $('btn-continue').style.display = localStorage.getItem('snake_save') ? 'block' : 'none';
+    $('menu-overlay').classList.add('active');
+    resizeCanvas(); draw();
+}
+
+function showGame() {
+    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+    $('stats-bar').style.display = 'flex'; $('controls').style.display = 'flex';
+    game.state = 'PLAYING'; startTimer(); startTick(); updateStats();
+}
+
+function hideAllOverlays() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active')); }
+
+function showToast(msg, dur) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._hide); t._hide = setTimeout(() => t.classList.remove('show'), dur || 1500);
+}
+
+// ==================== PAUSE / RESUME ====================
+function togglePause() {
+    if (game.state === 'PLAYING') { pauseGame(); }
+    else if (game.state === 'PAUSED') { resumeGame(); }
+}
+function pauseGame() {
+    if (game.state !== 'PLAYING') return;
+    game.state = 'PAUSED'; game.pausedTime = Date.now(); stopTick();
+    btnTogglePause.textContent = '继续|␣'; btnTogglePause.className = 'func-btn toggle paused';
+    requestRender();
+}
+function resumeGame() {
+    if (game.state !== 'PAUSED') return;
+    const pauseDur = Date.now() - game.pausedTime;
+    game.state = 'PLAYING';
+    game.elapsedPause += pauseDur;
+    // Compensate timers so "time since" stats don't count pause period
+    game.lastEatTimestamp += pauseDur;
+    if (game.fruit) game.fruitSpawnTime += pauseDur;
+    startTick();
+    btnTogglePause.textContent = '暂停'; btnTogglePause.className = 'func-btn toggle';
+    updateStats();
+}
+
+// ==================== SAVE / LOAD ====================
+function saveGame() {
+    try {
+        const wasPlaying = game.state === 'PLAYING';
+        if (wasPlaying) pauseGame();
+        const data = {
+            snake: game.snake, direction: game.direction, nextDirection: game.nextDirection,
+            fruit: game.fruit, fruitSpawnTime: game.fruitSpawnTime,
+            score: game.score, length: game.length, speed: game.speed,
+            startTime: game.startTime, elapsedPause: game.elapsedPause,
+            lastEatTimestamp: game.lastEatTimestamp, lastFruitEatDuration: game.lastFruitEatDuration,
+            savedAt: Date.now()
+        };
+        localStorage.setItem('snake_save', JSON.stringify(data));
+        showToast('游戏已保存');
+    } catch(e) { showToast('保存失败: ' + e.message); }
+}
+
+function loadGame() {
+    try {
+        const raw = localStorage.getItem('snake_save');
+        if (!raw) { showToast('没有存档'); return; }
+        const data = JSON.parse(raw);
+        if (!data.snake || !data.snake.length) { showToast('存档已损坏'); return; }
+        if (data.savedAt) {
+            const timeOff = Date.now() - data.savedAt;
+            data.elapsedPause += timeOff;
+            data.lastEatTimestamp += timeOff;
+            if (data.fruitSpawnTime) data.fruitSpawnTime += timeOff;
+        }
+
+        game.snake = data.snake; game.direction = data.direction;
+        game.nextDirection = data.nextDirection; game.score = data.score || 0;
+        game.length = data.length || game.snake.length; game.speed = data.speed || 5;
+        game.startTime = data.startTime || Date.now();
+        game.elapsedPause = data.elapsedPause || 0;
+        game.lastEatTimestamp = data.lastEatTimestamp || Date.now();
+        game.lastFruitEatDuration = data.lastFruitEatDuration || 0;
+        game.gameOver = false;
+
+        // Validate fruit
+        if (data.fruit) {
+            const occ = new Set(game.snake.map(s => s.x+','+s.y));
+            if (occ.has(data.fruit.x+','+data.fruit.y)) { game.fruit = null; game.fruitSpawnTime = 0; spawnFruit(); }
+            else { game.fruit = data.fruit; game.fruitSpawnTime = data.fruitSpawnTime || Date.now(); }
+        } else { game.fruit = null; game.fruitSpawnTime = 0; spawnFruit(); }
+
+        hideAllOverlays();
+        $('stats-bar').style.display = 'flex'; $('controls').style.display = 'flex';
+        game.state = 'PAUSED'; // load defaults to paused
+        btnTogglePause.textContent = '继续|␣'; btnTogglePause.className = 'func-btn toggle paused';
+        stopTimer(); startTimer(); updateStats(); resizeCanvas();
+        showToast('存档已读取（已暂停）');
+    } catch(e) { showToast('读取失败: ' + e.message); }
+}
+
+// ==================== CONTROLS: KEYBOARD ====================
+function setDirection(dir) {
+    if (game.state !== 'PLAYING') return;
+    if (dir === OPPOSITE[game.direction] && game.snake.length > 1) return;
+    game.nextDirection = dir;
+}
+document.addEventListener('keydown', e => {
+    const km = { 'ArrowUp':'UP','w':'UP','W':'UP','ArrowDown':'DOWN','s':'DOWN','S':'DOWN','ArrowLeft':'LEFT','a':'LEFT','A':'LEFT','ArrowRight':'RIGHT','d':'RIGHT','D':'RIGHT' };
+    const dir = km[e.key];
+    if (dir) { e.preventDefault(); setDirection(dir); }
+
+    // Shortcuts (only active when game is not in MENU)
+    if (game.state !== 'MENU') {
+        if (e.key === ' ') { e.preventDefault(); togglePause(); }
+        else if (e.key === 'Escape') { e.preventDefault(); quitGame(); }
+        else if (e.key === '1') { e.preventDefault(); loadGame(); }
+        else if (e.key === '2') { e.preventDefault(); saveGame(); }
+        else if (e.key === '+' || e.key === '=') { e.preventDefault(); speedUp(); }
+        else if (e.key === '-' || e.key === '_') { e.preventDefault(); speedDown(); }
+    } else {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); $('btn-start').click(); }
+    }
+});
+
+// ==================== CONTROLS: DPAD ====================
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+    btn.addEventListener('touchstart', e => { e.preventDefault(); setDirection(btn.dataset.dir); });
+    btn.addEventListener('mousedown', e => { e.preventDefault(); setDirection(btn.dataset.dir); });
+});
+
+// ==================== CONTROLS: SWIPE + TAP ====================
+// Touch swipe/tap (mobile)
+let tx=0, ty=0, t0=0, swiping=false, touchFired=false;
+canvas.addEventListener('touchstart', e => { const t=e.touches[0]; tx=t.clientX; ty=t.clientY; t0=Date.now(); swiping=true; touchFired=true; }, {passive:true});
+canvas.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+canvas.addEventListener('touchend', e => {
+    if (!swiping) return; swiping=false;
+    const t=e.changedTouches[0], dx=t.clientX-tx, dy=t.clientY-ty, dt=Date.now()-t0;
+    if (Math.abs(dx)<15 && Math.abs(dy)<15 && dt<300) { handleCanvasTap(); return; }
+    if (dt>500||(Math.abs(dx)<15&&Math.abs(dy)<15)) return;
+    if (Math.abs(dx)>Math.abs(dy)) setDirection(dx>0?'RIGHT':'LEFT');
+    else setDirection(dy>0?'DOWN':'UP');
+}, {passive:true});
+
+// Mouse swipe/tap (desktop)
+let mx=0, my=0, m0=0, mDown=false, lastTapTime=0;
+canvas.addEventListener('mousedown', e => {
+    if (touchFired) { touchFired=false; return; }
+    mx=e.clientX; my=e.clientY; m0=Date.now(); mDown=true;
+});
+canvas.addEventListener('mousemove', e => {
+    if (!mDown) return;
+    const dx=e.clientX-mx, dy=e.clientY-my;
+    if (Math.abs(dx)>20 || Math.abs(dy)>20) {
+        if (Math.abs(dx)>Math.abs(dy)) setDirection(dx>0?'RIGHT':'LEFT');
+        else setDirection(dy>0?'DOWN':'UP');
+        mDown=false;
+    }
+});
+canvas.addEventListener('mouseup', e => {
+    if (!mDown) return; mDown=false;
+    const dx=e.clientX-mx, dy=e.clientY-my, dt=Date.now()-m0;
+    if (Math.abs(dx)<15 && Math.abs(dy)<15 && dt<300) { handleCanvasTap(); return; }
+    if (Math.abs(dx)>Math.abs(dy)) setDirection(dx>0?'RIGHT':'LEFT');
+    else setDirection(dy>0?'DOWN':'UP');
+});
+
+let tapTimestamps=[]; // track taps for double-tap detection
+function handleCanvasTap() {
+    if (game.state === 'MENU') { initGame(); showGame(); return; }
+    // PLAYING/PAUSED: double-tap to toggle
+    const now=Date.now();
+    tapTimestamps.push(now);
+    if (tapTimestamps.length>2) tapTimestamps.shift();
+    if (tapTimestamps.length===2 && tapTimestamps[1]-tapTimestamps[0]<350) {
+        tapTimestamps=[];
+        if (game.state==='PLAYING') pauseGame();
+        else if (game.state==='PAUSED') resumeGame();
+    }
+}
+
+// ==================== LEADERBOARD ====================
+const LB_KEY = 'snake_leaderboard';
+function getLocalLeaderboard() { try { return JSON.parse(localStorage.getItem(LB_KEY)||'[]'); }catch(e){return [];} }
+function saveLocalLeaderboard(score, length, speed) {
+    try {
+        const list = getLocalLeaderboard();
+        list.push({score,length,speed,date:new Date().toISOString(),timestamp:Date.now()});
+        list.sort((a,b)=>b.score-a.score);
+        if (list.length>100) list.length=100;
+        localStorage.setItem(LB_KEY, JSON.stringify(list));
+    } catch(e) {}
+}
+function renderLocalLeaderboard(period) {
+    let list = getLocalLeaderboard();
+    const c = $('lb-list');
+    if (!list.length) { c.innerHTML='<div class="lb-empty">暂无记录</div>'; return; }
+    if (period&&period!=='all') {
+        const cut = Date.now()-({month:30*86400000,week:7*86400000,day:86400000}[period]||0);
+        list = list.filter(e=>e.timestamp>=cut);
+    }
+    if (!list.length) { c.innerHTML='<div class="lb-empty">该周期暂无记录</div>'; return; }
+    c.innerHTML = list.map((e,i)=>{
+        const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+        const ds=e.date?new Date(e.date).toLocaleDateString('zh-CN'):'';
+        return `<div class="lb-item"><div class="lb-rank ${rc}">${i+1}</div><div class="lb-avatar"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#667">🐍</div></div><div class="lb-name">本地 ${ds}</div><div class="lb-score">${e.score}</div></div>`;
+    }).join('');
+}
+
+// ==================== TOY SDK ====================
+// SDK loaded via <script async> in <head> — never blocks page rendering.
+// window.toy may not be ready immediately; poll until available.
+
+let _toyPromise = null;
+function toyReady() {
+    if (!_toyPromise) {
+        _toyPromise = new Promise(resolve => {
+            if (window.toy) { resolve(true); return; }
+            let n = 0;
+            const iv = setInterval(() => {
+                n++;
+                if (window.toy) { clearInterval(iv); resolve(true); }
+                else if (n > 30) { clearInterval(iv); resolve(false); }
+            }, 300);
+        });
+    }
+    return _toyPromise;
+}
+
+function renderGlobalLeaderboard(period) {
+    const c = $('lb-list');
+    c.innerHTML = '<div class="lb-empty">加载中...</div>';
+    toyReady().then(ready => {
+        if (!ready) { c.innerHTML = '<div class="lb-empty">环境不支持排行榜</div>'; return; }
+        toy.getRankList({ board: 1, period: period || 'all', limit: 50 })
+            .then(list => {
+                if (!list || list.length === 0) { c.innerHTML = '<div class="lb-empty">暂无排行数据</div>'; return; }
+                c.innerHTML = list.map(e => {
+                    const rc = e.rank === 1 ? 'gold' : e.rank === 2 ? 'silver' : e.rank === 3 ? 'bronze' : '';
+                    const av = e.avatar
+                        ? `<img src="${e.avatar}" alt="" onerror="this.style.display='none'">`
+                        : '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:14px;color:#667">🐍</div>';
+                    return `<div class="lb-item"><div class="lb-rank ${rc}">${e.rank}</div><div class="lb-avatar">${av}</div><div class="lb-name">${e.nickname || '匿名'}</div><div class="lb-score">${e.score}</div></div>`;
+                }).join('');
+            })
+            .catch(err => {
+                c.innerHTML = '<div class="lb-empty">加载失败: ' + (err.message || '') + '</div>';
+            });
+    });
+}
+
+function submitGlobalScore(score) {
+    toyReady().then(ready => {
+        if (!ready) return;
+        toy.submitScore({ board: 1, score: Math.floor(score) }).catch(() => {});
+    });
+}
+
+// ==================== HELP / LEADERBOARD UI ====================
+let lbPeriod='all', lbBoard='local';
+function openHelp() { $('help-screen').style.display='flex'; }
+function closeHelp() { $('help-screen').style.display='none'; }
+function openLeaderboard() { $('leaderboard-screen').style.display='flex'; renderLeaderboard(); }
+function closeLeaderboard() { $('leaderboard-screen').style.display='none'; }
+function renderLeaderboard() {
+    if (lbBoard==='local') renderLocalLeaderboard(lbPeriod);
+    else renderGlobalLeaderboard(lbPeriod);
+}
+function checkFirstTimeHelp() {
+    if (!localStorage.getItem('snake_help_shown')) { localStorage.setItem('snake_help_shown','1'); openHelp(); }
+}
+
+// ==================== EVENT BINDINGS ====================
+// Menu
+$('btn-start').addEventListener('click', () => {
+    initGame(); showGame();
+    if (!localStorage.getItem('snake_hint_shown')) {
+        localStorage.setItem('snake_hint_shown','1');
+        setTimeout(() => showToast('拖拽/滑动=转向 · 双击=暂停', 2000), 500);
+    }
+});
+$('btn-continue').addEventListener('click', loadGame);
+$('btn-leaderboard-menu').addEventListener('click', openLeaderboard);
+$('btn-help-menu').addEventListener('click', openHelp);
+
+// Game Over
+$('btn-restart').addEventListener('click', () => { $('gameover-overlay').classList.remove('active'); initGame(); showGame(); });
+$('btn-menu-gameover').addEventListener('click', () => { $('gameover-overlay').classList.remove('active'); showMenu(); });
+
+// Bottom function buttons
+$('btn-toggle-pause').addEventListener('click', togglePause);
+$('btn-save-game').addEventListener('click', saveGame);
+$('btn-load-game').addEventListener('click', loadGame);
+$('btn-speed-up').addEventListener('click', speedUp);
+$('btn-speed-down').addEventListener('click', speedDown);
+$('btn-quit-game').addEventListener('click', quitGame);
+
+function quitGame() {
+    stopTick(); stopTimer();
+    if (game.state === 'PLAYING' || game.state === 'PAUSED') {
+        showMenu();
+    }
+}
+
+// Help close (×)
+$('btn-help-close').addEventListener('click', closeHelp);
+
+// Leaderboard close (×)
+$('btn-lb-close').addEventListener('click', closeLeaderboard);
+document.querySelectorAll('#leaderboard-screen .lb-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        if (tab.dataset.period) { lbPeriod=tab.dataset.period; document.querySelectorAll('#leaderboard-screen .lb-tab[data-period]').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); }
+        if (tab.dataset.board) { lbBoard=tab.dataset.board; document.querySelectorAll('#leaderboard-screen .lb-tab[data-board]').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); }
+        renderLeaderboard();
+    });
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ==================== INIT ====================
+resizeCanvas();
+Promise.all(imageLoadPromises).then(() => { showMenu(); checkFirstTimeHelp(); });
+setTimeout(() => { if (document.querySelector('#menu-overlay.active')) checkFirstTimeHelp(); }, 1000);
+
+// BG render loop
+function bgLoop() {
+    if ((game.state==='PLAYING'||game.state==='PAUSED') && !renderRequested) {
+        if (game.state==='PLAYING' && game.fruit) {
+            const sl = Math.floor((Date.now()-game.lastEatTimestamp)/1000);
+            statLastEat.textContent = sl+'s';
+            statExpected.textContent = '+' + calcExpectedScore();
+        }
+        requestRender();
+    }
+    requestAnimationFrame(bgLoop);
+}
+bgLoop();
+
+// Auto-pause on tab switch
+document.addEventListener('visibilitychange', () => { if (document.hidden && game.state==='PLAYING') pauseGame(); });
+
+console.log('🎮 贪吃可莉加载完成！');
+</script>
+</body>
+</html>

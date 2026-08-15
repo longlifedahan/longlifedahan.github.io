@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#bfe8ff">
+  <title>合成大肥鱼</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ 首页 ============ -->
+    <section id="view-home" class="view home-view">
+      <div class="home-icon" id="home-icon"><img class="home-fish" src="images/10.png" alt=""></div>
+      <h1 class="home-title">合成大肥鱼</h1>
+      <div class="home-sub">点击落鱼 · 相同碰撞合成 · 合成 DeepSeek 大肥鱼</div>
+      <div class="home-stats">
+        <div class="hstat"><span class="hstat-label">最高分</span><span class="hstat-val" id="home-hi">0</span></div>
+        <div class="hstat"><span class="hstat-label">已玩</span><span class="hstat-val" id="home-games">0</span> 局</div>
+      </div>
+      <div class="home-btns">
+        <button class="btn btn-primary btn-big" id="btn-start">▶ 开始游戏</button>
+        <button class="btn btn-resume" id="btn-continue" hidden>⏸ 继续游戏</button>
+        <button class="btn" id="btn-rank">🏆 排行榜</button>
+        <button class="btn" id="btn-settings">⚙️ 设置</button>
+        <button class="btn" id="btn-help">❓ 玩法说明</button>
+      </div>
+      <div class="home-foot">
+        <span class="home-tip">点击屏幕落鱼 / 空格键落鱼，方向键移动</span>
+      </div>
+    </section>
+
+    <!-- ============ 游戏 ============ -->
+    <section id="view-game" class="view game-view" hidden>
+      <div class="hud">
+        <div class="hud-cell">
+          <span class="hud-label">得分</span>
+          <span class="hud-num" id="hud-score">0</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">时间</span>
+          <span class="hud-num" id="hud-time">00:00</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">最高分</span>
+          <span class="hud-num" id="hud-hi">0</span>
+        </div>
+        <div class="hud-cell hud-r">
+          <div class="fish-count" id="hud-fish"><img class="fish-count-img" src="images/10.png" alt="">×0</div>
+          <div class="next-ball" id="next-ball-box">
+            <span class="next-label">下一球</span>
+            <img class="next-img" id="next-ball" alt="">
+          </div>
+          <button class="btn-mini" id="btn-pause">⏸</button>
+        </div>
+      </div>
+      <div class="game-mid">
+        <div id="game-wrap">
+          <canvas id="game"></canvas>
+        </div>
+      </div>
+      <div class="game-foot">
+        <span>点击落鱼 · <span id="danger-tip">鱼到红线</span>停留太久会 GAME OVER</span>
+      </div>
+
+      <!-- 暂停 -->
+      <div id="pause-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">⏸ 已暂停</div>
+          <div class="ov-score">本局得分 <b id="pause-score">0</b></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-resume">继续游戏</button>
+            <button class="btn" id="btn-restart">重新开始</button>
+            <button class="btn" id="btn-pause-settings">⚙️ 设置</button>
+            <button class="btn" id="btn-settle">🧾 退出并结算</button>
+            <button class="btn ghost" id="btn-exit">返回首页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 结束 -->
+      <div id="over-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">游戏结束</div>
+          <div class="ov-big">得分 <b id="over-score">0</b></div>
+          <div class="ov-new" id="over-new" hidden>🏆 新纪录！</div>
+          <div class="ov-row"><span>本局时间</span><span id="over-time">00:00</span></div>
+          <div class="ov-row"><span>本局大肥鱼</span><span id="over-fish"><img class="fish-count-img" src="images/10.png" alt="">×0 条</span></div>
+          <div class="ov-row"><span>最高分</span><span id="over-hi">0</span></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-again">再来一局</button>
+            <button class="btn" id="btn-ranko">🏆 排行榜</button>
+            <button class="btn ghost" id="btn-home">返回首页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 排行榜 ============ -->
+    <section id="view-rank" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-rank">← 返回</button>
+        <h2 class="page-title">🏆 排行榜</h2>
+      </header>
+      <div class="tabs" id="rank-src">
+        <button class="tab active" data-src="local">本地榜</button>
+        <button class="tab" data-src="bili">B站榜</button>
+      </div>
+      <div class="tabs" id="rank-board" hidden>
+        <button class="btab active" data-board="1">最高分</button>
+        <button class="btab" data-board="2">大肥鱼数</button>
+      </div>
+      <div class="tabs" id="rank-period" hidden>
+        <button class="ptab" data-p="day">日榜</button>
+        <button class="ptab" data-p="week">周榜</button>
+        <button class="ptab" data-p="month">月榜</button>
+        <button class="ptab active" data-p="all">总榜</button>
+      </div>
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-settings" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-settings">← 返回</button>
+        <h2 class="page-title">⚙️ 设置</h2>
+      </header>
+      <div class="set-body">
+        <div class="set-sec">
+          <h3>🎨 显示</h3>
+          <label class="set-row">
+            <span class="set-label">球上显示级别数字</span>
+            <span class="set-switch">
+              <input type="checkbox" id="set-level" checked>
+              <span class="track"></span>
+            </span>
+          </label>
+        </div>
+        <div class="set-sec">
+          <h3>🔊 声音</h3>
+          <label class="set-row">
+            <span class="set-label">游戏音效</span>
+            <span class="set-switch">
+              <input type="checkbox" id="set-muted" checked>
+              <span class="track"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 说明 ============ -->
+    <section id="view-help" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-help">← 返回</button>
+        <h2 class="page-title">❓ 玩法说明</h2>
+      </header>
+      <div class="help-body">
+        <div class="help-sec">
+          <h3>🐟 基本玩法</h3>
+          <p>点击顶部释放一条鱼，同样大小的鱼<b>碰撞</b>后<b>合成</b>更大的鱼。</p>
+          <p>鱼越大越难合成，一条<b>大肥鱼（10级）</b>是终极目标！</p>
+        </div>
+        <div class="help-sec">
+          <h3>💥 计分规则</h3>
+          <p>合成出 <b>N 级</b>鱼得 <b>2^(N-1)</b> 分：1→2 得 2 分，2→3 得 4 分……</p>
+          <p>合成出 <b>大肥鱼（10级）</b>额外奖励 <b>1024</b> 分（共 512+1024=1536 分）！</p>
+        </div>
+        <div class="help-sec">
+          <h3>⚠️ 危险区</h3>
+          <p>鱼一旦堆到顶部红线上方并<b>静止</b>，游戏结束。小心控制鱼的数量。</p>
+        </div>
+        <div class="help-sec">
+          <h3>🕹 操作</h3>
+          <p><b>手机</b>：滑动顶部瞄准，点击落鱼。<b>电脑</b>：← → 移动，空格落鱼，P/Esc 暂停。</p>
+        </div>
+        <div class="help-sec">
+          <h3>🏆 排行榜</h3>
+          <p>记录历史最高分：本地榜（本机）+ B站榜（日/周/月/总，前 100 名）。</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIRE 计算器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #fff5f7 0%, #eef2ff 100%);
+    min-height: 100vh;
+    color: #333;
+  }
+  .header {
+    background: linear-gradient(135deg, #ff9a9e 0%, #ff6a88 45%, #ff5e62 100%);
+    color: #fff;
+    padding: 30px 16px 22px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 6px rgba(0,0,0,.12);
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tab {
+    flex: 1;
+    padding: 11px 0;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255,255,255,.28);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s, color .2s;
+  }
+  .tab.active {
+    background: #fff;
+    color: #ff5e62;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  }
+  .container {
+    max-width: 460px;
+    margin: 18px auto 0;
+    padding: 0 16px 60px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(255, 94, 98, .14);
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #ffe0e2;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #fffafb;
+    color: #333;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .field input:focus { border-color: #ff6a88; background: #fff; }
+  .field input:disabled { background: #f5f5f5; color: #bbb; border-color: #eee; }
+  .check { margin-top: 16px; }
+  .chk {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chk input[type=checkbox] {
+    width: 20px;
+    height: 20px;
+    accent-color: #ff5e62;
+    cursor: pointer;
+  }
+  .btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #ff9a9e, #ff5e62);
+    box-shadow: 0 6px 18px rgba(255, 94, 98, .35);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 3px 10px rgba(255, 94, 98, .3); }
+  .result {
+    display: none;
+    text-align: center;
+    padding: 26px 20px;
+  }
+  .result .label {
+    font-size: 14px;
+    color: #999;
+    font-weight: 600;
+  }
+  .result .amount {
+    font-size: 40px;
+    font-weight: 900;
+    color: #ff5e62;
+    margin: 10px 0 4px;
+    letter-spacing: 1px;
+    word-break: break-all;
+  }
+  .result .amount small { font-size: 20px; }
+  .result .desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.7;
+    margin-top: 8px;
+  }
+  .table-wrap {
+    display: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 340px;
+  }
+  .table-wrap th {
+    background: linear-gradient(135deg, #ff9a9e, #ff6a88);
+    color: #fff;
+    padding: 10px 8px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .table-wrap th:first-child { border-radius: 10px 0 0 0; }
+  .table-wrap th:last-child { border-radius: 0 10px 0 0; }
+  .table-wrap td {
+    padding: 9px 8px;
+    text-align: right;
+    border-bottom: 1px solid #f5f5f5;
+    white-space: nowrap;
+  }
+  .table-wrap td:first-child { text-align: center; color: #999; }
+  .table-wrap tr:nth-child(even) td { background: #fff8f9; }
+  .table-wrap tr:last-child td {
+    background: #fff0f1;
+    font-weight: 700;
+    color: #ff5e62;
+  }
+  .table-wrap td.positive { color: #22a06b; }
+  .table-wrap td.negative { color: #ff5e62; }
+  .tip {
+    font-size: 12px;
+    color: #bbb;
+    margin-top: 16px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>FIRE 计算器</h1>
+  <div class="tabs">
+    <button class="tab active" data-tab="t1" onclick="switchTab('t1')">需要多少钱</button>
+    <button class="tab" data-tab="t2" onclick="switchTab('t2')">能花多少年</button>
+    <button class="tab" data-tab="t3" onclick="switchTab('t3')">每年能花多少</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Tab 1: 需要多少钱 -->
+  <div class="panel active" id="p-t1">
+    <div class="card">
+      <div class="grid">
+        <div class="field">
+          <label>预计生存期（年）</label>
+          <input type="number" id="y1" value="50" min="1">
+        </div>
+        <div class="field">
+          <label>每年花销（元）</label>
+          <input type="number" id="s1" value="60000" min="1">
+        </div>
+        <div class="field">
+          <label>每年通胀（%）</label>
+          <input type="number" id="i1" value="2.5" min="0" step="0.1">
+        </div>
+        <div class="field">
+          <label>年化收益（%）</label>
+          <input type="number" id="r1" value="4" min="0" step="0.1">
+        </div>
+      </div>
+      <div class="check">
+        <label class="chk">
+          <input type="checkbox" id="forever1" onchange="toggleForever1()">
+          <span>永远花不完</span>
+        </label>
+      </div>
+      <button class="btn" onclick="calc1()">开 始 计 算</button>
+    </div>
+    <div class="card result" id="res1">
+      <div class="label" id="lab1">你至少需要存够</div>
+      <div class="amount"><small>¥</small><span id="need1">0</span></div>
+      <div class="desc" id="desc1"></div>
+    </div>
+    <div class="card table-wrap" id="tbl1">
+      <table>
+        <thead>
+          <tr>
+            <th>年份</th><th>当年开销</th><th>投资收益</th><th>年末资金</th>
+          </tr>
+        </thead>
+        <tbody id="tb1"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 2: 能花多少年 -->
+  <div class="panel" id="p-t2">
+    <div class="card">
+      <div class="grid">
+        <div class="field">
+          <label>现有资金（元）</label>
+          <input type="number" id="p2" value="1000000" min="1">
+        </div>
+        <div class="field">
+          <label>每年花销（元）</label>
+          <input type="number" id="s2" value="60000" min="1">
+        </div>
+        <div class="field">
+          <label>每年通胀（%）</label>
+          <input type="number" id="i2" value="2.5" min="0" step="0.1">
+        </div>
+        <div class="field">
+          <label>年化收益（%）</label>
+          <input type="number" id="r2" value="4" min="0" step="0.1">
+        </div>
+      </div>
+      <button class="btn" onclick="calc2()">开 始 计 算</button>
+    </div>
+    <div class="card result" id="res2">
+      <div class="label">这笔钱可以花</div>
+      <div class="amount"><span id="years2">0</span><small> 年</small></div>
+      <div class="desc" id="desc2"></div>
+    </div>
+    <div class="card table-wrap" id="tbl2">
+      <table>
+        <thead>
+          <tr>
+            <th>年份</th><th>当年开销</th><th>投资收益</th><th>年末资金</th>
+          </tr>
+        </thead>
+        <tbody id="tb2"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 3: 每年能花多少 -->
+  <div class="panel" id="p-t3">
+    <div class="card">
+      <div class="grid">
+        <div class="field">
+          <label>现有资金（元）</label>
+          <input type="number" id="p3" value="1000000" min="1">
+        </div>
+        <div class="field">
+          <label>预计生存期（年）</label>
+          <input type="number" id="y3" value="50" min="1">
+        </div>
+        <div class="field">
+          <label>每年通胀（%）</label>
+          <input type="number" id="i3" value="2.5" min="0" step="0.1">
+        </div>
+        <div class="field">
+          <label>年化收益（%）</label>
+          <input type="number" id="r3" value="4" min="0" step="0.1">
+        </div>
+      </div>
+      <div class="check">
+        <label class="chk">
+          <input type="checkbox" id="forever3" onchange="toggleForever3()">
+          <span>永远花不完</span>
+        </label>
+      </div>
+      <button class="btn" onclick="calc3()">开 始 计 算</button>
+    </div>
+    <div class="card result" id="res3">
+      <div class="label" id="lab3">第1年每年最多可花</div>
+      <div class="amount"><small>¥</small><span id="spend3">0</span></div>
+      <div class="desc" id="desc3"></div>
+    </div>
+    <div class="card table-wrap" id="tbl3">
+      <table>
+        <thead>
+          <tr>
+            <th>年份</th><th>当年开销</th><th>投资收益</th><th>年末资金</th>
+          </tr>
+        </thead>
+        <tbody id="tb3"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tip">所有数字均为估算，实际请结合自身情况与专业建议调整</div>
+</div>
+
+<script>
+  const fmt = n => Math.round(n).toLocaleString('zh-CN');
+
+  function simulate(principal, years, spend, inflation, rate) {
+    let balance = principal;
+    const rows = [];
+    for (let i = 1; i <= years; i++) {
+      const cost = spend * Math.pow(1 + inflation, i - 1);
+      const invest = balance * rate;
+      balance = balance + invest - cost;
+      if (balance < -1e-6) return { ok: false, rows };
+      rows.push({ year: i, cost, invest, balance });
+    }
+    return { ok: true, rows };
+  }
+
+  // Tab1: 求能撑满生存期的最小本金
+  function findPrincipal(years, spend, inflation, rate) {
+    let low = 0, high = spend;
+    while (!simulate(high, years, spend, inflation, rate).ok) high *= 2;
+    for (let i = 0; i < 200; i++) {
+      const mid = (low + high) / 2;
+      if (simulate(mid, years, spend, inflation, rate).ok) high = mid;
+      else low = mid;
+    }
+    return high;
+  }
+
+  // Tab2: 求资金能支撑多少年
+  function findYears(principal, spend, inflation, rate) {
+    let balance = principal;
+    const rows = [];
+    const maxY = 1000;
+    for (let i = 1; i <= maxY; i++) {
+      const cost = spend * Math.pow(1 + inflation, i - 1);
+      const invest = balance * rate;
+      balance = balance + invest - cost;
+      if (balance < -1e-6) return { years: i - 1, rows, infinite: false };
+      rows.push({ year: i, cost, invest, balance });
+    }
+    return { years: maxY, rows, infinite: true };
+  }
+
+  // Tab3: 求在生存期内能承受的最大年花销
+  function findMaxSpend(principal, years, inflation, rate) {
+    let lo = 0, hi = 1;
+    while (simulate(principal, years, hi, inflation, rate).ok) hi *= 2;
+    for (let i = 0; i < 200; i++) {
+      const mid = (lo + hi) / 2;
+      if (simulate(principal, years, mid, inflation, rate).ok) lo = mid;
+      else hi = mid;
+    }
+    return lo;
+  }
+
+  function renderTable(tbodyId, rows) {
+    const tb = document.getElementById(tbodyId);
+    tb.innerHTML = '';
+    let shown = rows;
+    if (rows.length > 60) {
+      shown = rows.slice(0, 30).concat([null], rows.slice(rows.length - 30));
+    }
+    shown.forEach(r => {
+      const tr = document.createElement('tr');
+      if (r === null) {
+        tr.innerHTML = '<td colspan="4" style="text-align:center;color:#bbb;">......</td>';
+      } else {
+        const investCls = r.invest >= 0 ? 'positive' : 'negative';
+        tr.innerHTML =
+          '<td>' + r.year + '</td>' +
+          '<td>' + fmt(r.cost) + '</td>' +
+          '<td class="' + investCls + '">' + fmt(r.invest) + '</td>' +
+          '<td>' + fmt(r.balance) + '</td>';
+      }
+      tb.appendChild(tr);
+    });
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + name));
+    if (name === 't1') calc1();
+    if (name === 't2') calc2();
+    if (name === 't3') calc3();
+  }
+
+  function toggleForever1() {
+    document.getElementById('y1').disabled = document.getElementById('forever1').checked;
+    calc1();
+  }
+
+  function calc1() {
+    const forever = document.getElementById('forever1').checked;
+    const spend = parseFloat(document.getElementById('s1').value);
+    const inflation = parseFloat(document.getElementById('i1').value) / 100;
+    const rate = parseFloat(document.getElementById('r1').value) / 100;
+    const years = parseFloat(document.getElementById('y1').value);
+    if (!spend || spend <= 0) { alert('请填写有效的每年花销'); return; }
+
+    let principal, result, desc;
+    if (forever) {
+      if (rate <= inflation) {
+        document.getElementById('res1').style.display = 'none';
+        document.getElementById('tbl1').style.display = 'none';
+        alert('要永远花不完，年化收益必须高于通胀，请调整输入');
+        return;
+      }
+      principal = spend / (rate - inflation);
+      const n = Math.max(60, Math.round(years) || 60);
+      result = simulate(principal, n, spend, inflation, rate);
+      document.getElementById('lab1').textContent = '要永远花不完，至少需存够';
+      desc = '按通胀 ' + (inflation * 100).toFixed(1) + '%、收益 ' + (rate * 100).toFixed(1) +
+        '% 估算，只要年化收益持续高于通胀，这笔钱就足够你<b>永远花下去</b>，开销随通胀逐年增长。';
+    } else {
+      if (!years || years <= 0) { alert('请填写有效的预计生存期'); return; }
+      principal = findPrincipal(years, spend, inflation, rate);
+      result = simulate(principal, years, spend, inflation, rate);
+      document.getElementById('lab1').textContent = '你至少需要存够';
+      desc = '按年化收益 ' + (rate * 100).toFixed(1) + '%、通胀 ' + (inflation * 100).toFixed(1) +
+        '% 估算，这笔钱可以支撑你生活约 <b>' + years + '</b> 年，每年开销随通胀逐年增长。';
+    }
+
+    document.getElementById('need1').textContent = fmt(principal);
+    document.getElementById('desc1').innerHTML = desc;
+    renderTable('tb1', result.rows);
+    document.getElementById('res1').style.display = 'block';
+    document.getElementById('tbl1').style.display = 'block';
+  }
+
+  function calc2() {
+    const principal = parseFloat(document.getElementById('p2').value);
+    const spend = parseFloat(document.getElementById('s2').value);
+    const inflation = parseFloat(document.getElementById('i2').value) / 100;
+    const rate = parseFloat(document.getElementById('r2').value) / 100;
+    if (!principal || !spend || principal <= 0 || spend <= 0) { alert('请填写有效的现有资金和每年花销'); return; }
+
+    const res = findYears(principal, spend, inflation, rate);
+    const years = res.years;
+    document.getElementById('years2').textContent = fmt(years);
+    let desc;
+    if (res.infinite) {
+      desc = '资金持续增长，超过 ' + res.years + ' 年仍不耗尽，理论上可长期持续。';
+    } else if (years === 0) {
+      desc = '现有资金不足以支付第1年开销，请增加本金或减少花销。';
+    } else {
+      desc = '按本金 ¥' + fmt(principal) + '、通胀 ' + (inflation * 100).toFixed(1) +
+        '%、收益 ' + (rate * 100).toFixed(1) + '% 估算，每年花销从 ¥' + fmt(spend) +
+        ' 起随通胀增长，资金可支撑约 <b>' + years + '</b> 年。';
+    }
+    document.getElementById('desc2').innerHTML = desc;
+    if (years > 0) renderTable('tb2', res.rows);
+    document.getElementById('res2').style.display = 'block';
+    document.getElementById('tbl2').style.display = res.infinite || years > 0 ? 'block' : 'none';
+  }
+
+  function toggleForever3() {
+    document.getElementById('y3').disabled = document.getElementById('forever3').checked;
+    calc3();
+  }
+
+  function calc3() {
+    const forever = document.getElementById('forever3').checked;
+    const principal = parseFloat(document.getElementById('p3').value);
+    const years = parseFloat(document.getElementById('y3').value);
+    const inflation = parseFloat(document.getElementById('i3').value) / 100;
+    const rate = parseFloat(document.getElementById('r3').value) / 100;
+    if (!principal || principal <= 0) { alert('请填写有效的现有资金'); return; }
+
+    let spend, result, desc, label;
+    if (forever) {
+      if (rate <= inflation) {
+        document.getElementById('res3').style.display = 'none';
+        document.getElementById('tbl3').style.display = 'none';
+        alert('要永远花不完，年化收益必须高于通胀，请调整输入');
+        return;
+      }
+      spend = principal * (rate - inflation);
+      const n = Math.max(60, Math.round(years) || 60);
+      result = simulate(principal, n, spend, inflation, rate);
+      label = '要永远花不完，每年最多可花';
+      desc = '按本金 ¥' + fmt(principal) + '、通胀 ' + (inflation * 100).toFixed(1) +
+        '%、收益 ' + (rate * 100).toFixed(1) + '% 估算，只要年化收益持续高于通胀，' +
+        '每年可花 ¥' + fmt(spend) + ' 并<b>永远花下去</b>。';
+    } else {
+      if (!years || years <= 0) { alert('请填写有效的预计生存期'); return; }
+      spend = findMaxSpend(principal, years, inflation, rate);
+      result = simulate(principal, years, spend, inflation, rate);
+      label = '第1年每年最多可花';
+      desc = '按本金 ¥' + fmt(principal) + '、通胀 ' + (inflation * 100).toFixed(1) +
+        '%、收益 ' + (rate * 100).toFixed(1) + '% 估算，第1年最多可花 ¥' + fmt(spend) +
+        '，之后每年花销随通胀上调，正好支撑 <b>' + years + '</b> 年。';
+    }
+
+    document.getElementById('lab3').textContent = label;
+    document.getElementById('spend3').textContent = fmt(spend);
+    document.getElementById('desc3').innerHTML = desc;
+    renderTable('tb3', result.rows);
+    document.getElementById('res3').style.display = 'block';
+    document.getElementById('tbl3').style.display = 'block';
+  }
+
+  calc1();
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e88e5">
+<title>反应力测试</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 游戏主色块 -->
+<div id="stage">
+  <div id="topBar">
+    <div id="slots">
+      <div class="slot"></div>
+      <div class="slot"></div>
+      <div class="slot"></div>
+      <div class="slot"></div>
+      <div class="slot"></div>
+    </div>
+    <div id="timer">0:00.000</div>
+  </div>
+  <button id="btnRestart">重开</button>
+</div>
+
+<!-- 规则页 -->
+<div id="startScreen" class="overlay show">
+  <div class="panel">
+    <h1>反应力测试</h1>
+    <p>屏幕默认<b style="color:#1e88e5">蓝色</b></p>
+    <p>变<b style="color:#43a047">绿</b> → 尽快点击（提前点击每次罚时 0.25s）</p>
+    <p>变<b style="color:#e53935">红</b> → 不要点击（点击下次罚时 0.5s）</p>
+    <p>红色有 50% 概率出现，最多一次</p>
+    <p>结果：测试 5 次，去掉最快和最慢，取均值</p>
+    <button id="btnStart" class="btn-primary">开始测试</button>
+    <button id="btnRankStart" class="btn-secondary">排行榜</button>
+  </div>
+</div>
+
+<!-- 结果页 -->
+<div id="resScreen" class="overlay">
+  <div class="panel wide">
+    <h2>本轮成绩</h2>
+    <div id="resTimes"></div>
+    <div id="resCalc"></div>
+    <div id="resFinal"></div>
+    <button id="btnAgain" class="btn-primary">再来一轮</button>
+    <button id="btnRankRes" class="btn-secondary">排行榜</button>
+    <button id="btnHome" class="btn-secondary">返回说明</button>
+  </div>
+</div>
+
+<!-- 排行榜 -->
+<div id="rankScreen" class="overlay">
+  <div class="panel wide">
+    <h2>排行榜</h2>
+    <div class="tabs">
+      <span class="tab active" data-tab="local">本地最快</span>
+      <span class="tab" data-tab="global">B站全局</span>
+    </div>
+    <div id="rankLocal" class="rank-body"></div>
+    <div id="rankGlobal" class="rank-body hide">
+      <div id="rankGlobalContent"></div>
+      <div id="rankGlobalGate" class="hide">
+        <p class="gate-tip">关注作者后可查看 B站 全局排行榜</p>
+        <button id="btnFollow" class="btn-secondary">去关注 13450091</button>
+      </div>
+    </div>
+    <button id="btnCloseRank" class="btn-secondary">关闭</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

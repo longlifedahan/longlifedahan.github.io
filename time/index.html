@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1026">
+  <title>手速测试</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 首页 -->
+    <section id="view-home" class="view active">
+      <div class="home-inner">
+        <h1 class="title">手速测试</h1>
+
+        <div class="mode-seg" id="mode-seg">
+          <button class="seg" data-mode="1">倒计时</button>
+          <button class="seg" data-mode="2">正计时</button>
+        </div>
+
+        <div class="x-card">
+          <div class="x-head">
+            <span>目标时间</span>
+            <span class="x-val" id="x-val">5 秒</span>
+          </div>
+          <input type="range" id="x-range" min="3" max="10" step="1" value="5">
+          <div class="x-scale"><span>3s</span><span>10s</span></div>
+        </div>
+
+        <button class="btn primary" id="btn-start">开始测试</button>
+        <button class="btn ghost" id="btn-open-lb">排行榜</button>
+
+        <div class="best-card">
+          <div class="best-title">最佳战绩</div>
+          <div class="best-row" id="best-m1"></div>
+          <div class="best-row" id="best-m2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 计时页 -->
+    <section id="view-timing" class="view">
+      <header class="game-header">
+        <button class="icon-btn" id="btn-back" aria-label="返回首页">‹</button>
+        <div class="game-title" id="timing-title"></div>
+        <span class="header-spacer"></span>
+      </header>
+
+      <div class="stage" id="stage">
+        <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="ring-bg" cx="100" cy="100" r="92"></circle>
+          <circle class="ring-fg" id="ring-fg" cx="100" cy="100" r="92"></circle>
+        </svg>
+
+        <div class="time-box">
+          <button class="start-btn" id="btn-start-run">点击开始</button>
+          <div class="live-time" id="live-time" hidden></div>
+          <div class="live-unit" id="live-unit" hidden>秒</div>
+        </div>
+
+        <div class="live-hint" id="live-hint"></div>
+
+        <div class="result-panel" id="result-panel" hidden>
+          <div class="rank-name" id="rank-name"></div>
+          <div class="rank-err" id="rank-err"></div>
+          <div class="rank-sub" id="rank-sub"></div>
+          <div class="result-btns">
+            <button class="btn primary" id="btn-again">再来一局</button>
+            <button class="btn ghost" id="btn-result-lb">排行榜</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-source-tabs">
+        <button class="tab active" data-source="local">本地榜</button>
+        <button class="tab" data-source="global">全局榜</button>
+      </div>
+      <div class="tabs sub" id="lb-mode-tabs">
+        <button class="tab active" data-lbmode="1">倒计时</button>
+        <button class="tab" data-lbmode="2">正计时</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

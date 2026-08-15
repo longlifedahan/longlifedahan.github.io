@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>一掷千金 - Deal or No Deal</title>
+<script src="//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 40%, #0d0d3d 100%);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 12px; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .container {
+    width: 960px; max-width: 100%;
+    background: rgba(255,255,255,0.03);
+    border-radius: 24px; padding: 24px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-top: 8px;
+  }
+
+  /* --- Header --- */
+  .header { text-align: center; margin-bottom: 16px; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .header-top h1 {
+    font-size: 32px; font-weight: 900;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 3px;
+  }
+  .btn-leaderboard {
+    background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.2);
+    color: #f6d365; padding: 8px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    transition: background 0.2s; touch-action: manipulation;
+  }
+  .btn-leaderboard:active { background: rgba(255,215,0,0.2); }
+  @media (hover: hover) {
+    .btn-leaderboard:hover { background: rgba(255,215,0,0.18); }
+  }
+  .header .subtitle {
+    color: rgba(255,255,255,0.35); font-size: 12px; margin-top: 2px; letter-spacing: 5px;
+  }
+  .header .round-info {
+    display: flex; justify-content: center; gap: 10px; margin-top: 10px;
+    color: rgba(255,255,255,0.6); font-size: 13px; flex-wrap: wrap;
+  }
+  .header .round-info span {
+    background: rgba(255,255,255,0.06); padding: 3px 12px; border-radius: 16px;
+    white-space: nowrap;
+  }
+
+  /* --- Banker Area --- */
+  .banker-area {
+    text-align: center; padding: 14px 12px 16px; margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,165,0,0.05));
+    border-radius: 16px; border: 1px solid rgba(255,215,0,0.15);
+    min-height: 72px;
+  }
+  .banker-area .label {
+    color: #f6d365; font-size: 14px; font-weight: 600; letter-spacing: 1px;
+  }
+  .banker-area .offer {
+    font-size: 44px; font-weight: 900; color: #fff;
+    text-shadow: 0 0 30px rgba(255,215,0,0.3);
+    margin: 4px 0 12px;
+    display: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .banker-area .offer.show { display: block; animation: offerPop 0.5s ease; }
+  @keyframes offerPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .banker-area .msg {
+    color: rgba(255,255,255,0.55); font-size: 16px; letter-spacing: 0.5px;
+    min-height: 24px;
+  }
+  .btn-group { display: none; gap: 16px; justify-content: center; margin-top: 4px; }
+  .btn-group.show { display: flex; }
+  .btn-deal, .btn-nodeal {
+    padding: 12px 32px; border: none; border-radius: 50px; font-size: 18px;
+    font-weight: 800; cursor: pointer; letter-spacing: 2px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    touch-action: manipulation;
+  }
+  .btn-deal {
+    background: linear-gradient(135deg, #f6d365, #fda085); color: #1a1a4e;
+    box-shadow: 0 4px 20px rgba(253,160,133,0.3);
+  }
+  .btn-nodeal {
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9);
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  @media (hover: hover) {
+    .btn-deal:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(253,160,133,0.4); }
+    .btn-nodeal:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+  }
+  .btn-disabled { opacity: 0.3; pointer-events: none; }
+
+  /* --- Box Grid --- */
+  .box-grid {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin-bottom: 16px;
+  }
+  .box {
+    width: calc((100% - 60px) / 7); aspect-ratio: 1; border-radius: 14px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    cursor: pointer; font-weight: 800; font-size: 22px; color: #fff;
+    background: linear-gradient(145deg, #1e3a6e, #162a52);
+    border: 2px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .box:active:not(.opened):not(.selected):not(.disabled) {
+    transform: scale(0.94);
+  }
+  .box .num { font-size: 20px; line-height: 1.1; pointer-events: none; }
+  .box .icon { font-size: 18px; margin-top: 3px; opacity: 0.5; pointer-events: none; }
+  .box.selected {
+    background: linear-gradient(145deg, #f6d365, #fda085);
+    border-color: #fff; color: #1a1a4e;
+    box-shadow: 0 0 25px rgba(253,160,133,0.3);
+    animation: pulse 2s infinite;
+  }
+  .box.selected .icon { opacity: 0.8; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(253,160,133,0.2); }
+    50% { box-shadow: 0 0 35px rgba(253,160,133,0.4); }
+  }
+  .box.opened {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.06);
+    cursor: default; transform: scale(0.92); opacity: 0.45;
+  }
+  .box.opened .num { font-size: 13px; }
+  .box.opened .amount-label { font-size: 12px; font-weight: 600; margin-top: 1px; pointer-events: none; }
+  .box.opened .amount-low { color: #7ec8e3; }
+  .box.opened .amount-medium { color: #f6d365; }
+  .box.opened .amount-high { color: #fda085; }
+  .box.opened .amount-veryhigh { color: #ff6b6b; }
+  .box.opened .icon { display: none; }
+  .box.disabled { cursor: default; opacity: 0.45; }
+
+  /* --- Bottom Area --- */
+  .bottom-area {
+    display: flex; gap: 16px;
+  }
+  .opened-boxes {
+    flex: 1; min-width: 0;
+    background: rgba(255,255,255,0.02);
+    border-radius: 14px; padding: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    min-height: 60px;
+  }
+  .opened-boxes .title {
+    font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 8px; letter-spacing: 1px;
+  }
+  .opened-boxes .chips {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .chip {
+    padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+  }
+  .chip-verylow { background: rgba(126,200,227,0.15); color: #7ec8e3; }
+  .chip-low { background: rgba(126,200,227,0.25); color: #7ec8e3; }
+  .chip-medium { background: rgba(246,211,101,0.2); color: #f6d365; }
+  .chip-high { background: rgba(253,160,133,0.2); color: #fda085; }
+  .chip-veryhigh { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+
+  .remaining-panel {
+    width: 200px; flex-shrink: 0;
+    background: rgba(255,255,255,0.02);
+    border-radius: 14px; padding: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    max-height: 160px; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .remaining-panel .title {
+    font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 8px; letter-spacing: 1px;
+  }
+  .remaining-panel .list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .remaining-panel .rem-item {
+    padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55);
+  }
+  .rem-item.rem-verylow { color: #7ec8e3; }
+  .rem-item.rem-low { color: #7ec8e3; }
+  .rem-item.rem-medium { color: #f6d365; }
+  .rem-item.rem-high { color: #fda085; }
+  .rem-item.rem-veryhigh { color: #ff6b6b; }
+
+  /* --- Leaderboard Modal --- */
+  .lb-modal {
+    position: fixed; inset: 0; z-index: 150;
+    display: none; flex-direction: column; justify-content: flex-start;
+    align-items: center;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    padding: 40px 20px 20px;
+  }
+  .lb-modal.show { display: flex; }
+
+  .lb-card {
+    background: linear-gradient(145deg, #14144a, #0d0d3d);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 60px rgba(0,0,0,0.5);
+    max-width: 520px; width: 100%;
+    max-height: 90vh; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .lb-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px 0;
+  }
+  .lb-header h2 { color: #f6d365; font-size: 22px; letter-spacing: 2px; }
+  .lb-close {
+    background: none; border: none; color: rgba(255,255,255,0.4);
+    font-size: 28px; cursor: pointer; padding: 4px 8px; line-height: 1;
+    touch-action: manipulation;
+  }
+
+  .lb-tabs {
+    display: flex; gap: 0; margin: 12px 24px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .lb-tab {
+    padding: 10px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
+    color: rgba(255,255,255,0.35); border: none; background: none;
+    border-bottom: 2px solid transparent; letter-spacing: 1px;
+    transition: color 0.2s, border-color 0.2s; touch-action: manipulation;
+  }
+  .lb-tab.active { color: #f6d365; border-bottom-color: #f6d365; }
+
+  .lb-body {
+    padding: 16px 24px 24px; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    min-height: 200px;
+  }
+
+  /* Local stats */
+  .lb-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 16px;
+  }
+  .lb-stat {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px; padding: 10px 6px; text-align: center;
+  }
+  .lb-stat .val {
+    font-size: 22px; font-weight: 900; color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .lb-stat .val.gold { color: #f6d365; }
+  .lb-stat .label {
+    font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px;
+  }
+
+  /* Local records list */
+  .lb-records-title {
+    font-size: 12px; color: rgba(255,255,255,0.25); margin-bottom: 8px; letter-spacing: 1px;
+  }
+  .lb-record {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.03); margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .lb-record > div { text-align: center; }
+  .lb-record .r-amount {
+    font-weight: 800; font-size: 15px;
+  }
+  .lb-record .r-amount.gold { color: #f6d365; }
+  .lb-record .r-amount.r-box { color: rgba(255,255,255,0.5); font-size: 13px; }
+  .lb-record .r-sub {
+    font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 1px;
+  }
+  .lb-record .r-right {
+    text-align: right !important; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .lb-record .r-type {
+    font-size: 10px; color: rgba(255,255,255,0.3); padding: 2px 8px;
+    border-radius: 10px; background: rgba(255,255,255,0.05); display: inline-block;
+  }
+  .lb-record .r-time {
+    font-size: 10px; color: rgba(255,255,255,0.25);
+  }
+
+  /* Global leaderboard */
+  .lb-myrank {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-radius: 12px;
+    background: rgba(255,215,0,0.06);
+    border: 1px solid rgba(255,215,0,0.12);
+    margin-bottom: 16px;
+  }
+  .lb-myrank .mr-label { font-size: 13px; color: rgba(255,255,255,0.5); }
+  .lb-myrank .mr-score { font-size: 20px; font-weight: 800; color: #f6d365; }
+  .lb-myrank .mr-rank { font-size: 16px; font-weight: 700; color: #fff; }
+
+  .lb-global-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.03); margin-bottom: 4px;
+  }
+  .lb-global-item .gi-rank {
+    width: 28px; text-align: center;
+    font-weight: 800; font-size: 15px; color: rgba(255,255,255,0.3);
+  }
+  .lb-global-item .gi-rank.top1 { color: #f6d365; font-size: 18px; }
+  .lb-global-item .gi-rank.top2 { color: #c0c0c0; font-size: 16px; }
+  .lb-global-item .gi-rank.top3 { color: #cd7f32; font-size: 16px; }
+  .lb-global-item .gi-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; font-size: 14px;
+  }
+  .lb-global-item .gi-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .lb-global-item .gi-name {
+    flex: 1; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lb-global-item .gi-score {
+    font-size: 14px; font-weight: 700; color: #f6d365;
+  }
+
+  .lb-empty {
+    text-align: center; color: rgba(255,255,255,0.2);
+    padding: 40px 0; font-size: 14px; line-height: 2;
+  }
+  .lb-loading {
+    text-align: center; color: rgba(255,255,255,0.3);
+    padding: 40px 0; font-size: 14px;
+  }
+
+  /* 全球排行榜位 & 周期 tabs */
+  .lb-sub-tabs, .lb-period-tabs {
+    display: flex; gap: 0; margin-bottom: 8px;
+  }
+  .lb-sub-tabs { margin-bottom: 6px; }
+  .lb-stab, .lb-ptab {
+    padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+    color: rgba(255,255,255,0.35); border: none; background: rgba(255,255,255,0.04);
+    border-radius: 16px; letter-spacing: 0.5px;
+    transition: color 0.2s, background 0.2s; touch-action: manipulation;
+  }
+  .lb-stab.active, .lb-ptab.active {
+    color: #1a1a4e; background: #f6d365;
+  }
+  .lb-period-tabs { gap: 6px; margin-bottom: 12px; }
+  .lb-ptab { flex: 1; text-align: center; font-size: 12px; padding: 5px 6px; }
+
+  /* --- Start overlay --- */
+  .start-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: linear-gradient(135deg, #0a0a2e, #1a1a4e);
+    padding: 24px;
+  }
+  .start-overlay h1 {
+    font-size: 46px; font-weight: 900;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px; text-align: center;
+  }
+  .start-overlay p {
+    color: rgba(255,255,255,0.45); font-size: 14px; margin-bottom: 28px; letter-spacing: 4px;
+  }
+  .start-overlay .start-btn {
+    padding: 16px 56px; border: none; border-radius: 50px;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    color: #1a1a4e; font-size: 20px; font-weight: 800; cursor: pointer;
+    letter-spacing: 3px; box-shadow: 0 8px 40px rgba(253,160,133,0.3);
+    transition: transform 0.15s;
+    touch-action: manipulation;
+  }
+  .start-overlay .start-btn:active { transform: scale(0.96); }
+  @media (hover: hover) {
+    .start-overlay .start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 50px rgba(253,160,133,0.4); }
+  }
+  .start-overlay .rules {
+    margin-top: 28px; color: rgba(255,255,255,0.25); font-size: 13px; text-align: center; line-height: 2;
+    max-width: 360px;
+  }
+
+  /* --- Result modal --- */
+  .result-modal {
+    position: fixed; inset: 0; z-index: 200;
+    display: none; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    padding: 20px;
+  }
+  .result-modal.show { display: flex; }
+  .result-modal .card {
+    background: linear-gradient(145deg, #1a1a4e, #0d0d3d);
+    border-radius: 28px; padding: 36px 28px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+    max-width: 460px; width: 100%;
+  }
+  .result-modal .card h2 {
+    font-size: 24px; color: rgba(255,255,255,0.7); margin-bottom: 12px;
+  }
+  .result-modal .card .big-amount {
+    font-size: 54px; font-weight: 900;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin: 8px 0; word-break: break-all;
+  }
+  .result-modal .card .big-amount.blue {
+    background: linear-gradient(135deg, #7ec8e3, #4a9eff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .result-modal .card .desc {
+    color: rgba(255,255,255,0.4); font-size: 15px; margin-bottom: 24px; line-height: 1.6;
+  }
+  .result-modal .card .play-again {
+    padding: 14px 48px; border: none; border-radius: 50px;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    color: #1a1a4e; font-size: 17px; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s;
+    touch-action: manipulation;
+  }
+  .result-modal .card .play-again:active { transform: scale(0.96); }
+  @media (hover: hover) {
+    .result-modal .card .play-again:hover { transform: translateY(-2px); }
+  }
+
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .container { padding: 12px; border-radius: 16px; }
+    body { padding: 6px; align-items: flex-start; }
+    .header { margin-bottom: 10px; }
+    .header-top h1 { font-size: 22px; }
+    .btn-leaderboard { font-size: 12px; padding: 5px 12px; }
+    .header .round-info { font-size: 11px; gap: 6px; margin-top: 6px; }
+    .header .round-info span { padding: 2px 10px; }
+    .banker-area { padding: 10px 10px 12px; margin-bottom: 10px; }
+    .banker-area .offer { font-size: 30px; }
+    .banker-area .msg { font-size: 14px; }
+    .box-grid { gap: 6px; margin-bottom: 10px; }
+    .box { width: calc((100% - 24px) / 5); border-radius: 10px; }
+    .box .num { font-size: 15px; }
+    .box .icon { font-size: 14px; }
+    .bottom-area { gap: 10px; }
+    .opened-boxes { padding: 10px; }
+    .remaining-panel { width: 140px; padding: 10px; max-height: 120px; }
+    .start-overlay h1 { font-size: 32px; }
+    .start-overlay .start-btn { padding: 12px 40px; font-size: 17px; }
+    .result-modal .card { padding: 28px 20px; }
+    .result-modal .card .big-amount { font-size: 38px; }
+    .btn-deal, .btn-nodeal { padding: 10px 20px; font-size: 15px; flex: 1; max-width: 140px; }
+    .lb-modal { padding: 20px 12px 12px; }
+    .lb-card { border-radius: 20px; }
+    .lb-header { padding: 16px 20px 0; }
+    .lb-tabs { margin: 10px 20px 0; }
+    .lb-body { padding: 12px 20px 20px; }
+    .lb-stats { grid-template-columns: repeat(2, 1fr); }
+    .lb-stat .val { font-size: 18px; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 2px; }
+    .container { padding: 6px; border-radius: 12px; margin-top: 0; }
+    .header { margin-bottom: 6px; }
+    .header-top h1 { font-size: 18px; letter-spacing: 1px; }
+    .btn-leaderboard { font-size: 10px; padding: 3px 8px; }
+    .header .subtitle { display: none; }
+    .header .round-info { font-size: 10px; gap: 4px; margin-top: 4px; }
+    .header .round-info span { padding: 2px 8px; }
+    .banker-area { padding: 6px 6px 8px; min-height: 44px; margin-bottom: 6px; border-radius: 10px; }
+    .banker-area .label { font-size: 11px; }
+    .banker-area .offer { font-size: 22px; margin: 2px 0 6px; }
+    .banker-area .msg { font-size: 12px; min-height: 18px; }
+    .box-grid { gap: 5px; margin-bottom: 8px; }
+    .box { width: calc((100% - 15px) / 4); aspect-ratio: unset; height: 72px; border-radius: 8px; }
+    .box .num { font-size: 15px; }
+    .box .icon { font-size: 12px; margin-top: 1px; }
+    .box.opened .num { font-size: 10px; }
+    .box.opened .amount-label { font-size: 10px; }
+    .btn-group { gap: 8px; }
+    .btn-deal, .btn-nodeal { padding: 8px 14px; font-size: 13px; }
+    /* 底部：竖排展示金额 */
+    .bottom-area { flex-direction: column; gap: 6px; flex: 1; }
+    .opened-boxes { padding: 8px 10px; min-height: 48px; border-radius: 8px; flex: 1; }
+    .opened-boxes .title { font-size: 11px; margin-bottom: 4px; }
+    .chip { font-size: 13px; padding: 3px 10px; }
+    .remaining-panel { width: auto; padding: 8px 10px; max-height: 120px; border-radius: 8px; display: block; flex: 1; }
+    .remaining-panel .title { font-size: 11px; margin-bottom: 6px; }
+    .remaining-panel .rem-item { font-size: 12px; padding: 3px 8px; }
+    .remaining-panel .list { gap: 4px; }
+    /* 排行榜顶部对齐 */
+    .lb-modal { padding: 0; }
+    .lb-card { border-radius: 0 0 20px 20px; max-height: 100vh; }
+    .lb-header { padding: 14px 16px 0; }
+    .lb-header h2 { font-size: 18px; }
+    .lb-tabs { margin: 8px 16px 0; }
+    .lb-tab { padding: 8px 14px; font-size: 13px; }
+    .lb-body { padding: 10px 16px 20px; }
+    .lb-stats { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+    .lb-stat { padding: 6px 4px; border-radius: 8px; }
+    .lb-stat .val { font-size: 16px; }
+    .lb-stat .label { font-size: 10px; }
+    .lb-record { padding: 8px 10px; }
+    .lb-record .r-amount { font-size: 14px; }
+    .lb-record .r-amount.r-box { font-size: 12px; }
+    .lb-record .r-sub { font-size: 9px; }
+    .lb-record .r-type { font-size: 9px; padding: 1px 6px; }
+    .lb-record .r-time { font-size: 9px; }
+    .lb-stab, .lb-ptab { font-size: 12px; padding: 5px 10px; }
+    /* 开始画面 */
+    .start-overlay h1 { font-size: 28px; }
+    .start-overlay p { font-size: 11px; margin-bottom: 20px; }
+    .start-overlay .start-btn { padding: 10px 32px; font-size: 15px; }
+    .start-overlay .rules { font-size: 11px; margin-top: 20px; }
+    /* 结果弹窗 */
+    .result-modal .card { padding: 24px 16px; border-radius: 20px; }
+    .result-modal .card h2 { font-size: 18px; margin-bottom: 8px; }
+    .result-modal .card .big-amount { font-size: 30px; margin: 4px 0; }
+    .result-modal .card .desc { font-size: 12px; }
+    .result-modal .card .play-again { padding: 10px 32px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="header">
+    <div class="header-top">
+      <h1>一掷千金</h1>
+      <button class="btn-leaderboard" id="btnLeaderboard">排行榜</button>
+    </div>
+    <div class="subtitle">DEAL OR NO DEAL</div>
+    <div class="round-info">
+      <span id="roundDisplay">第 0 轮</span>
+      <span id="remainingCount">剩余 21 箱</span>
+      <span id="toOpenDisplay">待开 0 箱</span>
+    </div>
+  </div>
+
+  <div class="banker-area" id="bankerArea">
+    <div class="label">银行家报价</div>
+    <div class="offer" id="offerDisplay"></div>
+    <div class="msg" id="bankerMsg">选择一个箱子作为你的幸运箱...</div>
+    <div class="btn-group" id="btnGroup">
+      <button class="btn-deal" id="btnDeal">成交！</button>
+      <button class="btn-nodeal" id="btnNodeal">不成交！</button>
+    </div>
+  </div>
+
+  <div class="box-grid" id="boxGrid"></div>
+
+  <div class="bottom-area">
+    <div class="opened-boxes">
+      <div class="title">已开箱</div>
+      <div class="chips" id="openedChips"></div>
+    </div>
+    <div class="remaining-panel">
+      <div class="title">剩余金额</div>
+      <div class="list" id="remainingList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div class="lb-modal" id="lbModal">
+  <div class="lb-card">
+    <div class="lb-header">
+      <h2>排行榜</h2>
+      <button class="lb-close" id="lbClose">✕</button>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-tab="local">本地战绩</button>
+      <button class="lb-tab" data-tab="global">全球排行</button>
+    </div>
+    <div class="lb-body" id="lbBody">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Start Screen -->
+<div class="start-overlay" id="startOverlay">
+  <h1>一掷千金</h1>
+  <p>DEAL OR NO DEAL</p>
+  <button class="start-btn" id="startBtn">开始游戏</button>
+  <div class="rules">
+    21个箱子，其中1个藏有 ¥1,000,000<br>
+    选一个作为你的幸运箱，然后逐一开箱<br>
+    每轮银行家会根据剩余金额出价<br>
+    成交还是不成交？决定权在你手中！
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="result-modal" id="resultModal">
+  <div class="card">
+    <h2 id="resultTitle"></h2>
+    <div class="big-amount" id="resultAmount"></div>
+    <div class="desc" id="resultDesc"></div>
+    <button class="play-again" id="playAgain">再来一局</button>
+  </div>
+</div>
+
+<script>
+// ========== 金额配置 ==========
+const AMOUNTS = [
+  0.01, 1, 5, 10, 20, 50, 100, 200, 500,
+  1000, 2000, 5000, 10000, 20000, 50000,
+  100000, 200000, 300000, 500000, 750000, 1000000
+];
+
+const OPEN_SCHEDULE = [6, 5, 4, 3, 1, 1, 1];
+const STORAGE_KEY = 'deal_records';
+const MILLION = 1000000;
+
+// ========== 游戏状态 ==========
+let state = {};
+let animationTimer = null;
+let currentTab = 'local';
+
+function fmt(n) {
+  if (n === 0.01) return '¥0.01';
+  return '¥' + Math.floor(n).toLocaleString();
+}
+
+function fmtShort(n) {
+  if (n >= MILLION) return (n / MILLION).toFixed(1) + 'M';
+  if (n >= 10000) return (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '万';
+  return fmt(n);
+}
+
+// ========== 大数编码（用于 B站 排行榜存储超 1600w 的总收入） ==========
+// 编码规则：前4位 = 1111 + 位数(digits)，后4位 = 科学计数法前4位小数(mantissa)
+// value ≈ mantissa × 10^(digits - 4)
+// 前4位加 1111 偏移：编码值最小为 (1111+1)*10000=11,120,000，保证大于所有历史
+// 原始金额分（历史数据都 < 千万），从而让 SDK"只保留最高分"用新分覆盖旧分
+function encodeScore(value) {
+  if (value <= 0) return 0;
+  var digits = Math.floor(Math.log10(value)) + 1;
+  var mantissa = Math.floor(value / Math.pow(10, digits - 4));
+  if (mantissa > 9999) mantissa = 9999;
+  return (1111 + digits) * 10000 + mantissa;
+}
+
+function decodeScore(encoded) {
+  if (encoded <= 0) return 0;
+  if (encoded >= (1111 + 1) * 10000) {
+    // 新格式：前4位 = 1111 + 位数
+    var digits = Math.floor(encoded / 10000) - 1111;
+    var mantissa = encoded % 10000;
+    return mantissa * Math.pow(10, digits - 4);
+  }
+  // 历史数据：未加偏移的原始金额分，直接原样返回
+  return encoded;
+}
+
+// 收入榜展示：金额友好格式化（支持超大数）
+function fmtEarnings(n) {
+  if (n >= 100000000) return (n / 100000000).toFixed(2) + '亿';
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return fmt(n);
+}
+
+function getAmountClass(val) {
+  if (val < 100) return 'verylow';
+  if (val < 1000) return 'low';
+  if (val < 50000) return 'medium';
+  if (val < 500000) return 'high';
+  return 'veryhigh';
+}
+
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' +
+         pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+
+// ========== 本地存储 ==========
+function getRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const records = JSON.parse(raw);
+    return migrateRecords(records);
+  } catch { return []; }
+}
+
+// 历史数据迁移：旧记录没有 boxAmount 字段
+// - 旧"开箱"记录：带走金额 = 箱内金额，可直接补齐
+// - 旧"成交"记录：无法找回箱内金额，保持 null（显示为 -）
+function migrateRecords(records) {
+  let changed = false;
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    if (r.boxAmount == null && r.type === 'own') {
+      r.boxAmount = r.amount;
+      changed = true;
+    }
+  }
+  if (changed) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch {}
+  }
+  return records;
+}
+
+function saveRecord(amount, type, boxAmount) {
+  try {
+    const records = getRecords();
+    records.unshift({ amount, type, boxAmount: boxAmount || amount, timestamp: Date.now() });
+    if (records.length > 200) records.length = 200;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch (e) {
+    console.warn('本地存储失败:', e);
+  }
+}
+
+function getStats() {
+  const records = getRecords();
+  const total = records.length;
+  if (total === 0) return { total: 0, max: 0, sum: 0, millionCount: 0 };
+  let max = 0, sum = 0, millionCount = 0;
+  for (const r of records) {
+    if (r.amount > max) max = r.amount;
+    sum += r.amount;
+    if (r.amount >= MILLION) millionCount++;
+  }
+  return { total, max, sum, millionCount };
+}
+
+// ========== Toy SDK 全球排行榜 ==========
+function isToyReady() {
+  return typeof window.toy !== 'undefined' && window.toy !== null;
+}
+
+async function submitGlobalScore(board, score) {
+  if (!isToyReady()) return;
+  try {
+    const ok = await window.toy.isSupport('submitScore');
+    if (ok) {
+      await window.toy.submitScore({ board, score });
+    }
+  } catch (e) {
+    console.warn('[ToySDK] submitScore(board=' + board + ') 失败:', e);
+  }
+}
+
+async function fetchGlobalRankList(board, period) {
+  if (!isToyReady()) return null;
+  try {
+    const ok = await window.toy.isSupport('getRankList');
+    if (!ok) return null;
+    return await window.toy.getRankList({ board, period, limit: 100 });
+  } catch (e) {
+    console.warn('[ToySDK] getRankList 失败:', e);
+    return null;
+  }
+}
+
+async function fetchMyGlobalRank(board, period) {
+  if (!isToyReady()) return null;
+  try {
+    const ok = await window.toy.isSupport('getMyRank');
+    if (!ok) return null;
+    return await window.toy.getMyRank({ board, period });
+  } catch (e) {
+    console.warn('[ToySDK] getMyRank 失败:', e);
+    return null;
+  }
+}
+
+// ========== 初始化游戏 ==========
+function initGame() {
+  if (animationTimer) { clearTimeout(animationTimer); animationTimer = null; }
+  const shuffled = [...AMOUNTS].sort(() => Math.random() - 0.5);
+  state = {
+    amounts: shuffled,
+    playerBox: -1,
+    opened: new Array(21).fill(false),
+    round: 0,
+    stepInRound: 0,
+    phase: 'choose',
+    currentOffer: 0,
+    remainingAmounts: [...shuffled],
+    locked: false,
+  };
+  render();
+}
+
+function getRemainingIndices() {
+  const r = [];
+  for (let i = 0; i < 21; i++) {
+    if (!state.opened[i]) r.push(i);
+  }
+  return r;
+}
+
+function getAmountsNeededThisRound() {
+  if (state.round >= OPEN_SCHEDULE.length) return 0;
+  return OPEN_SCHEDULE[state.round];
+}
+
+function calcOffer() {
+  const rem = getRemainingIndices().filter(i => i !== state.playerBox);
+  if (rem.length === 0) return state.amounts[state.playerBox];
+  const avg = rem.reduce((s, i) => s + state.amounts[i], 0) / rem.length;
+  const factor = 0.5 + (state.round / OPEN_SCHEDULE.length) * 0.4;
+  return Math.round(avg * factor);
+}
+
+function getOfferMsg(offer) {
+  if (offer >= 500000) return '天价！银行家下了血本！';
+  if (offer >= 100000) return '相当不错的报价！';
+  if (offer >= 10000) return '银行家认真了...';
+  return '银行家的报价有点低啊';
+}
+
+// ========== 选择箱子 ==========
+function selectBox(idx) {
+  if (state.phase !== 'choose' || state.locked) return;
+  state.locked = true;
+  state.playerBox = idx;
+  state.phase = 'open';
+  state.round = 0;
+  state.stepInRound = 0;
+  render();
+  updateBankerMsg('选好了！现在开始开箱，点击任意箱子打开它');
+  state.locked = false;
+}
+
+// ========== 打开箱子 ==========
+function openBox(idx) {
+  if (state.phase !== 'open' || state.locked) return;
+  if (idx === state.playerBox) {
+    updateBankerMsg('这是你的幸运箱，不能打开！');
+    return;
+  }
+  if (state.opened[idx]) return;
+  if (state.stepInRound >= getAmountsNeededThisRound()) return;
+
+  state.locked = true;
+  state.opened[idx] = true;
+  state.stepInRound++;
+  state.remainingAmounts = getRemainingIndices().map(i => state.amounts[i]);
+
+  render();
+
+  if (checkAllOpenedExceptPlayer()) {
+    state.locked = false;
+    openPlayerBox();
+    return;
+  }
+
+  if (state.stepInRound >= getAmountsNeededThisRound()) {
+    animationTimer = setTimeout(() => {
+      animationTimer = null;
+      makeOffer();
+      state.locked = false;
+    }, 350);
+  } else {
+    const left = getAmountsNeededThisRound() - state.stepInRound;
+    updateBankerMsg(`还需打开 ${left} 个箱子`);
+    state.locked = false;
+  }
+}
+
+function checkAllOpenedExceptPlayer() {
+  for (let i = 0; i < 21; i++) {
+    if (i !== state.playerBox && !state.opened[i]) return false;
+  }
+  return true;
+}
+
+function makeOffer() {
+  const offer = calcOffer();
+  state.currentOffer = offer;
+  state.phase = 'offer';
+  render();
+  showOffer(offer);
+}
+
+function showOffer(offer) {
+  const el = document.getElementById('offerDisplay');
+  el.textContent = fmt(offer);
+  el.classList.add('show');
+  document.getElementById('btnGroup').classList.add('show');
+  updateBankerMsg(getOfferMsg(offer));
+}
+
+// ========== Deal / No Deal ==========
+function handleDeal() {
+  if (state.phase !== 'offer' || state.locked) return;
+  state.locked = true;
+  state.phase = 'dealt';
+  onGameEnd('deal', state.currentOffer, state.amounts[state.playerBox]);
+  showResult('deal', state.currentOffer);
+}
+
+function handleNoDeal() {
+  if (state.phase !== 'offer' || state.locked) return;
+  state.locked = true;
+  state.phase = 'open';
+  state.round++;
+  state.stepInRound = 0;
+  document.getElementById('offerDisplay').classList.remove('show');
+  document.getElementById('offerDisplay').textContent = '';
+  document.getElementById('btnGroup').classList.remove('show');
+
+  const rem = getRemainingIndices();
+  if (rem.length === 1 && rem[0] === state.playerBox) {
+    state.locked = false;
+    openPlayerBox();
+    return;
+  }
+
+  render();
+  const need = getAmountsNeededThisRound();
+  if (need === 0) {
+    animationTimer = setTimeout(() => {
+      animationTimer = null;
+      makeOffer();
+      state.locked = false;
+    }, 300);
+  } else {
+    updateBankerMsg(`第 ${state.round + 1} 轮，打开 ${need} 个箱子`);
+    state.locked = false;
+  }
+}
+
+function openPlayerBox() {
+  state.phase = 'done';
+  const amt = state.amounts[state.playerBox];
+  onGameEnd('own', amt, amt);
+  showResult('own', amt);
+}
+
+// ========== 游戏结束处理（保存 + 提交排行榜） ==========
+function onGameEnd(type, amount, boxAmount) {
+  // 保存到本地
+  saveRecord(amount, type, boxAmount);
+
+  // 提交全球排行榜：
+  // board=1 总收入榜（大数编码，覆盖历史高分）、board=2 百万次数榜、board=3 平均带走榜
+  const stats = getStats();
+  var totalInt = Math.round(stats.sum);
+  if (totalInt > 0) {
+    submitGlobalScore(1, encodeScore(totalInt));
+  }
+  if (stats.millionCount > 0) {
+    submitGlobalScore(2, stats.millionCount);
+  }
+  if (stats.total > 0) {
+    submitGlobalScore(3, Math.round(stats.sum / stats.total));
+  }
+}
+
+// ========== 显示结果 ==========
+function showResult(type, amount) {
+  const modal = document.getElementById('resultModal');
+  modal.classList.add('show');
+  const title = document.getElementById('resultTitle');
+  const amtEl = document.getElementById('resultAmount');
+  const desc = document.getElementById('resultDesc');
+
+  if (type === 'deal') {
+    title.textContent = '成交！';
+    amtEl.textContent = fmt(amount);
+    amtEl.className = 'big-amount';
+    desc.textContent = '你选择了成交，带走了' + fmt(amount) + '！你的箱子里是 ' + fmt(state.amounts[state.playerBox]);
+  } else {
+    title.textContent = '开箱！';
+    amtEl.textContent = fmt(amount);
+    amtEl.className = 'big-amount ' + getAmountClass(amount);
+    desc.textContent = amount >= MILLION ? '百万富翁！恭喜你！' :
+                       amount >= 100000 ? '太棒了，一笔可观的奖金！' :
+                       amount >= 1000 ? '不错的结果！' :
+                       '运气不太好，下次加油！';
+  }
+}
+
+// ========== 渲染 ==========
+function render() {
+  renderBoxes();
+  renderInfo();
+  renderOpenedChips();
+  renderRemaining();
+}
+
+function isBoxClickable(i) {
+  if (state.phase === 'choose') return true;
+  if (state.phase === 'open' && !state.opened[i] && i !== state.playerBox) return true;
+  return false;
+}
+
+function renderBoxes() {
+  const grid = document.getElementById('boxGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 21; i++) {
+    const box = document.createElement('div');
+    box.className = 'box';
+    if (i === state.playerBox && state.phase !== 'choose') box.classList.add('selected');
+    if (state.opened[i]) {
+      box.classList.add('opened');
+      const val = state.amounts[i];
+      const ac = getAmountClass(val);
+      box.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="amount-label amount-' + ac + '">' + fmt(val) + '</span>';
+    } else {
+      box.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="icon">📦</span>';
+    }
+    if (!isBoxClickable(i)) {
+      box.classList.add('disabled');
+    }
+    box.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (state.phase === 'choose') selectBox(i);
+      else if (state.phase === 'open') openBox(i);
+    });
+    grid.appendChild(box);
+  }
+}
+
+function renderInfo() {
+  document.getElementById('roundDisplay').textContent = '第 ' + (state.round + 1) + ' 轮';
+  const rem = getRemainingIndices().length;
+  document.getElementById('remainingCount').textContent = '剩余 ' + rem + ' 箱';
+  const need = state.phase === 'open' ? getAmountsNeededThisRound() - state.stepInRound : 0;
+  document.getElementById('toOpenDisplay').textContent = state.phase === 'choose' ? '等待选择' :
+    state.phase === 'offer' ? '待出价' :
+    state.phase === 'dealt' || state.phase === 'done' ? '游戏结束' :
+    '还需开 ' + need + ' 箱';
+}
+
+function renderOpenedChips() {
+  const el = document.getElementById('openedChips');
+  el.innerHTML = '';
+  const opened = [];
+  for (let i = 0; i < 21; i++) {
+    if (state.opened[i]) opened.push(state.amounts[i]);
+  }
+  opened.sort(function(a, b) { return a - b; });
+  for (let vi = 0; vi < opened.length; vi++) {
+    const v = opened[vi];
+    const chip = document.createElement('span');
+    chip.className = 'chip chip-' + getAmountClass(v);
+    chip.textContent = fmt(v);
+    el.appendChild(chip);
+  }
+  if (opened.length === 0) {
+    el.innerHTML = '<span style="color:rgba(255,255,255,0.15);font-size:12px;">暂无开箱</span>';
+  }
+}
+
+function renderRemaining() {
+  const el = document.getElementById('remainingList');
+  el.innerHTML = '';
+  const vals = state.remainingAmounts.slice().sort(function(a, b) { return a - b; });
+  for (let vi = 0; vi < vals.length; vi++) {
+    const v = vals[vi];
+    const item = document.createElement('span');
+    item.className = 'rem-item rem-' + getAmountClass(v);
+    item.textContent = fmt(v);
+    el.appendChild(item);
+  }
+}
+
+function updateBankerMsg(msg) {
+  document.getElementById('bankerMsg').textContent = msg;
+}
+
+// ========== 排行榜渲染 ==========
+function renderLeaderboard(tab) {
+  const body = document.getElementById('lbBody');
+  currentTab = tab || 'local';
+
+  // 更新 tab 高亮
+  document.querySelectorAll('.lb-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === currentTab);
+  });
+
+  if (currentTab === 'local') {
+    renderLocalLeaderboard(body);
+  } else {
+    renderGlobalLeaderboard(body);
+  }
+}
+
+function renderLocalLeaderboard(body) {
+  const records = getRecords();
+  const stats = getStats();
+
+  if (records.length === 0) {
+    body.innerHTML = '<div class="lb-empty">暂无游戏记录<br>去玩一局吧！</div>';
+    return;
+  }
+
+  var html = '';
+  // stats
+  html += '<div class="lb-stats">';
+  html += '<div class="lb-stat"><div class="val">' + stats.total + '</div><div class="label">总局数</div></div>';
+  html += '<div class="lb-stat"><div class="val gold">' + fmtShort(stats.max) + '</div><div class="label">最高带走</div></div>';
+  html += '<div class="lb-stat"><div class="val gold">' + stats.millionCount + '</div><div class="label">百万次数</div></div>';
+  html += '<div class="lb-stat"><div class="val gold">' + fmtShort(stats.sum) + '</div><div class="label">总收入</div></div>';
+  html += '</div>';
+
+  // records
+  html += '<div class="lb-records-title">历史记录（最近20条）</div>';
+  var maxRecords = records.slice(0, 20);
+  for (var i = 0; i < maxRecords.length; i++) {
+    var r = maxRecords[i];
+    var ac = getAmountClass(r.amount);
+    var typeLabel = r.type === 'deal' ? '成交' : '开箱';
+    var goldClass = r.amount >= 100000 ? ' gold' : '';
+    var boxFmt = r.boxAmount != null ? fmt(r.boxAmount) : '-';
+    html += '<div class="lb-record">';
+    html += '<div><div class="r-amount' + goldClass + '">' + fmt(r.amount) + '</div><div class="r-sub">带走</div></div>';
+    html += '<div><div class="r-amount r-box">' + boxFmt + '</div><div class="r-sub">箱内</div></div>';
+    html += '<div class="r-right"><span class="r-type">' + typeLabel + '</span><span class="r-time">' + fmtDate(r.timestamp) + '</span></div>';
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+// ========== 全球排行状态 ==========
+let gBoard = 1;
+let gPeriod = 'all';
+
+function getPeriodLabel(p) {
+  return { all:'总榜', month:'月榜', week:'周榜', day:'日榜' }[p] || p;
+}
+function getBoardLabel(b) {
+  return b === 1 ? '总收入榜' : b === 2 ? '百万次数榜' : '平均带走榜';
+}
+function formatBoardScore(b, score) {
+  if (b === 1) return fmtEarnings(decodeScore(score));
+  if (b === 2) return score + '次';
+  return fmt(score);
+}
+
+async function renderGlobalLeaderboard(body) {
+  if (!isToyReady()) {
+    body.innerHTML = '<div class="lb-empty">排行榜仅在 B站 App 内可用<br>请在 B站 中打开此页面</div>';
+    return;
+  }
+
+  body.innerHTML = '';
+  var html = '';
+
+  // 榜位 tabs
+  html += '<div class="lb-sub-tabs">';
+  html += '<button class="lb-stab' + (gBoard === 1 ? ' active' : '') + '" data-gb="1">总收入榜</button>';
+  html += '<button class="lb-stab' + (gBoard === 2 ? ' active' : '') + '" data-gb="2">百万次数榜</button>';
+  html += '<button class="lb-stab' + (gBoard === 3 ? ' active' : '') + '" data-gb="3">平均带走榜</button>';
+  html += '</div>';
+
+  // 周期 tabs
+  html += '<div class="lb-period-tabs">';
+  var periods = ['day', 'week', 'month', 'all'];
+  for (var pi = 0; pi < periods.length; pi++) {
+    var p = periods[pi];
+    html += '<button class="lb-ptab' + (gPeriod === p ? ' active' : '') + '" data-gp="' + p + '">' + getPeriodLabel(p) + '</button>';
+  }
+  html += '</div>';
+
+  // 内容容器
+  html += '<div id="lbGlobalContent"><div class="lb-loading">加载中...</div></div>';
+  body.innerHTML = html;
+
+  // 榜位切换
+  body.querySelectorAll('.lb-stab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      gBoard = parseInt(this.dataset.gb);
+      loadGlobalData();
+    });
+  });
+
+  // 周期切换
+  body.querySelectorAll('.lb-ptab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      gPeriod = this.dataset.gp;
+      loadGlobalData();
+    });
+  });
+
+  // 加载数据
+  loadGlobalData();
+}
+
+async function loadGlobalData() {
+  // 更新 tab 高亮
+  var body = document.getElementById('lbBody');
+  if (body) {
+    body.querySelectorAll('.lb-stab').forEach(function(b) {
+      b.classList.toggle('active', parseInt(b.dataset.gb) === gBoard);
+    });
+    body.querySelectorAll('.lb-ptab').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.gp === gPeriod);
+    });
+  }
+
+  var content = document.getElementById('lbGlobalContent');
+  if (!content) return;
+  content.innerHTML = '<div class="lb-loading">加载中...</div>';
+
+  try {
+    var [list, mine] = await Promise.all([
+      fetchGlobalRankList(gBoard, gPeriod),
+      fetchMyGlobalRank(gBoard, gPeriod)
+    ]);
+
+    if (!list || list.length === 0) {
+      content.innerHTML = '<div class="lb-empty">暂无排行数据<br>快去挑战吧！</div>';
+      return;
+    }
+
+    var html = '';
+
+    // 我的排名
+    if (mine && mine.ranked) {
+      html += '<div class="lb-myrank">';
+      html += '<div><div class="mr-label">我的排名</div><div class="mr-rank">#' + mine.rank + '</div></div>';
+      html += '<div><div class="mr-label">' + getBoardLabel(gBoard) + '</div><div class="mr-score">' + formatBoardScore(gBoard, mine.score) + '</div></div>';
+      html += '</div>';
+    } else {
+      var s = getStats();
+      var localVal = gBoard === 1 ? fmtEarnings(Math.round(s.sum)) :
+                     gBoard === 2 ? s.millionCount + '次' :
+                     fmt(s.total > 0 ? Math.round(s.sum / s.total) : 0);
+      html += '<div class="lb-myrank">';
+      html += '<div><div class="mr-label">我的排名</div><div class="mr-rank">未上榜</div></div>';
+      html += '<div><div class="mr-label">' + getBoardLabel(gBoard) + '</div><div class="mr-score">' + localVal + '</div></div>';
+      html += '</div>';
+    }
+
+    // 榜单
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      var rankClass = '';
+      var rankLabel = '#' + item.rank;
+      if (item.rank === 1) { rankClass = ' top1'; rankLabel = '🥇'; }
+      else if (item.rank === 2) { rankClass = ' top2'; rankLabel = '🥈'; }
+      else if (item.rank === 3) { rankClass = ' top3'; rankLabel = '🥉'; }
+
+      var avatarHtml = item.avatar
+        ? '<img src="' + item.avatar + '" alt="" loading="lazy">'
+        : '👤';
+
+      html += '<div class="lb-global-item">';
+      html += '<div class="gi-rank' + rankClass + '">' + rankLabel + '</div>';
+      html += '<div class="gi-avatar">' + avatarHtml + '</div>';
+      html += '<div class="gi-name">' + escHtml(item.nickname || '匿名') + '</div>';
+      html += '<div class="gi-score">' + formatBoardScore(gBoard, item.score) + '</div>';
+      html += '</div>';
+    }
+
+    content.innerHTML = html;
+
+  } catch (e) {
+    content.innerHTML = '<div class="lb-empty">加载失败<br>请稍后再试</div>';
+    console.warn('[ToySDK] 排行榜加载失败:', e);
+  }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ========== 重新开始 ==========
+function resetGame() {
+  if (animationTimer) { clearTimeout(animationTimer); animationTimer = null; }
+  document.getElementById('resultModal').classList.remove('show');
+  document.getElementById('offerDisplay').classList.remove('show');
+  document.getElementById('offerDisplay').textContent = '';
+  document.getElementById('btnGroup').classList.remove('show');
+  initGame();
+}
+
+// ========== 事件绑定 ==========
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('startBtn').addEventListener('click', function() {
+    document.getElementById('startOverlay').style.display = 'none';
+    initGame();
+  });
+
+  document.getElementById('btnDeal').addEventListener('click', handleDeal);
+  document.getElementById('btnNodeal').addEventListener('click', handleNoDeal);
+  document.getElementById('playAgain').addEventListener('click', resetGame);
+
+  // 排行榜
+  var lbModal = document.getElementById('lbModal');
+  document.getElementById('btnLeaderboard').addEventListener('click', function() {
+    lbModal.classList.add('show');
+    renderLeaderboard('local');
+  });
+  document.getElementById('lbClose').addEventListener('click', function() {
+    lbModal.classList.remove('show');
+  });
+  lbModal.addEventListener('click', function(e) {
+    if (e.target === lbModal) lbModal.classList.remove('show');
+  });
+
+  // 排行榜 tab 切换
+  document.querySelectorAll('.lb-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      renderLeaderboard(this.dataset.tab);
+    });
+  });
+
+  // 键盘快捷键
+  document.addEventListener('keydown', function(e) {
+    if (state.phase === 'offer') {
+      if (e.key === 'Enter') handleDeal();
+      else if (e.key === ' ') { e.preventDefault(); handleNoDeal(); }
+    }
+    if (e.key === 'Escape') {
+      lbModal.classList.remove('show');
+    }
+  });
+});
+
+console.log('一掷千金已加载！ Enter=成交 空格=不成交');
+</script>
+</body>
+</html>

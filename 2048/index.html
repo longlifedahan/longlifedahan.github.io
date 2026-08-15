@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>2048</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  background:#0f0f1a;color:#fff;font-family:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+  height:100dvh;display:flex;flex-direction:column;overflow:hidden;user-select:none
+}
+
+/* ── Header ── */
+.header{text-align:center;padding:6px 0 2px;flex-shrink:0}
+.header h1{font-size:22px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ── Stats ── */
+.stats{display:flex;justify-content:space-around;padding:2px 8px 4px;flex-shrink:0;gap:4px}
+.stat-item{flex:1;text-align:center;background:rgba(255,255,255,.06);border-radius:6px;padding:3px 2px}
+.stat-label{font-size:9px;color:#888}
+.stat-value{font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2}
+
+/* ── Board ── */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2px 10px;min-height:0}
+.board-container{position:relative;width:100%;max-width:420px;aspect-ratio:1/1;background:#1a1a2e;border-radius:10px;padding:5px}
+.grid-bg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%;height:100%}
+.cell-bg{background:rgba(255,255,255,.05);border-radius:5px}
+.tiles-layer{position:absolute;top:5px;left:5px;right:5px;bottom:5px}
+.tile{
+  position:absolute;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  background:#f5f5f5;overflow:hidden;transition:transform .1s ease,opacity .1s ease;
+  transform:scale(0);opacity:0
+}
+.tile.show{transform:scale(1);opacity:1}
+.tile-img{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.75}
+.tile-num{position:relative;z-index:1;font-weight:900;color:#000;line-height:1;text-shadow:0 0 4px #fff,0 0 8px #fff,0 0 2px #fff}
+.tile-merged{animation:pop .18s ease}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* ── Game Over overlay ── */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;border-radius:10px;z-index:10}
+.overlay.show{display:flex}
+.overlay-box{text-align:center}
+.overlay-box h2{font-size:42px;margin-bottom:6px;color:#ff2222;text-shadow:0 0 20px rgba(255,0,0,.6);font-weight:900}
+.overlay-box p{font-size:18px;color:#ff4444;margin-bottom:16px;font-weight:700}
+
+/* ── Bottom Buttons ── */
+.bottom-btns{display:flex;flex-direction:column;gap:6px;padding:6px 10px 12px;flex-shrink:0}
+.bottom-btn{
+  background:rgba(255,255,255,.08);border:none;color:#ccc;font-size:13px;font-weight:600;
+  padding:10px 0;border-radius:8px;cursor:pointer;text-align:center;transition:background .15s
+}
+.bottom-btn:active{background:rgba(255,255,255,.16)}
+.bottom-btn.primary{background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1a2e}
+.bottom-btn.primary:active{opacity:.85}
+.btn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+
+/* ── Modal ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;
+  display:none;flex-direction:column;padding:0;animation:fadeIn .15s ease
+}
+.modal-overlay.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;flex-shrink:0;border-bottom:1px solid #222
+}
+.modal-header h2{font-size:17px;font-weight:700}
+.modal-close{
+  font-size:24px;color:#888;cursor:pointer;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.06)
+}
+.modal-close:active{background:rgba(255,255,255,.15)}
+.modal-body{flex:1;overflow-y:auto;padding:8px 16px 24px;min-height:0}
+
+/* ── Leaderboard ── */
+.lb-empty{text-align:center;color:#555;padding:40px 0;font-size:14px}
+.lb-item{display:flex;align-items:center;padding:10px 4px;border-bottom:1px solid #1a1a2e}
+.lb-item:last-child{border-bottom:none}
+.lb-rank{width:28px;font-size:15px;font-weight:700;color:#555;text-align:center;flex-shrink:0}
+.lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
+.lb-avatar{width:28px;height:28px;border-radius:50%;margin-right:8px;flex-shrink:0;background:#333}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-detail{font-size:11px;color:#777;margin-top:1px}
+.lb-score{font-size:16px;font-weight:700;color:#ffd200;flex-shrink:0}
+.lb-period{display:flex;gap:8px;justify-content:center;padding:6px 0 8px;flex-wrap:wrap}
+.lb-period button{background:rgba(255,255,255,.08);border:none;color:#888;padding:5px 14px;border-radius:14px;font-size:12px;cursor:pointer}
+.lb-period button.active{background:#ffd200;color:#1a1a2e;font-weight:600}
+.sdk-loading{text-align:center;color:#555;padding:40px 0;font-size:13px}
+.lb-me{display:flex;align-items:center;padding:8px 4px;border-bottom:1px solid #ffd20033;margin-bottom:4px}
+.lb-me .lb-label{font-size:11px;color:#888;margin-right:8px}
+
+/* ── Gallery ── */
+.gal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:4px 0}
+.gal-item{aspect-ratio:1/1;border-radius:8px;overflow:hidden;cursor:pointer;position:relative;background:#1a1a2e}
+.gal-item img{width:100%;height:100%;object-fit:cover;display:block}
+.gal-item.locked{display:flex;align-items:center;justify-content:center;cursor:default}
+.gal-item.locked::after{content:'?';font-size:32px;font-weight:700;color:#333}
+.gal-item.locked img{display:none}
+.gal-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);font-size:9px;text-align:center;padding:2px;color:#999;line-height:1.3}
+
+/* ── Image Preview Modal ── */
+.img-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;
+  display:none;align-items:center;justify-content:center;flex-direction:column
+}
+.img-modal.show{display:flex}
+.img-modal img{max-width:88vw;max-height:65vh;border-radius:10px;object-fit:contain}
+.img-modal .im-title{font-size:15px;font-weight:600;margin:10px 0 4px}
+.img-modal .im-sub{font-size:12px;color:#888;margin-bottom:10px}
+.img-modal .im-dl{
+  background:linear-gradient(135deg,#f7971e,#ffd200);border:none;color:#1a1a2e;
+  font-size:14px;font-weight:700;padding:10px 28px;border-radius:8px;cursor:pointer
+}
+.img-modal .im-dl:active{transform:scale(.95)}
+.img-modal .im-close{
+  position:absolute;top:10px;right:10px;font-size:28px;color:#fff;cursor:pointer;
+  width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.15);border-radius:50%;z-index:210
+}
+</style>
+<style>
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  body{height:100vh}
+  .board-container{max-width:min(600px,80vh)}
+  .header h1{font-size:32px}
+  .stat-value{font-size:20px}
+  .bottom-btn{padding:14px 0;font-size:15px}
+  .bottom-btns{padding:10px 16px 20px;gap:8px}
+  .btn-row{gap:8px}
+  .board-wrap{padding:8px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="header"><h1>2048</h1></div>
+
+<div class="stats">
+  <div class="stat-item"><div class="stat-label">步数</div><div class="stat-value" id="statSteps">0</div></div>
+  <div class="stat-item"><div class="stat-label">分数</div><div class="stat-value" id="statScore">0</div></div>
+  <div class="stat-item"><div class="stat-label">最大</div><div class="stat-value" id="statMax">-</div></div>
+  <div class="stat-item"><div class="stat-label">时间</div><div class="stat-value" id="statTime">00:00</div></div>
+</div>
+
+<div class="board-wrap">
+  <div class="board-container" id="boardContainer">
+    <div class="grid-bg" id="gridBg"></div>
+    <div class="tiles-layer" id="tilesLayer"></div>
+    <div class="overlay" id="gameOverlay">
+      <div class="overlay-box">
+        <h2 id="overlayTitle">游戏结束</h2>
+        <p id="overlayScore">得分: 0</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-btns">
+  <button class="bottom-btn primary" onclick="restartGame()">重新开始</button>
+  <div class="btn-row">
+    <button class="bottom-btn" onclick="openModal('localModal')">本地榜单</button>
+    <button class="bottom-btn" onclick="openModal('globalModal')">全局榜单</button>
+    <button class="bottom-btn" onclick="openModal('galleryModal')">立绘库</button>
+  </div>
+</div>
+
+<!-- Local LB Modal -->
+<div class="modal-overlay" id="localModal">
+  <div class="modal-header">
+    <h2>本地榜单</h2>
+    <div class="modal-close" onclick="closeModal('localModal')">&times;</div>
+  </div>
+  <div class="modal-body" id="lbLocalBody"></div>
+</div>
+
+<!-- Global LB Modal -->
+<div class="modal-overlay" id="globalModal">
+  <div class="modal-header">
+    <h2>全局榜单</h2>
+    <div class="modal-close" onclick="closeModal('globalModal')">&times;</div>
+  </div>
+  <div class="modal-body">
+    <div class="lb-period" id="lbPeriods"></div>
+    <div id="globalMyRank"></div>
+    <div id="globalList"></div>
+  </div>
+</div>
+
+<!-- Gallery Modal -->
+<div class="modal-overlay" id="galleryModal">
+  <div class="modal-header">
+    <h2>立绘库</h2>
+    <div class="modal-close" onclick="closeModal('galleryModal')">&times;</div>
+  </div>
+  <div class="modal-body">
+    <div class="gal-grid" id="galGrid"></div>
+  </div>
+</div>
+
+<!-- Image Preview -->
+<div class="img-modal" id="imgPreview">
+  <div class="im-close" id="imCloseBtn">&times;</div>
+  <img id="previewImg" src="" alt="">
+  <div class="im-title" id="previewTitle"></div>
+  <div class="im-sub" id="previewSub"></div>
+  <button class="im-dl" id="imDlBtn">下载图片</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  2048 Game Engine
+// ═══════════════════════════════════════════════
+
+const SIZE = 4;
+const SPAWN_VALUES = [2, 4];
+const SPAWN_WEIGHTS = [0.9, 0.1];
+
+let grid = [];
+let score = 0;
+let steps = 0;
+let maxTile = 2;
+let gameOver = false;
+let gameStarted = false;
+let timerSec = 0;
+let timerInterval = null;
+let isMoving = false;
+
+let bestScore = parseInt(localStorage.getItem('g2048_bestScore')) || 0;
+let bestMaxTile = parseInt(localStorage.getItem('g2048_bestMaxTile')) || 2;
+let localLB = JSON.parse(localStorage.getItem('g2048_lb')) || [];
+
+function log2(v) { return Math.round(Math.log(v) / Math.LN2); }
+function getBoxIndex(value) { return log2(value); } // 2->1, 4->2, 8->3 ...
+
+function emptyGrid() {
+  return Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+}
+function cloneGrid(g) { return g.map(r => [...r]); }
+function getEmptyCells(g) {
+  const c = [];
+  for (let r = 0; r < SIZE; r++) for (let c2 = 0; c2 < SIZE; c2++) if (g[r][c2] === 0) c.push({r, c: c2});
+  return c;
+}
+
+function spawnTile(g) {
+  const cells = getEmptyCells(g);
+  if (!cells.length) return null;
+  const {r, c} = cells[Math.floor(Math.random() * cells.length)];
+  g[r][c] = Math.random() < SPAWN_WEIGHTS[0] ? SPAWN_VALUES[0] : SPAWN_VALUES[1];
+  return {r, c};
+}
+
+function slideRow(row) {
+  let arr = row.filter(v => v !== 0);
+  let add = 0;
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] === arr[i + 1]) { arr[i] *= 2; add += arr[i]; arr.splice(i + 1, 1); }
+  }
+  while (arr.length < SIZE) arr.push(0);
+  return {row: arr, add};
+}
+
+function slideLeft(g) {
+  let ch = false, add = 0;
+  for (let r = 0; r < SIZE; r++) {
+    const {row, add: a} = slideRow(g[r]);
+    if (JSON.stringify(row) !== JSON.stringify(g[r])) ch = true;
+    g[r] = row; add += a;
+  }
+  return {changed: ch, add};
+}
+
+function slideRight(g) {
+  let ch = false, add = 0;
+  for (let r = 0; r < SIZE; r++) {
+    const rev = [...g[r]].reverse();
+    const {row, add: a} = slideRow(rev);
+    const f = row.reverse();
+    if (JSON.stringify(f) !== JSON.stringify(g[r])) ch = true;
+    g[r] = f; add += a;
+  }
+  return {changed: ch, add};
+}
+
+function transpose(g) {
+  for (let r = 0; r < SIZE; r++) for (let c = r + 1; c < SIZE; c++)
+    [g[r][c], g[c][r]] = [g[c][r], g[r][c]];
+}
+
+function slideUp(g) { transpose(g); const r = slideLeft(g); transpose(g); return r; }
+function slideDown(g) { transpose(g); const r = slideRight(g); transpose(g); return r; }
+
+const SLIDE = {left: slideLeft, right: slideRight, up: slideUp, down: slideDown};
+
+function canMove(g) {
+  if (getEmptyCells(g).length) return true;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    if (c < SIZE - 1 && g[r][c] === g[r][c + 1]) return true;
+    if (r < SIZE - 1 && g[r][c] === g[r + 1][c]) return true;
+  }
+  return false;
+}
+
+function getMax(g) { let m = 2; for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (g[r][c] > m) m = g[r][c]; return m; }
+
+function move(dir) {
+  if (gameOver || isMoving) return;
+  const g = cloneGrid(grid);
+  const res = SLIDE[dir](g);
+  if (!res.changed) return;
+  if (!gameStarted) { gameStarted = true; startTimer(); }
+  isMoving = true;
+  grid = g;
+  score += res.add;
+  steps++;
+  maxTile = getMax(grid);
+  if (score > bestScore) { bestScore = score; localStorage.setItem('g2048_bestScore', bestScore); }
+  if (maxTile > bestMaxTile) { bestMaxTile = maxTile; localStorage.setItem('g2048_bestMaxTile', bestMaxTile); }
+  render(); updateStats();
+  const sp = spawnTile(grid);
+  if (sp) {
+    setTimeout(() => { render(); isMoving = false; if (!canMove(grid)) endGame(); }, 90);
+  } else { isMoving = false; if (!canMove(grid)) endGame(); }
+}
+
+function endGame() {
+  gameOver = true; stopTimer();
+  document.getElementById('gameOverlay').classList.add('show');
+  document.getElementById('overlayScore').textContent = `得分 ${score} · ${steps} 步 · 最大 ${maxTile}`;
+  addLocalLB(score, steps, maxTile);
+  submitGlobalScore();
+}
+
+function restartGame() {
+  document.getElementById('gameOverlay').classList.remove('show');
+  closeModal('localModal'); closeModal('globalModal'); closeModal('galleryModal');
+  grid = emptyGrid();
+  score = 0; steps = 0; maxTile = 2; gameOver = false; gameStarted = false;
+  stopTimer(); timerSec = 0; isMoving = false;
+  spawnTile(grid); spawnTile(grid);
+  maxTile = getMax(grid);
+  render(); updateStats(); renderGallery();
+}
+
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(() => { timerSec++; document.getElementById('statTime').textContent = fmtTime(timerSec); }, 1000);
+}
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+function fmtTime(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+
+// ═══════════════════════════════════════════════
+//  Render
+// ═══════════════════════════════════════════════
+
+let tileSize = 0, gapSize = 5, boardPad = 5;
+
+function updateMetrics() {
+  const c = document.getElementById('boardContainer');
+  tileSize = (c.clientWidth - boardPad * 2 - gapSize * (SIZE - 1)) / SIZE;
+}
+function tStyle(r, c) {
+  return {left: c*(tileSize+gapSize)+'px', top: r*(tileSize+gapSize)+'px', width: tileSize+'px', height: tileSize+'px'};
+}
+
+function render() {
+  const layer = document.getElementById('tilesLayer'); updateMetrics(); layer.innerHTML = '';
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const val = grid[r][c];
+    if (val === 0) continue;
+    const bi = getBoxIndex(val);
+    const s = tStyle(r, c);
+    const div = document.createElement('div');
+    div.className = 'tile show';
+    div.style.cssText = `left:${s.left};top:${s.top};width:${s.width};height:${s.height}`;
+    if (bi >= 1 && bi <= 19) {
+      const img = document.createElement('div');
+      img.className = 'tile-img';
+      img.style.backgroundImage = `url(images/box${bi}.jpg)`;
+      div.appendChild(img);
+    }
+    const num = document.createElement('div');
+    num.className = 'tile-num';
+    const t = String(val);
+    num.textContent = t;
+    if (t.length < 2) num.style.fontSize = '48px';
+    else if (t.length === 2) num.style.fontSize = '40px';
+    else if (t.length === 3) num.style.fontSize = '32px';
+    else if (t.length === 4) num.style.fontSize = '26px';
+    else if (t.length === 5) num.style.fontSize = '20px';
+    else num.style.fontSize = '16px';
+    div.appendChild(num);
+    layer.appendChild(div);
+  }
+}
+
+function updateStats() {
+  document.getElementById('statSteps').textContent = steps;
+  document.getElementById('statScore').textContent = score;
+  document.getElementById('statMax').textContent = maxTile >= 2 ? maxTile : '-';
+}
+
+// ═══════════════════════════════════════════════
+//  Input
+// ═══════════════════════════════════════════════
+
+let tx = 0, ty = 0;
+document.addEventListener('touchstart', e => { const t = e.changedTouches[0]; tx = t.clientX; ty = t.clientY; }, {passive: true});
+document.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+document.addEventListener('touchend', e => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - tx, dy = t.clientY - ty;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 15) return;
+  move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+}, {passive: true});
+
+document.addEventListener('keydown', e => {
+  const m = {ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',w:'up',a:'left',s:'down',d:'right',W:'up',A:'left',S:'down',D:'right'};
+  const dir = m[e.key];
+  if (dir) { e.preventDefault(); move(dir); }
+});
+
+// ═══════════════════════════════════════════════
+//  Modal helpers
+// ═══════════════════════════════════════════════
+
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// ═══════════════════════════════════════════════
+//  Local Leaderboard
+// ═══════════════════════════════════════════════
+
+function addLocalLB(sc, st, mt) {
+  localLB.push({score: sc, steps: st, maxTile: mt, date: Date.now()});
+  localLB.sort((a, b) => b.score - a.score);
+  if (localLB.length > 20) localLB = localLB.slice(0, 20);
+  localStorage.setItem('g2048_lb', JSON.stringify(localLB));
+  renderLocalLB();
+}
+
+function renderLocalLB() {
+  const el = document.getElementById('lbLocalBody');
+  if (!localLB.length) { el.innerHTML = '<div class="lb-empty">暂无记录，开始游戏吧！</div>'; return; }
+  el.innerHTML = localLB.slice(0, 30).map((item, i) =>
+    `<div class="lb-item">
+      <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+      <div class="lb-info">
+        <div class="lb-name">${item.steps} 步 · 最大 ${item.maxTile}</div>
+        <div class="lb-detail">${new Date(item.date).toLocaleDateString()}</div>
+      </div>
+      <div class="lb-score">${item.score}</div>
+    </div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  Global Leaderboard (Toy SDK)
+// ═══════════════════════════════════════════════
+
+let toyReady = false;
+let globalPeriod = 'all';
+
+function loadToySDK() {
+  if (toyReady) return;
+  if (window.toy && window.toy.isSupport) { toyReady = true; return; }
+  const s = document.createElement('script');
+  s.src = '//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js';
+  s.async = true;
+  s.onload = () => { setTimeout(() => { try { toyReady = !!(window.toy && window.toy.isSupport); } catch(e) {} }, 300); };
+  document.head.appendChild(s);
+}
+
+async function submitGlobalScore() {
+  if (!toyReady || !window.toy?.submitScore) return;
+  try { await window.toy.submitScore({ board: 1, score: Math.min(score, 16777215) }); } catch(e) {}
+}
+
+async function renderGlobalLB() {
+  loadToySDK(); // 按需加载
+  const listEl = document.getElementById('globalList');
+  const myEl = document.getElementById('globalMyRank');
+  if (!toyReady || !window.toy?.getRankList) {
+    listEl.innerHTML = '<div class="sdk-loading">SDK 未就绪<br><small>请在 B站 App 内打开查看</small></div>';
+    return;
+  }
+  try {
+    const [list, me] = await Promise.all([
+      window.toy.getRankList({ board: 1, period: globalPeriod, limit: 50 }),
+      window.toy.getMyRank ? window.toy.getMyRank({ board: 1, period: globalPeriod }).catch(() => null) : null
+    ]);
+    // My rank
+    if (me && me.ranked) {
+      myEl.innerHTML = `<div class="lb-me"><span class="lb-label">我的排名</span><div class="lb-rank gold">${me.rank}</div><div class="lb-info"><div class="lb-name">第 ${me.rank} 名</div></div><div class="lb-score">${me.score}</div></div>`;
+    } else { myEl.innerHTML = ''; }
+    // List
+    if (!list || !list.length) { listEl.innerHTML = '<div class="lb-empty">暂无排行数据</div>'; return; }
+    listEl.innerHTML = list.map((item, i) =>
+      `<div class="lb-item">
+        <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${item.rank}</div>
+        ${item.avatar ? `<img src="${item.avatar}" class="lb-avatar">` : '<div class="lb-avatar"></div>'}
+        <div class="lb-info"><div class="lb-name">${item.nickname||'匿名'}</div></div>
+        <div class="lb-score">${item.score}</div>
+      </div>`
+    ).join('');
+  } catch(e) { listEl.innerHTML = '<div class="lb-empty">加载失败</div>'; }
+}
+
+function initGlobalPeriods() {
+  const el = document.getElementById('lbPeriods');
+  el.innerHTML = [
+    {k:'all',l:'总榜'},{k:'month',l:'月榜'},{k:'week',l:'周榜'},{k:'day',l:'日榜'}
+  ].map(p => `<button class="${p.k===globalPeriod?'active':''}" data-p="${p.k}">${p.l}</button>`).join('');
+  el.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    globalPeriod = btn.dataset.p;
+    el.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.p === globalPeriod));
+    renderGlobalLB();
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  Gallery
+// ═══════════════════════════════════════════════
+
+const GAL_EXT = {1:'png',3:'png',12:'png',17:'png'};
+function galImg(i) { return `images/${i}.${GAL_EXT[i]||'jpg'}`; }
+
+function isUnlocked(i) {
+  if (i <= 12) return bestMaxTile >= Math.pow(2, i);
+  const req = {13:500,14:1000,15:2000,16:4000,17:6000,18:8000,19:10000};
+  return bestScore >= req[i];
+}
+function unlockDesc(i) {
+  if (i <= 12) return `合成 ${Math.pow(2,i)} 解锁`;
+  const req = {13:500,14:1000,15:2000,16:4000,17:6000,18:8000,19:10000};
+  return `总分 ${req[i]} 解锁`;
+}
+
+function renderGallery() {
+  const el = document.getElementById('galGrid');
+  el.innerHTML = '';
+  for (let i = 1; i <= 19; i++) {
+    if (isUnlocked(i)) {
+      const d = document.createElement('div');
+      d.className = 'gal-item';
+      d.innerHTML = `<img src="${galImg(i)}" alt="立绘${i}" loading="lazy"><div class="gal-tag">#${i}</div>`;
+      d.onclick = () => openPreview(i);
+      el.appendChild(d);
+    } else {
+      const d = document.createElement('div');
+      d.className = 'gal-item locked';
+      d.innerHTML = `<div class="gal-tag">${unlockDesc(i)}</div>`;
+      el.appendChild(d);
+    }
+  }
+}
+
+let previewIdx = 0;
+function openPreview(i) {
+  previewIdx = i;
+  document.getElementById('previewImg').src = galImg(i);
+  document.getElementById('previewTitle').textContent = `立绘 #${i}`;
+  const s = isUnlocked(i) ? '已解锁' : '未解锁';
+  document.getElementById('previewSub').textContent = s;
+  document.getElementById('imgPreview').classList.add('show');
+}
+function closeImgPreview() {
+  document.getElementById('imgPreview').classList.remove('show');
+}
+// close on background click / touch
+document.getElementById('imgPreview').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImgPreview();
+});
+document.getElementById('imgPreview').addEventListener('touchend', e => {
+  if (e.target === e.currentTarget) closeImgPreview();
+});
+// close btn
+document.getElementById('imCloseBtn').addEventListener('click', closeImgPreview);
+document.getElementById('imCloseBtn').addEventListener('touchend', closeImgPreview);
+// escape key
+document.addEventListener('keydown', function imgPreviewEsc(e) {
+  if (e.key === 'Escape' && document.getElementById('imgPreview').classList.contains('show')) {
+    closeImgPreview();
+  }
+});
+
+function downloadPreview() {
+  var url = galImg(previewIdx);
+  // 1) B站 SDK
+  if (toyReady && window.toy?.saveImageToAlbum) {
+    window.toy.saveImageToAlbum({ url: url, hintMsg: '需要相册权限来保存图片' }).catch(function(){});
+    return;
+  }
+  // 2) XHR -> blob -> ObjectURL -> <a download>（兼容 file:// 和 http://）
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    xhr.onload = function() {
+      if (xhr.status === 0 || xhr.status === 200) {
+        var blob = xhr.response;
+        if (!blob) return;
+        var u = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = u;
+        a.download = '立绘' + previewIdx + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(u); }, 5000);
+      }
+    };
+    // onerror / onabort 都静默
+    xhr.send();
+  } catch(e) {}
+}
+
+// Wire download btn
+document.getElementById('imDlBtn').addEventListener('click', downloadPreview);
+document.getElementById('imDlBtn').addEventListener('touchend', downloadPreview);
+
+// ═══════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════
+
+function init() {
+  const bg = document.getElementById('gridBg');
+  for (let i = 0; i < SIZE * SIZE; i++) { const c = document.createElement('div'); c.className = 'cell-bg'; bg.appendChild(c); }
+  grid = emptyGrid();
+  spawnTile(grid); spawnTile(grid);
+  maxTile = getMax(grid);
+  render(); updateStats();
+  renderLocalLB(); renderGallery();
+  initGlobalPeriods();
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (!gameOver) render(); }, 150); });
+
+init();
+</script>
+</body>
+</html>

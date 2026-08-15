@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#bfe0ff">
+  <title>中国人能飞</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ 首页 ============ -->
+    <section id="view-home" class="view home-view">
+      <div class="home-icon" id="home-icon">🦸</div>
+      <h1 class="home-title">中国人能飞</h1>
+      <div class="home-sub">连点上升 · 躲避生活的高墙 · 别让斩杀线追上</div>
+      <div class="home-stats">
+        <div class="hstat"><span class="hstat-label">最高飞高</span><span class="hstat-val" id="home-hi">0m</span></div>
+        <div class="hstat"><span class="hstat-label">已玩</span><span class="hstat-val" id="home-games">0 局</span></div>
+      </div>
+      <div class="home-btns">
+        <button class="btn btn-primary btn-big" id="btn-start">🚀 开始飞行</button>
+        <button class="btn" id="btn-rank">🏆 排行榜</button>
+        <button class="btn" id="btn-settings">⚙️ 设置</button>
+        <button class="btn" id="btn-help">❓ 玩法说明</button>
+      </div>
+      <div class="home-foot">
+        <span class="home-tip">手机：连点 ▲ 上升，点 ◀ ▶ 移位 · 电脑：WASD / 方向键</span>
+      </div>
+    </section>
+
+    <!-- ============ 游戏 ============ -->
+    <section id="view-game" class="view game-view" hidden>
+      <div class="hud">
+        <div class="hud-cell hud-alt">
+          <span class="hud-label">飞行高度</span>
+          <span class="hud-num" id="hud-alt">0m</span>
+        </div>
+        <div class="hud-cell hud-cell-s">
+          <span class="hud-label">速度</span>
+          <span class="hud-num" id="hud-speed">0m/s</span>
+        </div>
+        <div class="hud-cell hud-cell-s">
+          <span class="hud-label">最高</span>
+          <span class="hud-num" id="hud-hi">0m</span>
+        </div>
+        <div class="hud-cell hud-kl-cell">
+          <span class="hud-label">斩杀线</span>
+          <span class="hud-num hud-kl-num" id="hud-kl">未启动</span>
+        </div>
+        <button class="btn-mini" id="btn-mute">🔊</button>
+        <button class="btn-mini" id="btn-pause">⏸</button>
+      </div>
+      <div class="game-mid">
+        <div id="game-wrap">
+          <canvas id="game"></canvas>
+        </div>
+      </div>
+      <div class="ctrl-bar">
+        <button class="cbtn cbtn-l" id="btn-left">◀<span class="cbtn-key">A</span></button>
+        <div class="cbtn-mid">
+          <button class="cbtn cbtn-up" id="btn-up">▲<span class="cbtn-key">W / ↑</span><span class="cbtn-up-tip">连点上升更快</span></button>
+        </div>
+        <button class="cbtn cbtn-r" id="btn-right"><span class="cbtn-key">D</span>▶</button>
+      </div>
+      <div class="game-foot">
+        <span>连点上升 · 左右滑动移位 · 撞柱斩杀线暴涨 · 5秒后斩杀线启动</span>
+      </div>
+
+      <!-- 暂停 -->
+      <div id="pause-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">⏸ 已暂停</div>
+          <div class="ov-score">当前高度 <b id="pause-alt">0m</b></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-resume">继续飞行</button>
+            <button class="btn" id="btn-restart">重新开始</button>
+            <button class="btn" id="btn-pause-settings">⚙️ 设置</button>
+            <button class="btn" id="btn-settle">🧾 结算</button>
+            <button class="btn ghost" id="btn-exit">返回首页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 结束 -->
+      <div id="over-overlay" class="overlay" hidden>
+        <div class="overlay-card">
+          <div class="ov-title">☠ 你已被斩杀</div>
+          <div class="ov-big">飞行 <b id="over-alt">0m</b></div>
+          <div class="ov-new" id="over-new" hidden>🏆 新纪录！</div>
+          <div class="ov-row"><span>斩杀线所处</span><span id="over-kl">0m</span></div>
+          <div class="ov-row"><span>触碰柱子</span><span id="over-hits">0 次</span></div>
+          <div class="ov-row"><span>最高飞高</span><span id="over-hi">0m</span></div>
+          <div class="ov-btns">
+            <button class="btn btn-primary" id="btn-again">再来一局</button>
+            <button class="btn" id="btn-ranko">🏆 排行榜</button>
+            <button class="btn ghost" id="btn-home">返回首页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 排行榜 ============ -->
+    <section id="view-rank" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-rank">← 返回</button>
+        <h2 class="page-title">🏆 排行榜</h2>
+      </header>
+      <div class="tabs" id="rank-src">
+        <button class="tab active" data-src="local">本地榜</button>
+        <button class="tab" data-src="bili">B站榜</button>
+      </div>
+      <div class="tabs" id="rank-period" hidden>
+        <button class="ptab" data-p="day">日榜</button>
+        <button class="ptab" data-p="week">周榜</button>
+        <button class="ptab" data-p="month">月榜</button>
+        <button class="ptab active" data-p="all">总榜</button>
+      </div>
+      <div class="lb-note" id="rank-note"></div>
+      <div class="lb-body" id="rank-body"><div class="lb-tip">加载中…</div></div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-settings" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-settings">← 返回</button>
+        <h2 class="page-title">⚙️ 设置</h2>
+      </header>
+      <div class="set-body">
+        <div class="set-sec">
+          <h3>🔊 声音</h3>
+          <label class="set-row">
+            <span class="set-label">游戏音效</span>
+            <span class="set-switch">
+              <input type="checkbox" id="set-muted" checked>
+              <span class="track"></span>
+            </span>
+          </label>
+          <label class="set-row">
+            <span class="set-label">背景音乐</span>
+            <span class="set-switch">
+              <input type="checkbox" id="set-bgm" checked>
+              <span class="track"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 说明 ============ -->
+    <section id="view-help" class="view page-view" hidden>
+      <header class="page-head">
+        <button class="btn-mini" id="btn-back-help">← 返回</button>
+        <h2 class="page-title">❓ 玩法说明</h2>
+      </header>
+      <div class="help-body">
+        <div class="help-sec help-brief">
+          <p>快速点击 <b>▲ 上升</b> 按钮，往高处飞行，<b>躲避斩杀线</b>！一路上需要按 <b>◀ ▶</b> 左右按钮躲避<b>九九八十一难</b>，否则会<b>大幅增加斩杀线进度</b>！</p>
+          <p><b>🎁 道具：</b>500m 后每 100m 出现一个，捡到可<b>降低斩杀线 3~5m</b>，别忘了去吃！</p>
+          <p><b>操作按键：</b>手机：▲ 上升 / ◀ ▶ 左右移位；电脑：W/A/S/D 或 ↑↓←→，P 暂停。</p>
+          <p>尽可能飞得更高，逃离斩杀线吧！</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

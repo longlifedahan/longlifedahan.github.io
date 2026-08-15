@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#063b66">
+  <title>捕鱼达人</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ======== 首页 ======== -->
+    <section id="view-home" class="view active">
+      <div class="home-inner">
+        <h1 class="title">捕鱼达人</h1>
+        <div class="intro">
+          <p>按住炮口<b>拖动瞄准</b>，松开发射渔网</p>
+          <p>渔网覆盖鱼即判定<b>捕获</b>，越高级的炮越强力</p>
+          <p>捕获大鱼赚金币，升级渔场解锁<b>更高级的鱼</b></p>
+        </div>
+        <button class="btn primary" id="btn-start">开始捕鱼</button>
+        <button class="btn ghost" id="btn-open-lb">排行榜</button>
+
+        <div class="farm-card">
+          <div class="farm-row">
+            <span>渔场等级</span>
+            <span class="farm-val" id="home-level">1 级</span>
+          </div>
+          <div class="farm-row">
+            <span>总金币</span>
+            <span class="farm-val gold" id="home-coins">1000</span>
+          </div>
+          <div class="farm-row">
+            <span>累计赚取</span>
+            <span class="farm-val" id="home-earned">0</span>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="set-row">
+            <span class="set-label">音效</span>
+            <button class="set-toggle" id="btn-sound-home">开</button>
+          </div>
+          <div class="set-row">
+            <span class="set-label">鱼等级显示</span>
+            <button class="set-toggle" id="btn-fishlevel-home">开</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== 游戏页 ======== -->
+    <section id="view-game" class="view">
+      <canvas id="game"></canvas>
+
+      <!-- 顶部 HUD -->
+      <div class="hud">
+        <div class="hud-left">
+          <div class="hud-label">总金币</div>
+          <div class="hud-coins" id="hud-coins">1000</div>
+        </div>
+        <div class="hud-mid">
+          <div class="hud-farm">
+            <span class="hud-farm-label">渔场 Lv.<span id="hud-level">1</span></span>
+            <div class="hud-bar"><div class="hud-bar-fill" id="hud-bar"></div><span class="hud-bar-txt" id="hud-bar-pct">0%</span></div>
+          </div>
+        </div>
+        <div class="hud-right">
+          <button class="hud-btn" id="btn-mute" aria-label="音效">🔊</button>
+          <button class="hud-btn" id="btn-work" aria-label="打工">打工</button>
+          <button class="hud-btn" id="btn-pause" aria-label="暂停">⚙</button>
+        </div>
+      </div>
+
+      <!-- 炮等级控制（底部） -->
+      <div class="gun-ctl">
+        <button class="gun-btn" id="gun-minus" aria-label="降低炮等级">−</button>
+        <div class="gun-info">
+          <div class="gun-lv">炮 Lv.<span id="gun-level">1</span></div>
+          <div class="gun-price">单发 <span id="gun-price">10</span></div>
+        </div>
+        <button class="gun-btn" id="gun-plus" aria-label="升高炮等级">+</button>
+      </div>
+
+      <!-- 炮瞄准触摸区（canvas 上方对齐炮口） -->
+      <div id="gun-touch" aria-hidden="true"></div>
+
+      <!-- 提示 -->
+      <div class="toast" id="toast" hidden></div>
+    </section>
+  </div>
+
+  <!-- ======== 暂停 / 设置弹层 ======== -->
+  <div class="overlay" id="pause-overlay" hidden>
+    <div class="panel">
+      <h2>暂停</h2>
+      <div class="set-row wide">
+        <span class="set-label">音效</span>
+        <button class="set-toggle" id="btn-sound-game">开</button>
+      </div>
+      <div class="set-row wide">
+        <span class="set-label">鱼等级显示</span>
+        <button class="set-toggle" id="btn-fishlevel-game">开</button>
+      </div>
+      <button class="btn primary" id="btn-resume">继续捕鱼</button>
+      <button class="btn ghost" id="btn-pause-home">返回首页</button>
+      <button class="btn ghost debug-btn" id="btn-debug999" hidden>测试福利：领取 99999 金币</button>
+    </div>
+  </div>
+
+  <!-- ======== 渔场升级提醒 ======== -->
+  <div class="overlay" id="levelup-overlay" hidden>
+    <div class="panel small">
+      <div class="levelup-title">🎉 渔场升级！</div>
+      <div class="levelup-sub">渔场升至 <b id="levelup-new">2</b> 级，更高级的鱼出现了！</div>
+      <button class="btn primary" id="btn-levelup-ok">太棒了</button>
+    </div>
+  </div>
+
+  <!-- ======== 打工弹层 ======== -->
+  <div class="modal" id="work-modal" hidden>
+    <div class="modal-card work">
+      <div class="modal-head">
+        <h2 class="modal-title">打工赚钱</h2>
+        <button class="icon-close" id="btn-close-work" aria-label="关闭">×</button>
+      </div>
+      <div class="work-body">
+        <div class="work-level">渔场等级 <b id="work-level">1</b> 级</div>
+        <div class="work-rate">速率 <b id="work-rate">20</b> / 秒</div>
+        <div class="work-follow" id="work-follow">未关注</div>
+        <div class="work-pending">可领取 <b class="gold" id="work-pending">0</b></div>
+        <div class="work-cap">可领至 <span id="work-collected">0</span> / <span id="work-cap">1000</span></div>
+        <button class="btn primary" id="btn-work-collect">领取金币</button>
+        <button class="btn ghost" id="btn-work-follow">关注UP主（领取×10）</button>
+        <button class="btn ghost" id="btn-work-check">我已关注，检测</button>
+        <div class="work-tip">保持本页面开启才能累计金币；打工金币为赠送金币，不提升渔场等级、不计入排行榜</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 排行榜弹层 ======== -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-board-tabs">
+        <button class="tab active" data-board="1">赚取金币</button>
+        <button class="tab" data-board="2">渔场等级</button>
+      </div>
+      <div class="tabs" id="lb-period-tabs">
+        <button class="tab active" data-period="all">总榜</button>
+        <button class="tab" data-period="month">月榜</button>
+        <button class="tab" data-period="week">周榜</button>
+        <button class="tab" data-period="day">日榜</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- ======== 横屏提示 ======== -->
+  <div class="overlay" id="landscape-overlay" hidden>
+    <div class="landscape-box">
+      <div class="landscape-icon">📱</div>
+      <div class="landscape-text">请旋转手机，横屏游玩更佳</div>
+      <button class="btn ghost small-btn" id="btn-landscape-go">仍然游玩</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

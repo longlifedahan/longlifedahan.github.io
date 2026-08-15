@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1206">
+  <title>财富帝国</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 顶部信息栏 -->
+    <header class="topbar">
+      <div class="money-row">
+        <div class="money-cell">
+          <span class="mlabel">现有资产</span>
+          <span class="mvalue gold" id="m-gold">0 元</span>
+        </div>
+        <div class="money-cell right">
+          <span class="mlabel">累计资产</span>
+          <span class="mvalue" id="m-total">0 元</span>
+        </div>
+      </div>
+      <div class="stat-row">
+        <span class="stat" id="m-mult">倍率 ×1.0</span>
+        <span class="stat" id="m-base">基础 0 元/秒</span>
+        <span class="stat pps" id="m-pps">每秒 +0 元</span>
+        <button class="icon-btn rank" id="btn-rank" aria-label="排行榜">🏆</button>
+      </div>
+    </header>
+
+    <main id="main">
+
+      <!-- 大本营 -->
+      <section class="base-card" id="base-card">
+        <div class="base-icon" id="base-icon">🏰</div>
+        <div class="base-body">
+          <div class="base-title">大本营 <span class="base-lv" id="b-lv">Lv.1</span></div>
+          <div class="base-sub" id="b-rate">每秒产出：1 元</div>
+          <div class="base-hint">👆 点击增产 +10%（持续 1 分钟）</div>
+        </div>
+        <button class="btn btn-up" id="b-up">
+          <span class="up-label">升级</span>
+          <span class="up-cost" id="b-up-cost">100 元</span>
+        </button>
+        <div class="buff-bar"><div class="buff-fill" id="buff-fill"></div></div>
+      </section>
+
+      <!-- 建筑列表 -->
+      <div id="list"></div>
+      <div id="lock-tip"></div>
+
+    </main>
+
+    <footer class="foot" id="foot">💰 点大本营增产 · 挂机基础倍率5% · 关注作者可解锁24小时挂机</footer>
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div class="modal" id="lb-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title">🏆 B站排行榜</h2>
+        <button class="icon-close" id="btn-close-lb" aria-label="关闭">×</button>
+      </div>
+      <div class="tabs" id="lb-tabs">
+        <button class="tab active" data-b="1">总资产</button>
+        <button class="tab" data-b="2">每秒产值</button>
+        <button class="tab" data-b="3">大本营等级</button>
+      </div>
+      <div class="lb-note" id="lb-note"></div>
+      <div class="lb-body" id="lb-body"><div class="lb-tip">加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- 挂机回报弹窗 -->
+  <div class="modal" id="idle-modal" hidden>
+    <div class="modal-card idle-card">
+      <div class="idle-icon">💰</div>
+      <h2 class="modal-title idle-title">挂机回报</h2>
+      <div class="idle-body">
+        <div class="idle-line">你挂机了 <b id="idle-dur">0</b></div>
+        <div class="idle-line">赚取 <b class="gold" id="idle-gain">0 元</b></div>
+        <div class="idle-note" id="idle-note"></div>
+        <div class="idle-follow" id="idle-follow" hidden>
+          <div class="idle-follow-tip" id="idle-follow-tip">挂机上限 8 小时，关注作者可解锁 24 小时挂机</div>
+          <button class="idle-btn ghost" id="btn-follow">去关注作者</button>
+        </div>
+      </div>
+      <button class="idle-btn" id="btn-idle-ok">开始游戏</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
